@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #05070A; }
+  *, *::before, *::after { box-sizing: border-box; }
+  ::selection { background: rgba(53,214,232,0.28); }
+</style>
+</helmet>
+<div style="font-family: 'Inter', system-ui, sans-serif; background: #05070A; color: #E7ECF3; min-height: 100vh; -webkit-font-smoothing: antialiased;">
+
+  <!-- HEADER -->
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 28px; border-bottom: 1px solid #12151C;">
+    <div style="display: flex; align-items: center; gap: 16px; min-width: 0;">
+      <img src="assets/yuthikal-logo-crop.png" alt="Yuthikal AudioTech" style="height: 38px; width: auto; display: block;">
+      <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #7d8798; white-space: nowrap;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        Guitarra
+      </span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; padding: 3px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 999px; font-size: 12px; font-weight: 600;">
+        <span style="padding: 4px 11px; border-radius: 999px; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a;">ES</span>
+        <span style="padding: 4px 11px; border-radius: 999px; color: #9AA3B2;">EN</span>
+      </div>
+      <button aria-label="Cambiar tema" style="display: grid; place-items: center; width: 38px; height: 38px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 10px; color: #9AA3B2; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <div style="max-width: 980px; margin: 0 auto; padding: 56px 28px 90px;">
+    <!-- TITLE -->
+    <div style="margin-bottom: 30px;">
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #35D6E8; margin-bottom: 10px;">Referencia · Guitarra</div>
+      <h1 style="margin: 0 0 12px; font-size: 36px; font-weight: 800; letter-spacing: -0.025em;">Las notas musicales</h1>
+      <p style="margin: 0; max-width: 640px; font-size: 16px; line-height: 1.6; color: #9AA3B2;">Las 12 notas de la escala cromática. Las 7 <span style="color: #C3CAD6;">naturales</span> y las 5 <span style="color: #C3CAD6;">alteradas</span> (sostenidos y bemoles), que en la guitarra viven entre traste y traste.</p>
+    </div>
+
+    <!-- LEGEND -->
+    <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 22px; font-size: 12.5px; color: #8b93a3;">
+      <span style="letter-spacing: 0.04em;">Cómo leer las tarjetas:</span>
+      <span style="display: inline-flex; align-items: center; gap: 8px;"><span style="width: 15px; height: 24px; border-radius: 3px 3px 5px 5px; background: linear-gradient(180deg, #e9edf3, #cfd6e0);"></span>Natural</span>
+      <span style="display: inline-flex; align-items: center; gap: 8px;"><span style="width: 15px; height: 24px; border-radius: 3px 3px 5px 5px; background: linear-gradient(180deg, #23272f, #0d0f13); border: 1px solid #1b2130;"></span>Alterada</span>
+    </div>
+
+    <!-- NOTES GRID -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 14px;">
+      <sc-for list="{{ notes }}" as="n" hint-placeholder-count="12">
+        <sc-if value="{{ n.isNatural }}" hint-placeholder-val="{{ true }}">
+          <article style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 150px; padding: 20px; background: #14171f; border: 1px solid #262d3b; border-radius: 16px; transition: border-color .15s;" style-hover="border-color: #35D6E8;">
+            <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #5b6577; margin-bottom: 10px;">Natural</span>
+            <span style="font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -0.02em;">{{ n.es }}</span>
+            <span style="margin-top: 8px; font-size: 17px; font-weight: 700; color: #35D6E8;">{{ n.en }}</span>
+          </article>
+        </sc-if>
+        <sc-if value="{{ n.isAltered }}" hint-placeholder-val="{{ false }}">
+          <article style="display: flex; flex-direction: column; justify-content: center; min-height: 150px; padding: 18px; background: #090b0f; border: 1px solid #1b2130; border-radius: 16px; transition: border-color .15s;" style-hover="border-color: #35D6E8;">
+            <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #4f5a6d; margin-bottom: 12px;">Alterada</span>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+                <span style="font-size: 24px; font-weight: 800; line-height: 1;">{{ n.sharpEs }}</span>
+                <span style="font-size: 13px; font-weight: 700; color: #35D6E8;">{{ n.sharpEn }}</span>
+              </div>
+              <div style="font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: #5b6577; margin-top: -6px;">sostenido</div>
+              <div style="height: 1px; background: #1b2130;"></div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+                <span style="font-size: 24px; font-weight: 800; line-height: 1;">{{ n.flatEs }}</span>
+                <span style="font-size: 13px; font-weight: 700; color: #35D6E8;">{{ n.flatEn }}</span>
+              </div>
+              <div style="font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: #5b6577; margin-top: -6px;">bemol</div>
+            </div>
+          </article>
+        </sc-if>
+      </sc-for>
+    </div>
+
+    <!-- PIANO OCTAVE -->
+    <div style="margin-top: 46px;">
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #9AA3B2; margin-bottom: 16px;">Una octava en el piano</div>
+      <div style="position: relative; height: 168px; background: #0c0e13; border: 1px solid #1b2130; border-radius: 14px; padding: 14px; overflow: hidden;">
+        <div style="position: relative; display: flex; gap: 5px; height: 100%;">
+          <sc-for list="{{ whiteKeys }}" as="w" hint-placeholder-count="7">
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 12px; background: linear-gradient(180deg, #e9edf3, #cfd6e0); border-radius: 0 0 8px 8px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.08);">
+              <span style="font-size: 15px; font-weight: 800; color: #0d1017;">{{ w.es }}</span>
+              <span style="font-size: 10px; font-weight: 700; color: #5b6577;">{{ w.en }}</span>
+            </div>
+          </sc-for>
+          <!-- black keys -->
+          <sc-for list="{{ blackKeys }}" as="b" hint-placeholder-count="5">
+            <div style="{{ b.style }}">
+              <span style="font-size: 8.5px; font-weight: 700; color: #cfd6e0; text-align: center; line-height: 1.2;">{{ b.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 980, &quot;height&quot;: 900}}">
+class Component extends DCLogic {
+  renderVals() {
+    const nat = (es, en) => ({ isNatural: true, isAltered: false, es, en });
+    const alt = (sEs, sEn, fEs, fEn) => ({ isNatural: false, isAltered: true, sharpEs: sEs, sharpEn: sEn, flatEs: fEs, flatEn: fEn });
+
+    const notes = [
+      nat("Do", "C"),
+      alt("Do\u266F", "C\u266F", "Re\u266D", "D\u266D"),
+      nat("Re", "D"),
+      alt("Re\u266F", "D\u266F", "Mi\u266D", "E\u266D"),
+      nat("Mi", "E"),
+      nat("Fa", "F"),
+      alt("Fa\u266F", "F\u266F", "Sol\u266D", "G\u266D"),
+      nat("Sol", "G"),
+      alt("Sol\u266F", "G\u266F", "La\u266D", "A\u266D"),
+      nat("La", "A"),
+      alt("La\u266F", "A\u266F", "Si\u266D", "B\u266D"),
+      nat("Si", "B"),
+    ];
+
+    const whiteKeys = [
+      { es: "Do", en: "C" }, { es: "Re", en: "D" }, { es: "Mi", en: "E" },
+      { es: "Fa", en: "F" }, { es: "Sol", en: "G" }, { es: "La", en: "A" }, { es: "Si", en: "B" },
+    ];
+
+    // black keys positioned by percentage over the 7 white keys
+    const blackBase = {
+      position: "absolute", top: "0", width: "8.5%", height: "62%",
+      background: "linear-gradient(180deg, #23272f, #0d0f13)",
+      border: "1px solid #05070A", borderRadius: "0 0 6px 6px",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+      paddingBottom: "7px", boxShadow: "0 4px 8px rgba(0,0,0,0.5)", zIndex: 2,
+    };
+    const positions = [
+      { label: "Do\u266F Re\u266D", left: "10%" },
+      { label: "Re\u266F Mi\u266D", left: "24.3%" },
+      { label: "Fa\u266F Sol\u266D", left: "53%" },
+      { label: "Sol\u266F La\u266D", left: "67.3%" },
+      { label: "La\u266F Si\u266D", left: "81.6%" },
+    ];
+    const blackKeys = positions.map(p => ({ label: p.label, style: { ...blackBase, left: p.left } }));
+
+    return { notes, whiteKeys, blackKeys };
+  }
+}
+</script>
+</body>
+</html>

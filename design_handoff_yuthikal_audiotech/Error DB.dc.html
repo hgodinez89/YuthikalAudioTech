@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #05070A; }
+  *, *::before, *::after { box-sizing: border-box; }
+  ::selection { background: rgba(53,214,232,0.28); }
+  @keyframes yk-flat-pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+</style>
+</helmet>
+<div style="font-family: 'Inter', system-ui, sans-serif; background: #05070A; color: #E7ECF3; min-height: 100vh; -webkit-font-smoothing: antialiased;">
+  <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 24px;">
+    <div style="width: 100%; max-width: 520px; text-align: center;">
+      <!-- flatlined waveform illustration -->
+      <div style="display: flex; align-items: center; justify-content: center; height: 120px; margin-bottom: 30px;">
+        <svg width="360" height="110" viewBox="0 0 360 110" fill="none">
+          <line x1="0" y1="55" x2="120" y2="55" stroke="#243042" stroke-width="3" stroke-linecap="round"></line>
+          <path d="M120 55 L134 55 L142 26 L152 84 L162 40 L170 55 L184 55" stroke="#35D6E8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="animation: yk-flat-pulse 2.2s ease-in-out infinite;"></path>
+          <line x1="184" y1="55" x2="360" y2="55" stroke="#243042" stroke-width="3" stroke-linecap="round"></line>
+          <circle cx="330" cy="55" r="5" fill="#3a4454"></circle>
+        </svg>
+      </div>
+      <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; margin-bottom: 20px; background: rgba(214,138,53,0.1); border: 1px solid rgba(214,138,53,0.3); border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: #d68a35;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+        Servicio interrumpido
+      </div>
+      <h1 style="margin: 0 0 14px; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.3;">La base de datos está inaccesible por inactividad</h1>
+      <p style="margin: 0 auto 30px; max-width: 400px; font-size: 15.5px; line-height: 1.6; color: #9AA3B2;">Contacta al administrador para reactivar el servicio. Tus playlists y canciones están a salvo.</p>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <button style="display: inline-flex; align-items: center; gap: 9px; padding: 13px 24px; border: none; border-radius: 13px; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"></path><path d="M3 8a9 9 0 1 0 2.5-5.7L3 8"></path></svg>
+          Reintentar
+        </button>
+        <button style="display: inline-flex; align-items: center; gap: 9px; padding: 13px 22px; border: 1px solid #2a3346; border-radius: 13px; background: #0F131B; color: #E7ECF3; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z" fill="none"></path><path d="M22 6l-10 7L2 6"></path></svg>
+          Contactar al administrador
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1000, &quot;height&quot;: 720}}"></script>
+</body>
+</html>

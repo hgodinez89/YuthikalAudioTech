@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #05070A; }
+  *, *::before, *::after { box-sizing: border-box; }
+  ::selection { background: rgba(53,214,232,0.28); }
+  @keyframes yk-pulse-ring {
+    0%   { transform: scale(0.9); opacity: 0.55; }
+    70%  { transform: scale(2.1); opacity: 0; }
+    100% { transform: scale(2.1); opacity: 0; }
+  }
+  @keyframes yk-bar {
+    0%, 100% { transform: scaleY(0.35); }
+    50%      { transform: scaleY(1); }
+  }
+  .yk-scroll::-webkit-scrollbar { width: 10px; }
+  .yk-scroll::-webkit-scrollbar-thumb { background: #1c2230; border-radius: 8px; border: 2px solid #05070A; }
+</style>
+</helmet>
+<div class="yk-scroll" ref="{{ scrollRef }}" onScroll="{{ onScroll }}" style="font-family: 'Inter', system-ui, sans-serif; background: #05070A; color: #E7ECF3; min-height: 100vh; height: 100vh; overflow-y: auto; -webkit-font-smoothing: antialiased;">
+
+  <!-- HEADER -->
+  <header style="position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; background: rgba(5,7,10,0.82); backdrop-filter: blur(14px); border-bottom: 1px solid #12151C;">
+    <img src="assets/yuthikal-logo-crop.png" alt="Yuthikal AudioTech" style="height: 40px; width: auto; display: block;">
+    <nav style="display: none; gap: 26px; font-size: 14px; font-weight: 500; color: #9AA3B2;">
+      <span>Instrumentos</span>
+      <span style="color: #E7ECF3;">Acordes</span>
+      <span>Mis Playlists</span>
+    </nav>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; padding: 3px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 999px; font-size: 12px; font-weight: 600;">
+        <span style="padding: 4px 11px; border-radius: 999px; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a;">ES</span>
+        <span style="padding: 4px 11px; border-radius: 999px; color: #9AA3B2;">EN</span>
+      </div>
+      <button aria-label="Cambiar tema" style="display: grid; place-items: center; width: 38px; height: 38px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 10px; color: #9AA3B2; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <div style="max-width: 1120px; margin: 0 auto; padding: 28px 20px 80px;">
+
+    <!-- TITLE -->
+    <div style="margin-bottom: 22px;">
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #35D6E8; margin-bottom: 8px;">Referencia · Guitarra</div>
+      <h1 style="margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.02em;">Buscador de acordes</h1>
+    </div>
+
+    <!-- SEARCH BAR -->
+    <div style="display: flex; gap: 10px; align-items: stretch;">
+      <div style="position: relative; flex: 1; display: flex; align-items: center;">
+        <svg style="position: absolute; left: 16px; pointer-events: none;" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5b6577" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input value="{{ query }}" onInput="{{ onQuery }}" placeholder="Busca un acorde… ej. La menor, C#7, Si bemol" style="width: 100%; height: 54px; padding: 0 46px 0 46px; background: #0F131B; border: 1px solid #1f2636; border-radius: 14px; color: #E7ECF3; font-size: 16px; font-family: inherit; outline: none;" style-focus="border-color: #35D6E8; box-shadow: 0 0 0 3px rgba(53,214,232,0.14);">
+        <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ clearQuery }}" aria-label="Limpiar búsqueda" style="position: absolute; right: 12px; display: grid; place-items: center; width: 26px; height: 26px; background: #1b2130; border: none; border-radius: 999px; color: #9AA3B2; cursor: pointer;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+          </button>
+        </sc-if>
+      </div>
+      <!-- MIC -->
+      <div style="position: relative; display: grid; place-items: center; width: 54px; height: 54px; flex: 0 0 auto;">
+        <sc-if value="{{ listening }}" hint-placeholder-val="{{ false }}">
+          <span style="position: absolute; inset: 0; border-radius: 14px; background: rgba(53,214,232,0.5); animation: yk-pulse-ring 1.6s ease-out infinite;"></span>
+        </sc-if>
+        <button onClick="{{ toggleMic }}" title="{{ micTitle }}" aria-label="Búsqueda por voz" style="{{ micBtnStyle }}">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0M12 19v3"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- MIC INFO NOTE -->
+    <div style="display: flex; align-items: center; gap: 7px; margin-top: 10px; font-size: 12.5px; color: {{ micNoteColor }};">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+      <span>{{ micNote }}</span>
+    </div>
+
+    <!-- CONTROL ROW -->
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin: 22px 0 8px;">
+      <div style="display: flex; padding: 4px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 12px; font-size: 13px; font-weight: 600;">
+        <button onClick="{{ setGroupCat }}" style="{{ tabCatStyle }}">Por categoría</button>
+        <button onClick="{{ setGroupNote }}" style="{{ tabNoteStyle }}">Por nota</button>
+      </div>
+      <div style="font-size: 13px; color: #7d8798;">Mostrando <span style="color: #E7ECF3; font-weight: 600;">{{ shown }}</span> de {{ total }} acordes</div>
+    </div>
+
+    <!-- RESULTS -->
+    <sc-if value="{{ hasResults }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <sc-for list="{{ groups }}" as="group" hint-placeholder-count="3">
+          <section style="margin-top: 10px;">
+            <div style="position: sticky; top: 71px; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 14px 2px 12px; background: linear-gradient(#05070A 68%, rgba(5,7,10,0)); ">
+              <h2 style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #9AA3B2;">{{ group.label }}</h2>
+              <span style="font-size: 11px; font-weight: 600; color: #4f5a6d;">{{ group.count }}</span>
+              <span style="flex: 1; height: 1px; background: #12151C;"></span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">
+              <sc-for list="{{ group.chords }}" as="c" hint-placeholder-count="6">
+                <article style="position: relative; display: flex; flex-direction: column; align-items: center; padding: 16px 12px 14px; background: #12151C; border: 1px solid #1b2130; border-radius: 16px; cursor: pointer; transition: border-color .15s, transform .15s;" style-hover="border-color: #35D6E8; transform: translateY(-2px);">
+                  <sc-if value="{{ c.cejilla }}" hint-placeholder-val="{{ false }}">
+                    <span style="position: absolute; top: 10px; right: 10px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #35D6E8; padding: 3px 7px; border: 1px solid rgba(53,214,232,0.4); border-radius: 999px;">cejilla</span>
+                  </sc-if>
+                  <div style="width: 100%; display: flex; justify-content: center; padding: 4px 0 10px;">{{ c.svg }}</div>
+                  <div style="text-align: center; line-height: 1.35;">
+                    <span style="font-size: 17px; font-weight: 800; letter-spacing: -0.01em;">{{ c.n }}</span>
+                    <div style="font-size: 12.5px; color: #8b93a3;">{{ c.es }}</div>
+                  </div>
+                </article>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- EMPTY STATE -->
+    <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align: center; padding: 70px 20px; color: #7d8798;">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#2c3648" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 14px;"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <div style="font-size: 16px; font-weight: 600; color: #C3CAD6;">Sin resultados para "{{ query }}"</div>
+        <div style="font-size: 13.5px; margin-top: 6px;">Prueba con otra notación, p. ej. "Am" o "La menor".</div>
+      </div>
+    </sc-if>
+
+    <!-- INFINITE-SCROLL LOADER -->
+    <sc-if value="{{ hasResults }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 46px 0 8px; color: #5b6577;">
+        <div style="display: flex; align-items: flex-end; gap: 4px; height: 26px;">{{ loaderBars }}</div>
+        <span style="font-size: 12.5px; letter-spacing: 0.02em;">Cargando más acordes…</span>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <button onClick="{{ fabClick }}" aria-label="{{ fabLabel }}" title="{{ fabLabel }}" style="{{ fabStyle }}">{{ fabIcon }}</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1120, &quot;height&quot;: 900}}">
+class Component extends DCLogic {
+  state = { query: "", grouping: "cat", listening: false, micSupported: true, atBottom: false };
+
+  // ---- Chord catalog (frets low-E -> high-E; -1 = muted, 0 = open) ----
+  catalog() {
+    return [
+      // Mayores
+      { n: "C",  es: "Do mayor",  cat: "Mayores", root: "C",  frets: [-1,3,2,0,1,0] },
+      { n: "D",  es: "Re mayor",  cat: "Mayores", root: "D",  frets: [-1,-1,0,2,3,2] },
+      { n: "E",  es: "Mi mayor",  cat: "Mayores", root: "E",  frets: [0,2,2,1,0,0] },
+      { n: "F",  es: "Fa mayor",  cat: "Mayores", root: "F",  frets: [1,3,3,2,1,1], barre: { fret:1, from:0, to:5 } },
+      { n: "G",  es: "Sol mayor", cat: "Mayores", root: "G",  frets: [3,2,0,0,0,3] },
+      { n: "A",  es: "La mayor",  cat: "Mayores", root: "A",  frets: [-1,0,2,2,2,0] },
+      { n: "B",  es: "Si mayor",  cat: "Mayores", root: "B",  frets: [-1,2,4,4,4,2], barre: { fret:2, from:1, to:5 } },
+      // Menores
+      { n: "Am", es: "La menor",  cat: "Menores", root: "A",  frets: [-1,0,2,2,1,0] },
+      { n: "Bm", es: "Si menor",  cat: "Menores", root: "B",  frets: [-1,2,4,4,3,2], barre: { fret:2, from:1, to:5 } },
+      { n: "Cm", es: "Do menor",  cat: "Menores", root: "C",  frets: [-1,3,5,5,4,3], barre: { fret:3, from:1, to:5 } },
+      { n: "Dm", es: "Re menor",  cat: "Menores", root: "D",  frets: [-1,-1,0,2,3,1] },
+      { n: "Em", es: "Mi menor",  cat: "Menores", root: "E",  frets: [0,2,2,0,0,0] },
+      { n: "Fm", es: "Fa menor",  cat: "Menores", root: "F",  frets: [1,3,3,1,1,1], barre: { fret:1, from:0, to:5 } },
+      { n: "Gm", es: "Sol menor", cat: "Menores", root: "G",  frets: [3,5,5,3,3,3], barre: { fret:3, from:0, to:5 } },
+      // Séptimas
+      { n: "C7", es: "Do séptima", cat: "Séptimas", root: "C", frets: [-1,3,2,3,1,0] },
+      { n: "D7", es: "Re séptima", cat: "Séptimas", root: "D", frets: [-1,-1,0,2,1,2] },
+      { n: "E7", es: "Mi séptima", cat: "Séptimas", root: "E", frets: [0,2,0,1,0,0] },
+      { n: "G7", es: "Sol séptima",cat: "Séptimas", root: "G", frets: [3,2,0,0,0,1] },
+      { n: "A7", es: "La séptima", cat: "Séptimas", root: "A", frets: [-1,0,2,0,2,0] },
+      { n: "B7", es: "Si séptima", cat: "Séptimas", root: "B", frets: [-1,2,1,2,0,2] },
+      { n: "Am7",es: "La menor 7", cat: "Séptimas", root: "A", frets: [-1,0,2,0,1,0] },
+      { n: "Em7",es: "Mi menor 7", cat: "Séptimas", root: "E", frets: [0,2,0,0,0,0] },
+      { n: "Dm7",es: "Re menor 7", cat: "Séptimas", root: "D", frets: [-1,-1,0,2,1,1] },
+      // Suspendidos
+      { n: "Dsus4", es: "Re susp. 4", cat: "Suspendidos", root: "D", frets: [-1,-1,0,2,3,3] },
+      { n: "Dsus2", es: "Re susp. 2", cat: "Suspendidos", root: "D", frets: [-1,-1,0,2,3,0] },
+      { n: "Asus4", es: "La susp. 4", cat: "Suspendidos", root: "A", frets: [-1,0,2,2,3,0] },
+      { n: "Asus2", es: "La susp. 2", cat: "Suspendidos", root: "A", frets: [-1,0,2,2,0,0] },
+      { n: "Esus4", es: "Mi susp. 4", cat: "Suspendidos", root: "E", frets: [0,2,2,2,0,0] },
+      // Disminuidos
+      { n: "Bdim", es: "Si dism.", cat: "Disminuidos", root: "B", frets: [-1,2,3,4,3,-1] },
+      { n: "Ddim", es: "Re dism.", cat: "Disminuidos", root: "D", frets: [-1,-1,0,1,3,1] },
+      { n: "C#dim",es: "Do# dism.", cat: "Disminuidos", root: "C#", frets: [-1,-1,2,3,2,3] },
+      // Aumentados
+      { n: "Caug", es: "Do aum.", cat: "Aumentados", root: "C", frets: [-1,3,2,1,1,0] },
+      { n: "Eaug", es: "Mi aum.", cat: "Aumentados", root: "E", frets: [0,3,2,1,1,0] },
+      { n: "Gaug", es: "Sol aum.",cat: "Aumentados", root: "G", frets: [3,2,1,0,0,3] },
+      // Extendidos
+      { n: "Cmaj7", es: "Do mayor 7", cat: "Extendidos", root: "C", frets: [-1,3,2,0,0,0] },
+      { n: "Emaj7", es: "Mi mayor 7", cat: "Extendidos", root: "E", frets: [0,2,1,1,0,0] },
+      { n: "Amaj7", es: "La mayor 7", cat: "Extendidos", root: "A", frets: [-1,0,2,1,2,0] },
+      { n: "Cadd9", es: "Do add 9",   cat: "Extendidos", root: "C", frets: [-1,3,2,0,3,0] },
+      { n: "G6",    es: "Sol sexta",  cat: "Extendidos", root: "G", frets: [3,2,0,0,0,0] },
+      { n: "Em9",   es: "Mi menor 9", cat: "Extendidos", root: "E", frets: [0,2,0,0,0,2] },
+      // Otros
+      { n: "E5", es: "Mi power",  cat: "Otros", root: "E", frets: [0,2,2,-1,-1,-1] },
+      { n: "A5", es: "La power",  cat: "Otros", root: "A", frets: [-1,0,2,2,-1,-1] },
+      { n: "G5", es: "Sol power", cat: "Otros", root: "G", frets: [3,5,5,-1,-1,-1], barre: { fret:5, from:1, to:2 } },
+    ];
+  }
+
+  // Conceptual full catalog size (brief-style counter)
+  TOTAL = 132;
+
+  catOrder = ["Mayores","Menores","Séptimas","Suspendidos","Disminuidos","Aumentados","Extendidos","Otros"];
+  noteOrder = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  noteLabels = { "C":"Do","C#":"Do# / Reb","D":"Re","D#":"Re# / Mib","E":"Mi","F":"Fa","F#":"Fa# / Solb","G":"Sol","G#":"Sol# / Lab","A":"La","A#":"La# / Sib","B":"Si" };
+
+  // ---- SVG chord diagram ----
+  diagram(ch) {
+    const S = React.createElement;
+    const frets = ch.frets;
+    const played = frets.filter(f => f > 0);
+    const maxF = played.length ? Math.max(...played) : 0;
+    let start = 1;
+    if (maxF > 4) start = Math.min(...played);
+    const nF = 4, padX = 16, padTop = 24, gs = 15, fg = 21;
+    const gridW = gs * 5, svgW = padX * 2 + gridW;
+    const nutY = padTop, gridH = fg * nF, svgH = padTop + gridH + 6;
+    const grey = "#39414f", nutc = "#5a6474", mark = "#8b93a3", dot = "#35D6E8";
+    const els = [];
+    // strings
+    for (let i = 0; i < 6; i++) {
+      const x = padX + i * gs;
+      els.push(S("line", { key: "s"+i, x1: x, y1: nutY, x2: x, y2: nutY + gridH, stroke: grey, strokeWidth: 1.4 }));
+    }
+    // frets
+    for (let k = 0; k <= nF; k++) {
+      const y = nutY + k * fg;
+      const isNut = k === 0 && start === 1;
+      els.push(S("line", { key: "f"+k, x1: padX, y1: y, x2: padX + gridW, y2: y, stroke: isNut ? nutc : grey, strokeWidth: isNut ? 3.6 : 1.4, strokeLinecap: "round" }));
+    }
+    // position label
+    if (start > 1) {
+      els.push(S("text", { key: "lbl", x: padX - 7, y: nutY + fg * 0.62, fill: mark, fontSize: 10, fontWeight: 700, textAnchor: "end", fontFamily: "Inter, sans-serif" }, start + "fr"));
+    }
+    // barre capsule
+    const b = ch.barre;
+    if (b) {
+      const y = nutY + (b.fret - start + 0.5) * fg;
+      const x1 = padX + b.from * gs, x2 = padX + b.to * gs;
+      els.push(S("rect", { key: "barre", x: x1 - 6, y: y - 6, width: (x2 - x1) + 12, height: 12, rx: 6, fill: dot, opacity: 0.92 }));
+    }
+    // markers + dots
+    frets.forEach((f, i) => {
+      const x = padX + i * gs;
+      if (f === -1) {
+        const my = padTop - 12, r = 3.6;
+        els.push(S("line", { key: "x1"+i, x1: x - r, y1: my - r, x2: x + r, y2: my + r, stroke: mark, strokeWidth: 1.7, strokeLinecap: "round" }));
+        els.push(S("line", { key: "x2"+i, x1: x + r, y1: my - r, x2: x - r, y2: my + r, stroke: mark, strokeWidth: 1.7, strokeLinecap: "round" }));
+      } else if (f === 0) {
+        els.push(S("circle", { key: "o"+i, cx: x, cy: padTop - 12, r: 4, fill: "none", stroke: mark, strokeWidth: 1.6 }));
+      } else {
+        const covered = b && f === b.fret && i >= b.from && i <= b.to;
+        if (!covered) {
+          els.push(S("circle", { key: "d"+i, cx: x, cy: nutY + (f - start + 0.5) * fg, r: 6, fill: dot }));
+        }
+      }
+    });
+    return S("svg", { viewBox: "0 0 " + svgW + " " + svgH, width: svgW, height: svgH, style: { display: "block" } }, els);
+  }
+
+  matches(ch, q) {
+    if (!q) return true;
+    q = q.trim().toLowerCase();
+    return ch.n.toLowerCase().includes(q) || ch.es.toLowerCase().includes(q) || ch.cat.toLowerCase().includes(q);
+  }
+
+  renderVals() {
+    const q = this.state.query;
+    const grouping = this.state.grouping;
+    const all = this.catalog();
+    const filtered = all.filter(ch => this.matches(ch, q));
+
+    // decorate with svg + flags
+    const deco = filtered.map(ch => ({
+      n: ch.n, es: ch.es, cejilla: !!ch.barre, svg: this.diagram(ch),
+      cat: ch.cat, root: ch.root,
+    }));
+
+    // group
+    let groups = [];
+    if (grouping === "cat") {
+      groups = this.catOrder.map(label => ({
+        label, chords: deco.filter(c => c.cat === label),
+      }));
+    } else {
+      groups = this.noteOrder.map(r => ({
+        label: this.noteLabels[r], chords: deco.filter(c => c.root === r),
+      }));
+    }
+    groups = groups.filter(g => g.chords.length).map(g => ({ ...g, count: g.chords.length }));
+
+    // loader waveform bars
+    const S = React.createElement;
+    const heights = [10, 18, 24, 16, 22, 12, 20, 14];
+    const loaderBars = S(React.Fragment, null, heights.map((h, i) =>
+      S("span", { key: i, style: {
+        display: "block", width: "4px", height: h + "px", borderRadius: "3px",
+        background: "linear-gradient(#2E6BF0, #35D6E8)",
+        transformOrigin: "bottom", animation: "yk-bar 1s ease-in-out infinite",
+        animationDelay: (i * 0.1) + "s",
+      } })
+    ));
+
+    const catActive = { whiteSpace: "nowrap", padding: "7px 15px", borderRadius: "9px", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 600, background: "linear-gradient(135deg, #2E6BF0, #35D6E8)", color: "#04121a" };
+    const catIdle = { whiteSpace: "nowrap", padding: "7px 15px", borderRadius: "9px", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 600, background: "transparent", color: "#9AA3B2" };
+
+    const supported = this.state.micSupported;
+    const micBase = { display: "grid", placeItems: "center", width: "54px", height: "54px", borderRadius: "14px", cursor: supported ? "pointer" : "not-allowed", position: "relative", fontFamily: "inherit" };
+    let micBtnStyle;
+    if (!supported) {
+      micBtnStyle = { ...micBase, background: "#0C0F15", border: "1px solid #171c28", color: "#3b4454" };
+    } else if (this.state.listening) {
+      micBtnStyle = { ...micBase, background: "linear-gradient(135deg, #2E6BF0, #35D6E8)", border: "1px solid transparent", color: "#04121a", boxShadow: "0 0 22px rgba(53,214,232,0.5)" };
+    } else {
+      micBtnStyle = { ...micBase, background: "#0F131B", border: "1px solid #2a3346", color: "#35D6E8" };
+    }
+
+    return {
+      query: q,
+      hasQuery: q.length > 0,
+      onQuery: (e) => this.setState({ query: e.target.value }),
+      clearQuery: () => this.setState({ query: "" }),
+      shown: filtered.length,
+      total: this.TOTAL,
+      groups,
+      hasResults: filtered.length > 0,
+      noResults: filtered.length === 0,
+      loaderBars,
+      // floating scroll button
+      scrollRef: (el) => { this._sc = el; },
+      onScroll: (e) => { const el = e.target; const near = el.scrollTop + el.clientHeight >= el.scrollHeight - 100; if (near !== this.state.atBottom) this.setState({ atBottom: near }); },
+      fabClick: () => { const el = this._sc; if (!el) return; el.scrollTo({ top: this.state.atBottom ? 0 : el.scrollHeight, behavior: "smooth" }); },
+      fabLabel: this.state.atBottom ? "Ir arriba" : "Ir abajo",
+      fabIcon: S("svg", { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.4, strokeLinecap: "round", strokeLinejoin: "round" }, S("path", { d: this.state.atBottom ? "m18 15-6-6-6 6" : "m6 9 6 6 6-6" })),
+      fabStyle: { position: "fixed", bottom: "24px", right: "24px", zIndex: 50, display: "grid", placeItems: "center", width: "52px", height: "52px", borderRadius: "50%", border: "none", cursor: "pointer", background: "linear-gradient(135deg, #2E6BF0, #35D6E8)", color: "#04121a", boxShadow: "0 8px 24px rgba(46,107,240,0.4)" },
+      // grouping tabs
+      setGroupCat: () => this.setState({ grouping: "cat" }),
+      setGroupNote: () => this.setState({ grouping: "note" }),
+      tabCatStyle: grouping === "cat" ? catActive : catIdle,
+      tabNoteStyle: grouping === "note" ? catActive : catIdle,
+      // mic
+      listening: supported && this.state.listening,
+      toggleMic: () => { if (supported) this.setState(s => ({ listening: !s.listening })); },
+      micBtnStyle,
+      micTitle: supported ? "Buscar por voz" : "Tu navegador no admite búsqueda por voz. Usa Chrome o Edge.",
+      micNote: supported ? "La búsqueda por voz requiere Chrome o Edge." : "Búsqueda por voz no disponible en este navegador — usa Chrome o Edge.",
+      micNoteColor: supported ? "#7d8798" : "#b78a55",
+    };
+  }
+}
+</script>
+</body>
+</html>

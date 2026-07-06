@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "title": "Yuthikal AudioTech",
+    "description": "Your digital music stand for guitar: chords, songs and karaoke mode with real audio."
+  },
+  "header": {
+    "instruments": "Instruments",
+    "chords": "Chords",
+    "playlists": "My Playlists",
+    "toggleTheme": "Toggle theme",
+    "switchLanguage": "Switch language",
+    "signIn": "Sign in with Google"
+  },
+  "loading": {
+    "eyebrow": "Yuthikal AudioTech",
+    "message": "Tuning your session…"
+  },
+  "errorDb": {
+    "badge": "Service interrupted",
+    "title": "The database is unavailable due to inactivity",
+    "description": "Contact the administrator to restore the service. Your playlists and songs are safe.",
+    "retry": "Retry",
+    "contact": "Contact administrator"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or was moved.",
+    "back": "Back to home"
+  },
+  "landing": {
+    "badge": "Your digital music stand for guitar",
+    "title": "Your music, your chords, <accent>your stage</accent>",
+    "subtitle": "Learn chords, write your songs with lyrics and chord charts, and play them karaoke-style with real synchronized audio — all in one place.",
+    "ctaStart": "Get started",
+    "ctaHow": "See how it works",
+    "heroCard": {
+      "songMeta": "Key Em · Ballad",
+      "karaokeBadge": "Karaoke",
+      "verse": "Verse 1"
+    },
+    "featuresEyebrow": "All in one",
+    "featuresTitle": "From the chord to the stage",
+    "features": {
+      "finderTitle": "Chord finder",
+      "finderDesc": "Search by voice or text and browse every position of each chord on the neck.",
+      "referenceTitle": "Music reference",
+      "referenceDesc": "Strings and notes in Spanish and English, with traditional names and equivalences.",
+      "songsTitle": "Your songs",
+      "songsDesc": "Lyrics with chords anchored to each syllable, in the classic chord-sheet format.",
+      "karaokeTitle": "Karaoke mode",
+      "karaokeDesc": "Play the real audio and follow the lyrics and chords in perfect sync."
+    },
+    "karaokeEyebrow": "Karaoke mode",
+    "karaokeTitle": "Play the real audio and follow the synced lyrics",
+    "karaokeDesc": "The current line lights up, chords appear right when they change and the music stand scrolls by itself. Perfect for your phone or tablet while you play.",
+    "statChords": "chords in the catalog",
+    "statLanguages": "languages ES / EN",
+    "statPlaylists": "private playlists",
+    "deviceNow": "Now",
+    "deviceNext": "Next",
+    "footerCopy": "© 2026 Yuthikal AudioTech"
+  },
+  "strings": {
+    "eyebrow": "Reference · Guitar",
+    "title": "The guitar strings",
+    "intro": "From the highest and thinnest (1st) to the lowest and thickest (6th). In standard tuning, their notes are E–B–G–D–A–E.",
+    "stringWord": "string",
+    "gauge": "Gauge",
+    "pitch1": "The highest and thinnest",
+    "pitch2": "High",
+    "pitch3": "Middle",
+    "pitch4": "Low (wound)",
+    "pitch5": "Low (wound)",
+    "pitch6": "The lowest and thickest"
+  },
+  "notes": {
+    "eyebrow": "Reference · Guitar",
+    "title": "The musical notes",
+    "intro": "The 12 notes of the chromatic scale: 7 <em>natural</em> and 5 <em>altered</em> notes (sharps and flats), which on the guitar live one fret apart.",
+    "legend": "How to read the cards:",
+    "natural": "Natural",
+    "altered": "Altered",
+    "sharp": "sharp",
+    "flat": "flat",
+    "pianoTitle": "One octave on the piano"
+  },
+  "instruments": {
+    "eyebrow": "Start here",
+    "title": "Choose your instrument",
+    "subtitle": "Start with the guitar. More instruments are coming to your digital music stand soon.",
+    "explore": "Explore",
+    "soon": "Coming soon",
+    "guitar": { "name": "Guitar", "desc": "Chords, strings, notes and your songs." },
+    "piano": { "name": "Piano", "desc": "Keys, scales and chords." },
+    "ukulele": { "name": "Ukulele", "desc": "Chords and songs." },
+    "bass": { "name": "Bass", "desc": "Notes and bass lines." }
+  }
+}

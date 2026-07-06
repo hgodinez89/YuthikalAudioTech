@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #05070A; }
+  *, *::before, *::after { box-sizing: border-box; }
+  ::selection { background: rgba(53,214,232,0.28); }
+  .yk-scroll::-webkit-scrollbar { width: 10px; }
+  .yk-scroll::-webkit-scrollbar-thumb { background: #1c2230; border-radius: 8px; border: 2px solid #05070A; }
+</style>
+</helmet>
+<div class="yk-scroll" style="font-family: 'Inter', system-ui, sans-serif; background: #05070A; color: #E7ECF3; min-height: 100vh; height: 100vh; overflow-y: auto; -webkit-font-smoothing: antialiased;">
+
+  <!-- HEADER -->
+  <header style="position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 28px; background: rgba(5,7,10,0.82); backdrop-filter: blur(14px); border-bottom: 1px solid #12151C;">
+    <div style="display: flex; align-items: center; gap: 16px; min-width: 0;">
+      <img src="assets/yuthikal-logo-crop.png" alt="Yuthikal AudioTech" style="height: 38px; width: auto; display: block;">
+      <a href="Playlists.dc.html" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #7d8798; text-decoration: none; white-space: nowrap;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        Mis playlists
+      </a>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; padding: 3px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 999px; font-size: 12px; font-weight: 600;">
+        <span style="padding: 4px 11px; border-radius: 999px; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a;">ES</span>
+        <span style="padding: 4px 11px; border-radius: 999px; color: #9AA3B2;">EN</span>
+      </div>
+      <button aria-label="Cambiar tema" style="display: grid; place-items: center; width: 38px; height: 38px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 10px; color: #9AA3B2; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <div style="max-width: 960px; margin: 0 auto; padding: 40px 28px 90px;">
+
+    <!-- PLAYLIST HEADER BLOCK -->
+    <div style="display: flex; gap: 24px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding-bottom: 26px; border-bottom: 1px solid #12151C;">
+      <div style="min-width: 0; flex: 1;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
+          <h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em;">Noches de bohemia</h1>
+          <span style="display: inline-flex; padding: 5px 12px; background: #0F131B; border: 1px solid #2a3346; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #C3CAD6;">Bolero</span>
+        </div>
+        <p style="margin: 0 0 18px; font-size: 15px; line-height: 1.55; color: #9AA3B2; max-width: 520px;">Boleros para tocar despacio con café. Clásicos que nunca fallan en una noche tranquila.</p>
+        <div style="display: flex; gap: 32px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 12.5px; color: #8b93a3;">Me gusta</span>
+            <span style="display: flex; gap: 3px;">{{ likeStars }}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 12.5px; color: #8b93a3;">Dificultad</span>
+            <span style="display: flex; gap: 3px;">{{ diffStars }}</span>
+          </div>
+        </div>
+      </div>
+      <button style="display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; background: #0F131B; border: 1px solid #2a3346; border-radius: 12px; color: #E7ECF3; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>
+        Editar
+      </button>
+    </div>
+
+    <!-- SONGS -->
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 30px 0 18px;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 700;">Canciones <span style="font-size: 14px; font-weight: 500; color: #5b6577;">· {{ songCount }}</span></h2>
+      <button onClick="{{ addSong }}" style="display: inline-flex; align-items: center; gap: 9px; padding: 11px 18px; border: none; border-radius: 12px; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+        Nueva canción
+      </button>
+    </div>
+
+    <sc-if value="{{ hasSongs }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <sc-for list="{{ songs }}" as="s" hint-placeholder-count="5">
+          <article style="display: flex; align-items: center; gap: 16px; padding: 14px 16px 14px 18px; background: #12151C; border: 1px solid #1b2130; border-radius: 14px; transition: border-color .15s;" style-hover="border-color: #2a3346;">
+            <div style="min-width: 0; flex: 1;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-size: 15.5px; font-weight: 700;">{{ s.name }}</span>
+                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; background: #0F131B; border: 1px solid #2a3346; border-radius: 999px; font-size: 11.5px; font-weight: 600; color: #C3CAD6;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#35D6E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                  Tonalidad: {{ s.key }}
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px; margin-top: 8px;">
+                <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #7d8798;">{{ s.sourceIcon }}{{ s.sourceLabel }}</span>
+                <span style="{{ s.badgeStyle }}">{{ s.badgeDot }}{{ s.status }}</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; flex: 0 0 auto;">
+              <a href="Song View.dc.html" title="Ver" style="display: grid; place-items: center; width: 38px; height: 38px; background: transparent; border: none; border-radius: 10px; color: #9AA3B2; cursor: pointer; text-decoration: none;" style-hover="background: #1b2130; color: #E7ECF3;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </a>
+              <button title="Editar" style="display: grid; place-items: center; width: 38px; height: 38px; background: transparent; border: none; border-radius: 10px; color: #9AA3B2; cursor: pointer;" style-hover="background: #1b2130; color: #E7ECF3;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>
+              </button>
+              <button title="Calibrar" style="display: grid; place-items: center; width: 38px; height: 38px; background: transparent; border: none; border-radius: 10px; color: #9AA3B2; cursor: pointer;" style-hover="background: #1b2130; color: #E7ECF3;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+              </button>
+              <a href="Karaoke.dc.html" title="Karaoke" style="display: grid; place-items: center; width: 44px; height: 44px; margin-left: 6px; border-radius: 12px; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a; cursor: pointer; text-decoration: none; box-shadow: 0 4px 16px rgba(46,107,240,0.3);">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 2px;"><path d="M8 5v14l11-7z"></path></svg>
+              </a>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- EMPTY STATE -->
+    <sc-if value="{{ noSongs }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 60px 20px; background: #0c0e13; border: 1px dashed #1f2636; border-radius: 18px;">
+        <div style="color: #2a3648; margin-bottom: 18px;">{{ emptyArt }}</div>
+        <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 700; color: #C3CAD6;">Este playlist aún no tiene canciones</h3>
+        <p style="margin: 0 0 22px; font-size: 14px; color: #7d8798; max-width: 360px;">Agrega tu primera canción con su letra y acordes para empezar a tocar.</p>
+        <button onClick="{{ addSong }}" style="display: inline-flex; align-items: center; gap: 9px; padding: 12px 22px; border: none; border-radius: 12px; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+          Nueva canción
+        </button>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 960, &quot;height&quot;: 900}}">
+class Component extends DCLogic {
+  state = {
+    songs: [
+      { name: "St. James Infirmary Blues", key: "Mi menor — Em", source: "youtube", status: "sync" },
+      { name: "Bésame mucho", key: "Re menor — Dm", source: "youtube", status: "sync" },
+      { name: "La media vuelta", key: "Sol — G", source: "file", status: "raw" },
+      { name: "El reloj", key: "La — A", source: "youtube", status: "raw" },
+      { name: "Sabor a mí", key: "Do — C", source: "file", status: "sync" },
+    ],
+  };
+
+  star(filled) {
+    const S = React.createElement;
+    return S("svg", { width: 15, height: 15, viewBox: "0 0 24 24", fill: filled ? "#35D6E8" : "none", stroke: filled ? "#35D6E8" : "#3a4454", strokeWidth: 1.8, strokeLinejoin: "round" },
+      S("path", { d: "M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 21.5 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" }));
+  }
+  starsRow(count) {
+    const S = React.createElement;
+    return S(React.Fragment, null, [1, 2, 3, 4, 5].map(i => S("span", { key: i }, this.star(i <= count))));
+  }
+
+  ytIcon() {
+    const S = React.createElement;
+    return S("svg", { width: 15, height: 15, viewBox: "0 0 24 24", fill: "#8b93a3" },
+      S("path", { d: "M23 12s0-3.3-.4-4.9a2.6 2.6 0 0 0-1.8-1.8C19.2 5 12 5 12 5s-7.2 0-8.8.4a2.6 2.6 0 0 0-1.8 1.8C1 8.7 1 12 1 12s0 3.3.4 4.9a2.6 2.6 0 0 0 1.8 1.8C4.8 19 12 19 12 19s7.2 0 8.8-.4a2.6 2.6 0 0 0 1.8-1.8C23 15.3 23 12 23 12z" }),
+      S("path", { d: "M10 9l5 3-5 3z", fill: "#12151C" }));
+  }
+  fileIcon() {
+    const S = React.createElement;
+    return S("svg", { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "#8b93a3", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+      S("path", { d: "M9 18V6l10-2v12" }), S("circle", { cx: 6, cy: 18, r: 3 }), S("circle", { cx: 16, cy: 16, r: 3 }));
+  }
+
+  renderVals() {
+    const badgeSync = { display: "inline-flex", alignItems: "center", gap: "6px", padding: "3px 10px", borderRadius: "999px", fontSize: "11.5px", fontWeight: 600, background: "rgba(53,214,232,0.1)", border: "1px solid rgba(53,214,232,0.3)", color: "#35D6E8" };
+    const badgeRaw = { display: "inline-flex", alignItems: "center", gap: "6px", padding: "3px 10px", borderRadius: "999px", fontSize: "11.5px", fontWeight: 600, background: "#0F131B", border: "1px solid #2a3346", color: "#8b93a3" };
+    const dot = (c) => React.createElement("span", { style: { width: "6px", height: "6px", borderRadius: "50%", background: c, display: "inline-block" } });
+
+    const songs = this.state.songs.map(s => ({
+      name: s.name,
+      key: s.key,
+      sourceIcon: s.source === "youtube" ? this.ytIcon() : this.fileIcon(),
+      sourceLabel: s.source === "youtube" ? "YouTube" : "Archivo MP3",
+      status: s.status === "sync" ? "Sincronizada" : "Sin calibrar",
+      badgeStyle: s.status === "sync" ? badgeSync : badgeRaw,
+      badgeDot: dot(s.status === "sync" ? "#35D6E8" : "#5b6577"),
+    }));
+
+    const S = React.createElement;
+    const emptyArt = S("svg", { width: 110, height: 84, viewBox: "0 0 120 90", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+      S("path", { d: "M6 62h12l6-14 8 26 8-40 8 30 8-18 6 16h12", stroke: "#35D6E8", opacity: 0.5 }),
+      S("path", { d: "M84 30l-8 8" }),
+      S("path", { d: "M76 38c-4-4-11-3-15 1s-6 13-1 18 14 4 18 0 3-11-2-15z" }),
+      S("circle", { cx: 70, cy: 50, r: 5 }));
+
+    return {
+      likeStars: this.starsRow(4),
+      diffStars: this.starsRow(2),
+      songs,
+      songCount: this.state.songs.length + (this.state.songs.length === 1 ? " canción" : " canciones"),
+      hasSongs: this.state.songs.length > 0,
+      noSongs: this.state.songs.length === 0,
+      emptyArt,
+      addSong: () => {},
+    };
+  }
+}
+</script>
+</body>
+</html>

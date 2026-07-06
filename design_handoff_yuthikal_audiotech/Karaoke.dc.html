@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #05070A; overflow: hidden; }
+  *, *::before, *::after { box-sizing: border-box; }
+  .yk-lyrics::-webkit-scrollbar { display: none; }
+  .yk-lyrics { scrollbar-width: none; }
+</style>
+</helmet>
+<div style="font-family: 'Inter', system-ui, sans-serif; background: radial-gradient(120% 90% at 50% -10%, #0a1220 0%, #05070A 55%); color: #E7ECF3; height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; overflow: hidden;">
+
+  <!-- TOP BAR -->
+  <div style="flex: 0 0 auto; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 14px 24px 4px;">
+    <!-- current / next chords -->
+    <div style="display: flex; gap: 16px;">
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #35D6E8; margin-bottom: 4px;">Ahora</span>
+        <div style="padding: 8px; background: #10141c; border: 1px solid #223; border-radius: 12px; box-shadow: 0 0 24px rgba(53,214,232,0.28);">{{ nowSvg }}</div>
+        <span style="font-size: 14px; font-weight: 800; margin-top: 4px;">{{ nowChord }}</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; opacity: 0.62;">
+        <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #7d8798; margin-bottom: 4px;">Sigue</span>
+        <div style="padding: 8px; background: #0d1017; border: 1px solid #1b2130; border-radius: 12px;">{{ nextSvg }}</div>
+        <span style="font-size: 13px; font-weight: 700; margin-top: 4px; color: #C3CAD6;">{{ nextChord }}</span>
+      </div>
+    </div>
+
+    <!-- variant toggle + exit -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; padding: 4px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 11px; font-size: 12px; font-weight: 600;">
+        <button onClick="{{ setSync }}" style="{{ syncTabStyle }}">Sincronizada</button>
+        <button onClick="{{ setAuto }}" style="{{ autoTabStyle }}">Sin calibrar</button>
+      </div>
+      <button aria-label="Salir" style="display: grid; place-items: center; width: 40px; height: 40px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 11px; color: #9AA3B2; cursor: pointer;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SONG META -->
+  <div style="flex: 0 0 auto; text-align: center; padding: 2px 20px 4px;">
+    <span style="font-size: 13px; color: #7d8798;">St. James Infirmary Blues · <span style="color: #9AA3B2;">Tonalidad Em</span></span>
+  </div>
+
+  <!-- LYRICS -->
+  <div class="yk-lyrics" ref="{{ containerRef }}" style="flex: 1 1 auto; overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 80%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 80%, transparent 100%);">
+    <div style="padding: 40vh 20px 45vh; display: flex; flex-direction: column; gap: 22px; align-items: center;">
+      <sc-for list="{{ lines }}" as="line" hint-placeholder-count="8">
+        <div ref="{{ line.ref }}" style="{{ line.wrapStyle }}">
+          <sc-if value="{{ line.sec }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+              <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #35D6E8;">{{ line.sec }}</span>
+              <span style="padding: 3px 10px; background: #0F131B; border: 1px solid #1b2130; border-radius: 8px; font-size: 11.5px; letter-spacing: 0.12em; color: #9AA3B2;">{{ line.strum }}</span>
+            </div>
+          </sc-if>
+          <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; row-gap: 2px;">
+            <sc-for list="{{ line.segs }}" as="seg" hint-placeholder-count="3">
+              <span style="display: inline-flex; flex-direction: column; white-space: pre;">
+                <span style="{{ seg.chordStyle }}">{{ seg.c }}</span>
+                <span style="{{ seg.textStyle }}">{{ seg.t }}</span>
+              </span>
+            </sc-for>
+          </div>
+          <sc-if value="{{ line.isCurrent }}" hint-placeholder-val="{{ false }}">
+            <div style="height: 3px; margin: 12px auto 0; width: 180px; background: #1b2130; border-radius: 3px; overflow: hidden;">
+              <div style="height: 100%; width: {{ line.progressPct }}; background: linear-gradient(90deg, #2E6BF0, #35D6E8); border-radius: 3px; box-shadow: 0 0 12px rgba(53,214,232,0.7);"></div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- TRANSPORT -->
+  <div style="flex: 0 0 auto; padding: 14px 24px calc(20px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(5,7,10,0) 0%, #070a0f 30%); border-top: 1px solid #12151C;">
+
+    <!-- SYNCED: waveform progress -->
+    <sc-if value="{{ isSync }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; max-width: 640px; margin-left: auto; margin-right: auto;">
+        <span style="font-size: 12px; font-variant-numeric: tabular-nums; color: #9AA3B2; min-width: 40px;">{{ elapsed }}</span>
+        <div style="flex: 1; display: flex; align-items: center; gap: 3px; height: 30px;">{{ waveBars }}</div>
+        <span style="font-size: 12px; font-variant-numeric: tabular-nums; color: #7d8798; min-width: 40px; text-align: right;">{{ totalTime }}</span>
+      </div>
+    </sc-if>
+
+    <!-- FALLBACK: auto-scroll speed -->
+    <sc-if value="{{ isAuto }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <button onClick="{{ speedDown }}" aria-label="Más lento" style="display: grid; place-items: center; width: 42px; height: 42px; background: #0F131B; border: 1px solid #2a3346; border-radius: 12px; color: #C3CAD6; cursor: pointer; font-size: 22px;">–</button>
+          <div style="text-align: center; min-width: 88px;">
+            <div style="font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums;">{{ speedLabel }}</div>
+            <div style="font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #5b6577;">Velocidad</div>
+          </div>
+          <button onClick="{{ speedUp }}" aria-label="Más rápido" style="display: grid; place-items: center; width: 42px; height: 42px; background: #0F131B; border: 1px solid #2a3346; border-radius: 12px; color: #C3CAD6; cursor: pointer; font-size: 22px;">+</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 7px; font-size: 12px; color: #7d8798;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+          Sin sincronización — scroll automático
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- CONTROLS -->
+    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+      <button onClick="{{ restart }}" aria-label="Reiniciar" style="display: grid; place-items: center; width: 52px; height: 52px; background: transparent; border: none; color: #9AA3B2; cursor: pointer;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.7L3 8"></path><path d="M3 3v5h5"></path></svg>
+      </button>
+      <button onClick="{{ prevSection }}" aria-label="Sección anterior" style="display: grid; place-items: center; width: 52px; height: 52px; background: transparent; border: none; color: #C3CAD6; cursor: pointer;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12l-9-6z"></path></svg>
+      </button>
+      <button onClick="{{ togglePlay }}" aria-label="Reproducir/Pausar" style="display: grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; border: none; cursor: pointer; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a; box-shadow: 0 0 30px rgba(53,214,232,0.45);">
+        {{ playIcon }}
+      </button>
+      <button onClick="{{ nextSection }}" aria-label="Sección siguiente" style="display: grid; place-items: center; width: 52px; height: 52px; background: transparent; border: none; color: #C3CAD6; cursor: pointer;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l9 6-9 6z"></path></svg>
+      </button>
+      <button aria-label="Salir" style="display: grid; place-items: center; width: 52px; height: 52px; background: transparent; border: none; color: #9AA3B2; cursor: pointer;">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5M21 12H9"></path></svg>
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 900, &quot;height&quot;: 820}}">
+class Component extends DCLogic {
+  state = { t: 0, playing: false, mode: "sync", speed: 1 };
+
+  CHORDS = {
+    Em: { n: "Em", frets: [0,2,2,0,0,0] },
+    Am: { n: "Am", frets: [-1,0,2,2,1,0] },
+    B7: { n: "B7", frets: [-1,2,1,2,0,2] },
+    C:  { n: "C",  frets: [-1,3,2,0,1,0] },
+  };
+
+  SONG = [
+    { sec: "Verso 1", strum: "↓ – ↓ ↑ – ↑ ↓ ↑", segs: [ {c:"Em",t:"I went down to the St. "}, {c:"Am",t:"James In"}, {c:"Em",t:"firmary"} ] },
+    { segs: [ {c:"Em",t:"Saw my "}, {c:"B7",t:"baby "}, {c:"Em",t:"lyin' there"} ] },
+    { segs: [ {c:"Em",t:"Stretched out on a "}, {c:"Am",t:"long white "}, {c:"C",t:"table"} ] },
+    { segs: [ {c:"Em",t:"So sweet, so cold, so "}, {c:"B7",t:"fair"} ] },
+    { sec: "Coro", strum: "↓ ↓ ↑ ↑ ↓ ↑", segs: [ {c:"Em",t:"Let her "}, {c:"Am",t:"go, let her "}, {c:"Em",t:"go, God "}, {c:"B7",t:"bless her"} ] },
+    { segs: [ {c:"Em",t:"Wherever "}, {c:"Am",t:"she may "}, {c:"Em",t:"be"} ] },
+    { segs: [ {c:"C",t:"She can search this "}, {c:"Am",t:"whole world "}, {c:"Em",t:"over"} ] },
+    { segs: [ {c:"Em",t:"She'll never find a sweet man like "}, {c:"B7",t:"me"} ] },
+  ];
+
+  SYNC_STARTS = [0, 4, 8.5, 13.5, 18, 22, 26, 31];
+  SYNC_TOTAL = 37;
+
+  lineNodes = {};
+  prevIndex = -1;
+
+  componentDidMount() {
+    this._iv = setInterval(() => {
+      if (!this.state.playing) return;
+      const tl = this.timeline();
+      let t = this.state.t + 0.1;
+      if (t >= tl.total) { t = tl.total; this.setState({ t, playing: false }); return; }
+      this.setState({ t });
+    }, 100);
+    requestAnimationFrame(() => this.scrollToCurrent(false));
+    setTimeout(() => this.scrollToCurrent(false), 120);
+    setTimeout(() => this.scrollToCurrent(false), 500);
+    if (this._cont && window.ResizeObserver) {
+      this._ro = new ResizeObserver(() => {
+        cancelAnimationFrame(this._roRaf);
+        this._roRaf = requestAnimationFrame(() => this.scrollToCurrent(false));
+      });
+      this._ro.observe(this._cont);
+    }
+  }
+  componentWillUnmount() { clearInterval(this._iv); if (this._ro) this._ro.disconnect(); }
+
+  scrollToCurrent(smooth) {
+    const cur = this.currentIndex();
+    const node = this.lineNodes[cur];
+    const cont = this._cont;
+    if (node && cont) {
+      cont.scrollTo({ top: node.offsetTop - cont.clientHeight / 2 + node.clientHeight / 2, behavior: smooth ? "smooth" : "auto" });
+    }
+  }
+
+  componentDidUpdate() {
+    const cur = this.currentIndex();
+    if (cur !== this.prevIndex) {
+      this.prevIndex = cur;
+      this.scrollToCurrent(true);
+    }
+  }
+
+  timeline() {
+    if (this.state.mode === "sync") {
+      const starts = this.SYNC_STARTS;
+      return { starts, total: this.SYNC_TOTAL };
+    }
+    const dwell = 3.6 / this.state.speed;
+    const starts = this.SONG.map((_, i) => i * dwell);
+    return { starts, total: starts[starts.length - 1] + dwell };
+  }
+
+  currentIndex() {
+    const { starts } = this.timeline();
+    let idx = 0;
+    for (let i = 0; i < starts.length; i++) if (this.state.t >= starts[i]) idx = i;
+    return idx;
+  }
+
+  fmt(s) {
+    if (s < 0) s = 0;
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return m + ":" + String(sec).padStart(2, "0");
+  }
+
+  diagram(ch, scale) {
+    const S = React.createElement;
+    const frets = ch.frets;
+    const played = frets.filter(f => f > 0);
+    const maxF = played.length ? Math.max(...played) : 0;
+    let start = 1;
+    if (maxF > 4) start = Math.min(...played);
+    const nF = 4, padX = 14, padTop = 22, gs = 13, fg = 18;
+    const gridW = gs * 5, svgW = padX * 2 + gridW;
+    const nutY = padTop, gridH = fg * nF, svgH = padTop + gridH + 6;
+    const grey = "#39414f", nutc = "#5a6474", mark = "#8b93a3", dot = "#35D6E8";
+    const els = [];
+    for (let i = 0; i < 6; i++) { const x = padX + i * gs; els.push(S("line", { key: "s"+i, x1: x, y1: nutY, x2: x, y2: nutY + gridH, stroke: grey, strokeWidth: 1.3 })); }
+    for (let k = 0; k <= nF; k++) { const y = nutY + k * fg; const isNut = k === 0 && start === 1; els.push(S("line", { key: "f"+k, x1: padX, y1: y, x2: padX + gridW, y2: y, stroke: isNut ? nutc : grey, strokeWidth: isNut ? 3.2 : 1.3, strokeLinecap: "round" })); }
+    if (start > 1) els.push(S("text", { key: "lbl", x: padX - 6, y: nutY + fg * 0.62, fill: mark, fontSize: 9, fontWeight: 700, textAnchor: "end", fontFamily: "Inter, sans-serif" }, start + "fr"));
+    frets.forEach((f, i) => {
+      const x = padX + i * gs;
+      if (f === -1) { const my = padTop - 11, r = 3.2; els.push(S("line", { key: "x1"+i, x1: x - r, y1: my - r, x2: x + r, y2: my + r, stroke: mark, strokeWidth: 1.6, strokeLinecap: "round" })); els.push(S("line", { key: "x2"+i, x1: x + r, y1: my - r, x2: x - r, y2: my + r, stroke: mark, strokeWidth: 1.6, strokeLinecap: "round" })); }
+      else if (f === 0) els.push(S("circle", { key: "o"+i, cx: x, cy: padTop - 11, r: 3.6, fill: "none", stroke: mark, strokeWidth: 1.5 }));
+      else els.push(S("circle", { key: "d"+i, cx: x, cy: nutY + (f - start + 0.5) * fg, r: 5.2, fill: dot }));
+    });
+    const sc = scale || 1;
+    return S("svg", { viewBox: "0 0 " + svgW + " " + svgH, width: svgW * sc, height: svgH * sc, style: { display: "block" } }, els);
+  }
+
+  renderVals() {
+    const tl = this.timeline();
+    const cur = this.currentIndex();
+    const S = React.createElement;
+
+    // current + next chord
+    const curSegs = this.SONG[cur].segs;
+    const nowName = curSegs[0].c;
+    // find next distinct chord after nowName across the rest of song
+    let nextName = null;
+    const flat = [];
+    this.SONG.forEach(l => l.segs.forEach(s => flat.push(s.c)));
+    // build sequence index of current line first chord occurrence approx: just next different chord in current line then next line
+    const seq = [];
+    for (let i = cur; i < this.SONG.length; i++) this.SONG[i].segs.forEach(s => seq.push(s.c));
+    for (let i = 1; i < seq.length; i++) { if (seq[i] !== nowName) { nextName = seq[i]; break; } }
+    if (!nextName) nextName = nowName;
+
+    // progress within current line
+    const startT = tl.starts[cur];
+    const endT = (cur + 1 < tl.starts.length) ? tl.starts[cur + 1] : tl.total;
+    const prog = Math.max(0, Math.min(1, (this.state.t - startT) / (endT - startT || 1)));
+
+    const lines = this.SONG.map((l, i) => {
+      const isCurrent = i === cur;
+      const dist = Math.abs(i - cur);
+      const opacity = isCurrent ? 1 : Math.max(0.14, 0.62 - (dist - 1) * 0.15);
+      const segs = l.segs.map(seg => ({
+        c: seg.c, t: seg.t,
+        chordStyle: {
+          fontWeight: 800,
+          fontSize: isCurrent ? "17px" : "13px",
+          lineHeight: 1.5,
+          minHeight: isCurrent ? "26px" : "20px",
+          color: "#35D6E8",
+          textShadow: isCurrent ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)" : "none",
+          letterSpacing: "0.01em",
+        },
+        textStyle: {
+          fontSize: isCurrent ? "30px" : "21px",
+          fontWeight: isCurrent ? 700 : 500,
+          color: isCurrent ? "#FFFFFF" : "#C3CAD6",
+          lineHeight: 1.3,
+        },
+      }));
+      return {
+        sec: l.sec || "",
+        strum: l.strum || "",
+        segs,
+        isCurrent,
+        progressPct: Math.round(prog * 100) + "%",
+        ref: (el) => { if (el) this.lineNodes[i] = el; },
+        wrapStyle: {
+          textAlign: "center",
+          opacity,
+          transition: "opacity .4s ease, transform .4s ease",
+          transform: isCurrent ? "scale(1)" : "scale(0.98)",
+        },
+      };
+    });
+
+    // waveform progress bars
+    const nBars = 72;
+    const filled = Math.round((this.state.t / tl.total) * nBars);
+    const waveBars = S(React.Fragment, null, Array.from({ length: nBars }, (_, i) => {
+      const h = 6 + Math.abs(Math.sin(i * 0.55)) * 20 + (i % 3) * 2;
+      const on = i <= filled;
+      return S("span", { key: i, style: {
+        flex: 1, height: Math.round(h) + "px", borderRadius: "2px",
+        background: on ? "linear-gradient(180deg, #35D6E8, #2E6BF0)" : "#1b2130",
+        boxShadow: on && i === filled ? "0 0 10px rgba(53,214,232,0.8)" : "none",
+        transition: "background .12s",
+      } });
+    }));
+
+    const playIcon = this.state.playing
+      ? S("svg", { width: 30, height: 30, viewBox: "0 0 24 24", fill: "currentColor" }, S("rect", { x: 6, y: 5, width: 4, height: 14, rx: 1 }), S("rect", { x: 14, y: 5, width: 4, height: 14, rx: 1 }))
+      : S("svg", { width: 32, height: 32, viewBox: "0 0 24 24", fill: "currentColor", style: { marginLeft: "3px" } }, S("path", { d: "M8 5v14l11-7z" }));
+
+    const tabOn = { padding: "6px 13px", borderRadius: "8px", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "12px", fontWeight: 600, whiteSpace: "nowrap", background: "linear-gradient(135deg, #2E6BF0, #35D6E8)", color: "#04121a" };
+    const tabOff = { padding: "6px 13px", borderRadius: "8px", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "12px", fontWeight: 600, whiteSpace: "nowrap", background: "transparent", color: "#9AA3B2" };
+
+    const jumpToLine = (i) => {
+      const t = this.timeline();
+      this.setState({ t: t.starts[Math.max(0, Math.min(i, t.starts.length - 1))] });
+    };
+    // section boundaries (indices where sec label exists)
+    const secIdx = [];
+    this.SONG.forEach((l, i) => { if (l.sec) secIdx.push(i); });
+
+    return {
+      containerRef: (el) => { this._cont = el; },
+      lines,
+      nowChord: nowName,
+      nextChord: nextName,
+      nowSvg: this.diagram(this.CHORDS[nowName], 0.8),
+      nextSvg: this.diagram(this.CHORDS[nextName], 0.72),
+      isSync: this.state.mode === "sync",
+      isAuto: this.state.mode === "auto",
+      elapsed: this.fmt(this.state.t),
+      totalTime: this.fmt(tl.total),
+      waveBars,
+      speedLabel: this.state.speed.toFixed(1) + "×",
+      playIcon,
+      syncTabStyle: this.state.mode === "sync" ? tabOn : tabOff,
+      autoTabStyle: this.state.mode === "auto" ? tabOn : tabOff,
+      setSync: () => this.setState({ mode: "sync", t: 0, playing: false }),
+      setAuto: () => this.setState({ mode: "auto", t: 0, playing: false }),
+      togglePlay: () => this.setState(s => ({ playing: !s.playing, t: (!s.playing && s.t >= this.timeline().total) ? 0 : s.t })),
+      restart: () => { this.setState({ t: 0 }); },
+      speedDown: () => this.setState(s => ({ speed: Math.max(0.5, +(s.speed - 0.1).toFixed(1)) })),
+      speedUp: () => this.setState(s => ({ speed: Math.min(2, +(s.speed + 0.1).toFixed(1)) })),
+      prevSection: () => { const prior = secIdx.filter(x => x < cur).pop(); jumpToLine(prior != null ? prior : 0); },
+      nextSection: () => { const nxt = secIdx.find(x => x > cur); if (nxt != null) jumpToLine(nxt); },
+    };
+  }
+}
+</script>
+</body>
+</html>

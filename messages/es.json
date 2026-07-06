@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "title": "Yuthikal AudioTech",
+    "description": "Tu atril digital para guitarra: acordes, canciones y modo karaoke con audio real."
+  },
+  "header": {
+    "instruments": "Instrumentos",
+    "chords": "Acordes",
+    "playlists": "Mis Playlists",
+    "toggleTheme": "Cambiar tema",
+    "switchLanguage": "Cambiar idioma",
+    "signIn": "Iniciar con Google"
+  },
+  "loading": {
+    "eyebrow": "Yuthikal AudioTech",
+    "message": "Afinando tu sesión…"
+  },
+  "errorDb": {
+    "badge": "Servicio interrumpido",
+    "title": "La base de datos está inaccesible por inactividad",
+    "description": "Contacta al administrador para reactivar el servicio. Tus playlists y canciones están a salvo.",
+    "retry": "Reintentar",
+    "contact": "Contactar al administrador"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o fue movida.",
+    "back": "Volver al inicio"
+  },
+  "landing": {
+    "badge": "Tu atril digital para guitarra",
+    "title": "Tu música, tus acordes, <accent>tu escenario</accent>",
+    "subtitle": "Aprende acordes, escribe tus canciones con letra y cifrado, y tócalas en modo karaoke con audio real sincronizado — todo en un solo lugar.",
+    "ctaStart": "Comenzar",
+    "ctaHow": "Ver cómo funciona",
+    "heroCard": {
+      "songMeta": "Tonalidad Em · Balada",
+      "karaokeBadge": "Karaoke",
+      "verse": "Verso 1"
+    },
+    "featuresEyebrow": "Todo en uno",
+    "featuresTitle": "Del acorde al escenario",
+    "features": {
+      "finderTitle": "Buscador de acordes",
+      "finderDesc": "Busca por voz o texto y consulta todas las posiciones de cada acorde en el mástil.",
+      "referenceTitle": "Referencia musical",
+      "referenceDesc": "Cuerdas y notas en español e inglés, con nombres tradicionales y equivalencias.",
+      "songsTitle": "Tus canciones",
+      "songsDesc": "Letra con acordes anclados a cada sílaba, en el clásico formato de cifrado.",
+      "karaokeTitle": "Modo karaoke",
+      "karaokeDesc": "Reproduce el audio real y sigue la letra y los acordes perfectamente sincronizados."
+    },
+    "karaokeEyebrow": "Modo karaoke",
+    "karaokeTitle": "Toca el audio real y sigue la letra sincronizada",
+    "karaokeDesc": "La línea actual se ilumina, los acordes aparecen justo cuando cambian y el atril se desplaza solo. Ideal para tenerlo en el móvil o tablet mientras tocas.",
+    "statChords": "acordes en catálogo",
+    "statLanguages": "idiomas ES / EN",
+    "statPlaylists": "playlists privados",
+    "deviceNow": "Ahora",
+    "deviceNext": "Sigue",
+    "footerCopy": "© 2026 Yuthikal AudioTech"
+  },
+  "strings": {
+    "eyebrow": "Referencia · Guitarra",
+    "title": "Las cuerdas de la guitarra",
+    "intro": "De la más aguda y delgada (1ª) a la más grave y gruesa (6ª). En afinación estándar, sus notas son Mi–Si–Sol–Re–La–Mi.",
+    "stringWord": "cuerda",
+    "gauge": "Grosor",
+    "pitch1": "La más aguda y delgada",
+    "pitch2": "Aguda",
+    "pitch3": "Media",
+    "pitch4": "Grave (entorchada)",
+    "pitch5": "Grave (entorchada)",
+    "pitch6": "La más grave y gruesa"
+  },
+  "notes": {
+    "eyebrow": "Referencia · Guitarra",
+    "title": "Las notas musicales",
+    "intro": "Las 12 notas de la escala cromática. Las 7 <em>naturales</em> y las 5 <em>alteradas</em> (sostenidos y bemoles), que en la guitarra viven entre traste y traste.",
+    "legend": "Cómo leer las tarjetas:",
+    "natural": "Natural",
+    "altered": "Alterada",
+    "sharp": "sostenido",
+    "flat": "bemol",
+    "pianoTitle": "Una octava en el piano"
+  },
+  "instruments": {
+    "eyebrow": "Comienza aquí",
+    "title": "Elige tu instrumento",
+    "subtitle": "Empieza con la guitarra. Pronto sumaremos más instrumentos a tu atril digital.",
+    "explore": "Explorar",
+    "soon": "Próximamente",
+    "guitar": { "name": "Guitarra", "desc": "Acordes, cuerdas, notas y tus canciones." },
+    "piano": { "name": "Piano", "desc": "Teclas, escalas y acordes." },
+    "ukulele": { "name": "Ukelele", "desc": "Acordes y canciones." },
+    "bass": { "name": "Bajo", "desc": "Notas y líneas de bajo." }
+  }
+}

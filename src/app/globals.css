@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens — fuente: design_handoff_yuthikal_audiotech/README.md */
+:root {
+  --page: #edf1f7;
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #ffffff;
+  --edge: #e2e8f0;
+  --edge-2: #cbd5e1;
+  --ink: #0f172a;
+  --sub: #64748b;
+  --tert: #94a3b8;
+  --mute: #94a3b8;
+  --disabled: #cbd5e1;
+  --accent: #0c93ad;
+  --accent-dot: #0b8ba3;
+  --grad-from: #2560d6;
+  --grad-to: #0fa5be;
+  --ongrad: #ffffff;
+  --warn: #b7791f;
+  --selection: rgba(15, 165, 190, 0.2);
+  --diagram-grid: #cbd5e1;
+  --diagram-nut: #94a3b8;
+  --diagram-mark: #64748b;
+}
+
+.dark {
+  --page: #05070a;
+  --surface: #12151c;
+  --surface-2: #0f131b;
+  --surface-3: #0c0f15;
+  --edge: #1b2130;
+  --edge-2: #2a3346;
+  --ink: #e7ecf3;
+  --sub: #9aa3b2;
+  --tert: #7d8798;
+  --mute: #5b6577;
+  --disabled: #3b4454;
+  --accent: #35d6e8;
+  --accent-dot: #35d6e8;
+  --grad-from: #2e6bf0;
+  --grad-to: #35d6e8;
+  --ongrad: #04121a;
+  --warn: #d68a35;
+  --selection: rgba(53, 214, 232, 0.28);
+  --diagram-grid: #39414f;
+  --diagram-nut: #5a6474;
+  --diagram-mark: #8b93a3;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-edge: var(--edge);
+  --color-edge-2: var(--edge-2);
+  --color-ink: var(--ink);
+  --color-sub: var(--sub);
+  --color-tert: var(--tert);
+  --color-mute: var(--mute);
+  --color-disabled: var(--disabled);
+  --color-accent: var(--accent);
+  --color-accent-dot: var(--accent-dot);
+  --color-ongrad: var(--ongrad);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+}
+
+::selection {
+  background: var(--selection);
+}
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Gradiente de marca (azul → cian) */
+.yk-gradient {
+  background: linear-gradient(135deg, var(--grad-from), var(--grad-to));
+  color: var(--ongrad);
+}
+
+/* Keyframes reutilizables — nombres y curvas del handoff */
+@keyframes yk-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes yk-eq {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes yk-pulse-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  70%,
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+@keyframes yk-flat-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes yk-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

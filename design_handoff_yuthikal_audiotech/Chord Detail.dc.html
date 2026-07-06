@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #05070A; }
+  *, *::before, *::after { box-sizing: border-box; }
+  ::selection { background: rgba(53,214,232,0.28); }
+  .yk-scroll::-webkit-scrollbar { width: 10px; }
+  .yk-scroll::-webkit-scrollbar-thumb { background: #1c2230; border-radius: 8px; border: 2px solid #05070A; }
+</style>
+</helmet>
+<div class="yk-scroll" style="font-family: 'Inter', system-ui, sans-serif; background: #05070A; color: #E7ECF3; min-height: 100vh; height: 100vh; overflow-y: auto; -webkit-font-smoothing: antialiased;">
+
+  <!-- HEADER -->
+  <header style="position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 28px; background: rgba(5,7,10,0.82); backdrop-filter: blur(14px); border-bottom: 1px solid #12151C;">
+    <div style="display: flex; align-items: center; gap: 16px; min-width: 0;">
+      <img src="assets/yuthikal-logo-crop.png" alt="Yuthikal AudioTech" style="height: 38px; width: auto; display: block;">
+      <a href="Chord Finder.dc.html" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #7d8798; text-decoration: none; white-space: nowrap;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        Buscador de acordes
+      </a>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; padding: 3px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 999px; font-size: 12px; font-weight: 600;">
+        <span style="padding: 4px 11px; border-radius: 999px; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a;">ES</span>
+        <span style="padding: 4px 11px; border-radius: 999px; color: #9AA3B2;">EN</span>
+      </div>
+      <button aria-label="Cambiar tema" style="display: grid; place-items: center; width: 38px; height: 38px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 10px; color: #9AA3B2; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <div style="max-width: 1080px; margin: 0 auto; padding: 40px 28px 90px;">
+
+    <!-- CHORD HEADER -->
+    <div style="display: flex; align-items: flex-start; gap: 28px; flex-wrap: wrap; padding-bottom: 30px; border-bottom: 1px solid #12151C;">
+      <!-- featured big diagram -->
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center; padding: 22px 26px 18px; background: linear-gradient(180deg, #12151C, #0e1118); border: 1px solid #2a3346; border-radius: 20px; box-shadow: 0 20px 50px rgba(46,107,240,0.14);">
+        <span style="position: absolute; top: 12px; right: 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #35D6E8; padding: 4px 9px; border: 1px solid rgba(53,214,232,0.35); border-radius: 999px;">Más usada</span>
+        <div style="padding: 4px 0 8px;">{{ heroDiagram }}</div>
+        <span style="font-size: 12.5px; font-weight: 600; color: #8b93a3;">Posición 1 · traste 1</span>
+      </div>
+      <!-- names -->
+      <div style="flex: 1; min-width: 260px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
+          <span style="display: inline-flex; padding: 5px 13px; background: rgba(53,214,232,0.08); border: 1px solid rgba(53,214,232,0.28); border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: #35D6E8;">Séptimas</span>
+        </div>
+        <h1 style="margin: 0 0 4px; font-size: 56px; line-height: 1; font-weight: 800; letter-spacing: -0.03em;">A#<span style="color: #35D6E8;">7</span> <span style="color: #3b4454; font-weight: 500;">/</span> Sib<span style="color: #35D6E8;">7</span></h1>
+        <p style="margin: 8px 0 0; font-size: 16px; color: #9AA3B2;">La sostenido / Si bemol — <span style="color: #E7ECF3; font-weight: 600;">séptima</span></p>
+        <div style="display: flex; gap: 22px; margin-top: 24px; flex-wrap: wrap;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5b6577; margin-bottom: 6px;">Notas</div>
+            <div style="font-size: 15px; font-weight: 600;">A# · D · F · G#</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5b6577; margin-bottom: 6px;">Intervalos</div>
+            <div style="font-size: 15px; font-weight: 600;">1 · 3 · 5 · ♭7</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5b6577; margin-bottom: 6px;">Posiciones</div>
+            <div style="font-size: 15px; font-weight: 600;">{{ posCount }} en el mástil</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POSICIONES -->
+    <div style="margin: 30px 0 18px;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 700;">Posiciones <span style="font-size: 14px; font-weight: 500; color: #5b6577;">· de más común a menos común</span></h2>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 14px;">
+      <sc-for list="{{ positions }}" as="p" hint-placeholder-count="6">
+        <article style="position: relative; display: flex; flex-direction: column; align-items: center; padding: 18px 12px 16px; background: #12151C; border: 1px solid #1b2130; border-radius: 16px; transition: border-color .15s, transform .15s;" style-hover="border-color: #35D6E8; transform: translateY(-2px);">
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 8px;">
+            <span style="display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: #0F131B; border: 1px solid #2a3346; font-size: 11.5px; font-weight: 700; color: #C3CAD6;">{{ p.num }}</span>
+            <sc-if value="{{ p.cejilla }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #35D6E8; padding: 3px 7px; border: 1px solid rgba(53,214,232,0.4); border-radius: 999px;">cejilla</span>
+            </sc-if>
+          </div>
+          <div style="padding: 4px 0 10px;">{{ p.svg }}</div>
+          <span style="font-size: 12.5px; font-weight: 600; color: #8b93a3;">{{ p.label }}</span>
+        </article>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1080, &quot;height&quot;: 900}}">
+class Component extends DCLogic {
+  // A#7 / Bb7 positions, most-common -> least-common. frets low-E..high-E
+  POSITIONS = [
+    { frets: [-1,1,3,1,3,1], barre: { fret:1, from:1, to:5 }, base: 1 },   // open-ish A-shape barre @1
+    { frets: [6,8,6,7,6,6],  barre: { fret:6, from:0, to:5 }, base: 6 },   // E-shape barre @6
+    { frets: [-1,-1,8,10,9,11], base: 8 },                                  // upper voicing
+    { frets: [-1,1,1,1,-1,-1], barre: { fret:1, from:1, to:3 }, base: 1 },  // partial / triad
+    { frets: [6,-1,6,7,6,-1], base: 6 },                                    // rootless-ish
+    { frets: [-1,-1,3,3,3,4], base: 3 },                                    // top-string cluster
+  ];
+
+  diagram(pos, scale) {
+    const S = React.createElement;
+    const frets = pos.frets;
+    const played = frets.filter(f => f > 0);
+    const maxF = played.length ? Math.max(...played) : 0;
+    const minF = played.length ? Math.min(...played) : 1;
+    let start = 1;
+    if (maxF > 4) start = minF;
+    const nF = 4, padX = 16, padTop = 24, gs = 15, fg = 21;
+    const gridW = gs * 5, svgW = padX * 2 + gridW;
+    const nutY = padTop, gridH = fg * nF, svgH = padTop + gridH + 6;
+    const grey = "#39414f", nutc = "#5a6474", mark = "#8b93a3", dot = "#35D6E8";
+    const els = [];
+    for (let i = 0; i < 6; i++) { const x = padX + i * gs; els.push(S("line", { key: "s"+i, x1: x, y1: nutY, x2: x, y2: nutY + gridH, stroke: grey, strokeWidth: 1.4 })); }
+    for (let k = 0; k <= nF; k++) { const y = nutY + k * fg; const isNut = k === 0 && start === 1; els.push(S("line", { key: "f"+k, x1: padX, y1: y, x2: padX + gridW, y2: y, stroke: isNut ? nutc : grey, strokeWidth: isNut ? 3.6 : 1.4, strokeLinecap: "round" })); }
+    if (start > 1) { els.push(S("text", { key: "lbl", x: padX - 7, y: nutY + fg * 0.62, fill: mark, fontSize: 10, fontWeight: 700, textAnchor: "end", fontFamily: "Inter, sans-serif" }, start + "fr")); }
+    const b = pos.barre;
+    if (b && b.fret >= start && b.fret < start + nF) {
+      const y = nutY + (b.fret - start + 0.5) * fg;
+      const x1 = padX + b.from * gs, x2 = padX + b.to * gs;
+      els.push(S("rect", { key: "barre", x: x1 - 6, y: y - 6, width: (x2 - x1) + 12, height: 12, rx: 6, fill: dot, opacity: 0.92 }));
+    }
+    frets.forEach((f, i) => {
+      const x = padX + i * gs;
+      if (f === -1) { const my = padTop - 12, r = 3.6; els.push(S("line", { key: "x1"+i, x1: x - r, y1: my - r, x2: x + r, y2: my + r, stroke: mark, strokeWidth: 1.7, strokeLinecap: "round" })); els.push(S("line", { key: "x2"+i, x1: x + r, y1: my - r, x2: x - r, y2: my + r, stroke: mark, strokeWidth: 1.7, strokeLinecap: "round" })); }
+      else if (f === 0) { els.push(S("circle", { key: "o"+i, cx: x, cy: padTop - 12, r: 4, fill: "none", stroke: mark, strokeWidth: 1.6 })); }
+      else { const covered = b && f === b.fret && i >= b.from && i <= b.to; if (!covered) els.push(S("circle", { key: "d"+i, cx: x, cy: nutY + (f - start + 0.5) * fg, r: 6, fill: dot })); }
+    });
+    const sc = scale || 1;
+    return S("svg", { viewBox: "0 0 " + svgW + " " + svgH, width: svgW * sc, height: svgH * sc, style: { display: "block" } }, els);
+  }
+
+  fretLabel(pos) {
+    const played = pos.frets.filter(f => f > 0);
+    if (!played.length) return "cuerdas al aire";
+    const minF = Math.min(...played);
+    return minF === 1 ? "traste 1" : "traste " + minF;
+  }
+
+  renderVals() {
+    const positions = this.POSITIONS.map((p, i) => ({
+      num: i + 1,
+      label: "Posición " + (i + 1) + " · " + this.fretLabel(p),
+      svg: this.diagram(p, 1),
+      cejilla: !!p.barre,
+    }));
+    return {
+      heroDiagram: this.diagram(this.POSITIONS[0], 1.5),
+      positions,
+      posCount: this.POSITIONS.length,
+    };
+  }
+}
+</script>
+</body>
+</html>

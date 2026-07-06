@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #05070A; }
+  *, *::before, *::after { box-sizing: border-box; }
+  ::selection { background: rgba(53,214,232,0.28); }
+  .yk-scroll::-webkit-scrollbar { width: 10px; }
+  .yk-scroll::-webkit-scrollbar-thumb { background: #1c2230; border-radius: 8px; border: 2px solid #05070A; }
+  .yk-tabs { scrollbar-width: none; }
+  .yk-tabs::-webkit-scrollbar { display: none; }
+</style>
+</helmet>
+<div class="yk-scroll" ref="{{ scrollRef }}" onScroll="{{ onScroll }}" style="font-family: 'Inter', system-ui, sans-serif; background: #05070A; color: #E7ECF3; min-height: 100vh; height: 100vh; overflow-y: auto; -webkit-font-smoothing: antialiased;">
+
+  <!-- HEADER -->
+  <header style="position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; background: rgba(5,7,10,0.82); backdrop-filter: blur(14px); border-bottom: 1px solid #12151C;">
+    <div style="display: flex; align-items: center; gap: 16px; min-width: 0;">
+      <img src="assets/yuthikal-logo-crop.png" alt="Yuthikal AudioTech" style="height: 38px; width: auto; display: block;">
+      <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #7d8798; white-space: nowrap;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        Balada folk
+      </span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; padding: 3px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 999px; font-size: 12px; font-weight: 600;">
+        <span style="padding: 4px 11px; border-radius: 999px; background: linear-gradient(135deg, #2E6BF0, #35D6E8); color: #04121a;">ES</span>
+        <span style="padding: 4px 11px; border-radius: 999px; color: #9AA3B2;">EN</span>
+      </div>
+      <button aria-label="Cambiar tema" style="display: grid; place-items: center; width: 38px; height: 38px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 10px; color: #9AA3B2; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <div style="max-width: 860px; margin: 0 auto; padding: 30px 20px 100px;">
+
+    <!-- SONG HEADER -->
+    <div style="margin-bottom: 8px;">
+      <h1 style="margin: 0 0 6px; font-size: 30px; font-weight: 800; letter-spacing: -0.02em;">St. James Infirmary Blues</h1>
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <span style="font-size: 15px; color: #9AA3B2;">Traditional</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; background: #0F131B; border: 1px solid #2a3346; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #C3CAD6;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#35D6E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+          Tonalidad: <span style="color: #E7ECF3;">Mi menor — Em</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- MODE TABS -->
+    <div class="yk-tabs" style="display: flex; gap: 6px; margin: 22px 0 30px; padding: 5px; background: #0C0F15; border: 1px solid #1b2130; border-radius: 14px; width: fit-content; max-width: 100%; overflow-x: auto;">
+      <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
+        <button style="{{ tab.style }}">
+          <span style="display: flex; align-items: center; gap: 7px;">{{ tab.icon }}{{ tab.label }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <!-- CHORD SHEET -->
+    <div style="font-size: 18px; line-height: 1.9;">
+      <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="2">
+        <section style="margin-bottom: 34px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;">
+            <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #35D6E8;">{{ sec.label }}</span>
+            <span style="display: inline-flex; align-items: center; gap: 8px; padding: 4px 11px; background: #0F131B; border: 1px solid #1b2130; border-radius: 8px; font-size: 12px; color: #9AA3B2;">
+              <span style="text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; font-size: 10.5px; color: #5b6577;">Rasgueo</span>
+              <span style="font-family: 'Inter'; letter-spacing: 0.14em; color: #C3CAD6;">{{ sec.strum }}</span>
+            </span>
+          </div>
+          <sc-for list="{{ sec.lines }}" as="line" hint-placeholder-count="4">
+            <div style="display: flex; flex-wrap: wrap; align-items: flex-end; margin-bottom: 4px;">
+              <sc-for list="{{ line }}" as="seg" hint-placeholder-count="3">
+                <span style="display: inline-flex; flex-direction: column; white-space: pre;">
+                  <span onMouseEnter="{{ seg.onEnter }}" onMouseLeave="{{ seg.onLeave }}" style="{{ seg.chordStyle }}">{{ seg.c }}</span>
+                  <span style="color: #DDE3EC;">{{ seg.t }}</span>
+                </span>
+              </sc-for>
+            </div>
+          </sc-for>
+        </section>
+      </sc-for>
+    </div>
+
+    <!-- CHORDS IN THIS SONG -->
+    <div style="margin-top: 46px; padding-top: 26px; border-top: 1px solid #12151C;">
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #9AA3B2; margin-bottom: 16px;">Acordes en esta canción</div>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <sc-for list="{{ usedChords }}" as="c" hint-placeholder-count="4">
+          <article style="display: flex; flex-direction: column; align-items: center; padding: 14px 14px 12px; background: #12151C; border: 1px solid #1b2130; border-radius: 16px; min-width: 118px;">
+            <div style="padding-bottom: 8px;">{{ c.svg }}</div>
+            <span style="font-size: 16px; font-weight: 800;">{{ c.n }}</span>
+            <span style="font-size: 12px; color: #8b93a3;">{{ c.es }}</span>
+          </article>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOVER POPOVER -->
+  <sc-if value="{{ popover }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ popoverStyle }}">
+      <div style="padding-bottom: 6px;">{{ popover.svg }}</div>
+      <span style="font-size: 15px; font-weight: 800;">{{ popover.n }}</span>
+      <span style="font-size: 11.5px; color: #8b93a3;">{{ popover.es }}</span>
+    </div>
+  </sc-if>
+
+  <button onClick="{{ fabClick }}" aria-label="{{ fabLabel }}" title="{{ fabLabel }}" style="{{ fabStyle }}">{{ fabIcon }}</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 860, &quot;height&quot;: 900}}">
+class Component extends DCLogic {
+  state = { popover: null, atBottom: false };
+
+  CHORDS = {
+    Em: { n: "Em", es: "Mi menor",   frets: [0,2,2,0,0,0] },
+    Am: { n: "Am", es: "La menor",   frets: [-1,0,2,2,1,0] },
+    B7: { n: "B7", es: "Si séptima", frets: [-1,2,1,2,0,2] },
+    C:  { n: "C",  es: "Do mayor",   frets: [-1,3,2,0,1,0] },
+  };
+
+  SONG = [
+    { label: "Verso 1", strum: "↓ – ↓ ↑ – ↑ ↓ ↑", lines: [
+      [ {c:"Em",t:"I went down to the St. "}, {c:"Am",t:"James In"}, {c:"Em",t:"firmary"} ],
+      [ {c:"Em",t:"Saw my "}, {c:"B7",t:"baby "}, {c:"Em",t:"lyin' there"} ],
+      [ {c:"Em",t:"Stretched out on a "}, {c:"Am",t:"long white "}, {c:"C",t:"table"} ],
+      [ {c:"Em",t:"So sweet, so cold, so "}, {c:"B7",t:"fair"} ],
+    ]},
+    { label: "Coro", strum: "↓ ↓ ↑ ↑ ↓ ↑", lines: [
+      [ {c:"Em",t:"Let her "}, {c:"Am",t:"go, let her "}, {c:"Em",t:"go, God "}, {c:"B7",t:"bless her"} ],
+      [ {c:"Em",t:"Wherever "}, {c:"Am",t:"she may "}, {c:"Em",t:"be"} ],
+      [ {c:"C",t:"She can search this "}, {c:"Am",t:"whole world "}, {c:"Em",t:"over"} ],
+      [ {c:"Em",t:"She'll never find a sweet man like "}, {c:"B7",t:"me"} ],
+    ]},
+  ];
+
+  diagram(ch, scale) {
+    const S = React.createElement;
+    const frets = ch.frets;
+    const played = frets.filter(f => f > 0);
+    const maxF = played.length ? Math.max(...played) : 0;
+    let start = 1;
+    if (maxF > 4) start = Math.min(...played);
+    const nF = 4, padX = 16, padTop = 24, gs = 15, fg = 21;
+    const gridW = gs * 5, svgW = padX * 2 + gridW;
+    const nutY = padTop, gridH = fg * nF, svgH = padTop + gridH + 6;
+    const grey = "#39414f", nutc = "#5a6474", mark = "#8b93a3", dot = "#35D6E8";
+    const els = [];
+    for (let i = 0; i < 6; i++) {
+      const x = padX + i * gs;
+      els.push(S("line", { key: "s"+i, x1: x, y1: nutY, x2: x, y2: nutY + gridH, stroke: grey, strokeWidth: 1.4 }));
+    }
+    for (let k = 0; k <= nF; k++) {
+      const y = nutY + k * fg;
+      const isNut = k === 0 && start === 1;
+      els.push(S("line", { key: "f"+k, x1: padX, y1: y, x2: padX + gridW, y2: y, stroke: isNut ? nutc : grey, strokeWidth: isNut ? 3.6 : 1.4, strokeLinecap: "round" }));
+    }
+    if (start > 1) els.push(S("text", { key: "lbl", x: padX - 7, y: nutY + fg * 0.62, fill: mark, fontSize: 10, fontWeight: 700, textAnchor: "end", fontFamily: "Inter, sans-serif" }, start + "fr"));
+    frets.forEach((f, i) => {
+      const x = padX + i * gs;
+      if (f === -1) {
+        const my = padTop - 12, r = 3.6;
+        els.push(S("line", { key: "x1"+i, x1: x - r, y1: my - r, x2: x + r, y2: my + r, stroke: mark, strokeWidth: 1.7, strokeLinecap: "round" }));
+        els.push(S("line", { key: "x2"+i, x1: x + r, y1: my - r, x2: x - r, y2: my + r, stroke: mark, strokeWidth: 1.7, strokeLinecap: "round" }));
+      } else if (f === 0) {
+        els.push(S("circle", { key: "o"+i, cx: x, cy: padTop - 12, r: 4, fill: "none", stroke: mark, strokeWidth: 1.6 }));
+      } else {
+        els.push(S("circle", { key: "d"+i, cx: x, cy: nutY + (f - start + 0.5) * fg, r: 6, fill: dot }));
+      }
+    });
+    const w = svgW * (scale || 1), h = svgH * (scale || 1);
+    return S("svg", { viewBox: "0 0 " + svgW + " " + svgH, width: w, height: h, style: { display: "block" } }, els);
+  }
+
+  renderVals() {
+    const chordStyleBase = { fontWeight: 800, fontSize: "14px", color: "#35D6E8", lineHeight: 1.6, minHeight: "22px", cursor: "default", letterSpacing: "0.01em" };
+
+    const sections = this.SONG.map(sec => ({
+      label: sec.label,
+      strum: sec.strum,
+      lines: sec.lines.map(line => line.map(seg => ({
+        c: seg.c || "",
+        t: seg.t,
+        chordStyle: chordStyleBase,
+        onEnter: seg.c ? (e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          this.setState({ popover: { name: seg.c, x: r.left + r.width / 2, y: r.top } });
+        } : null,
+        onLeave: seg.c ? () => this.setState({ popover: null }) : null,
+      }))),
+    }));
+
+    const tabsData = [
+      { label: "Ver", active: true, icon: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z|3" },
+      { label: "Editar", active: false, icon: "M12 20h9|M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" },
+      { label: "Calibrar", active: false, icon: "M12 2v4|M12 18v4|M4.9 4.9l2.8 2.8|M16.3 16.3l2.8 2.8|M2 12h4|M18 12h4|C" },
+      { label: "Karaoke", active: false, icon: "PLAY" },
+    ];
+    const S = React.createElement;
+    const mkIcon = (t) => {
+      const props = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
+      if (t === "Ver") return S("svg", props, S("path", { d: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" }), S("circle", { cx: 12, cy: 12, r: 3 }));
+      if (t === "Editar") return S("svg", props, S("path", { d: "M12 20h9" }), S("path", { d: "M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" }));
+      if (t === "Calibrar") return S("svg", props, S("path", { d: "M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" }), S("circle", { cx: 12, cy: 12, r: 4 }));
+      return S("svg", { ...props, fill: "currentColor", stroke: "none" }, S("path", { d: "M8 5v14l11-7z" }));
+    };
+    const tabActive = { display: "flex", alignItems: "center", padding: "9px 16px", borderRadius: "10px", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: 600, whiteSpace: "nowrap", background: "linear-gradient(135deg, #2E6BF0, #35D6E8)", color: "#04121a" };
+    const tabIdle = { display: "flex", alignItems: "center", padding: "9px 16px", borderRadius: "10px", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: 600, whiteSpace: "nowrap", background: "transparent", color: "#9AA3B2" };
+    const tabs = tabsData.map(t => ({ label: t.label, style: t.active ? tabActive : tabIdle, icon: mkIcon(t.label) }));
+
+    const usedNames = ["Em", "Am", "B7", "C"];
+    const usedChords = usedNames.map(n => ({ n: this.CHORDS[n].n, es: this.CHORDS[n].es, svg: this.diagram(this.CHORDS[n]) }));
+
+    // popover
+    const pv = this.state.popover;
+    let popover = null, popoverStyle = null;
+    if (pv) {
+      const ch = this.CHORDS[pv.name];
+      popover = { n: ch.n, es: ch.es, svg: this.diagram(ch) };
+      popoverStyle = {
+        position: "fixed", left: pv.x + "px", top: pv.y + "px",
+        transform: "translate(-50%, calc(-100% - 12px))",
+        display: "flex", flexDirection: "column", alignItems: "center",
+        padding: "12px 14px 10px", background: "#12151C",
+        border: "1px solid #2a3346", borderRadius: "14px",
+        boxShadow: "0 12px 34px rgba(0,0,0,0.6)", zIndex: 60, pointerEvents: "none",
+      };
+    }
+
+    const fabIcon = S("svg", { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.4, strokeLinecap: "round", strokeLinejoin: "round" }, S("path", { d: this.state.atBottom ? "m18 15-6-6-6 6" : "m6 9 6 6 6-6" }));
+    const fabStyle = { position: "fixed", bottom: "24px", right: "24px", zIndex: 50, display: "grid", placeItems: "center", width: "52px", height: "52px", borderRadius: "50%", border: "none", cursor: "pointer", background: "linear-gradient(135deg, #2E6BF0, #35D6E8)", color: "#04121a", boxShadow: "0 8px 24px rgba(46,107,240,0.4)" };
+
+    return {
+      tabs, sections, usedChords, popover, popoverStyle,
+      scrollRef: (el) => { this._sc = el; },
+      onScroll: (e) => { const el = e.target; const near = el.scrollTop + el.clientHeight >= el.scrollHeight - 100; if (near !== this.state.atBottom) this.setState({ atBottom: near }); },
+      fabClick: () => { const el = this._sc; if (!el) return; el.scrollTo({ top: this.state.atBottom ? 0 : el.scrollHeight, behavior: "smooth" }); },
+      fabLabel: this.state.atBottom ? "Ir arriba" : "Ir abajo",
+      fabIcon, fabStyle,
+    };
+  }
+}
+</script>
+</body>
+</html>
