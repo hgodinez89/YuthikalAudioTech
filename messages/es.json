@@ -8,8 +8,66 @@
     "chords": "Acordes",
     "playlists": "Mis Playlists",
     "toggleTheme": "Cambiar tema",
-    "switchLanguage": "Cambiar idioma",
-    "signIn": "Iniciar con Google"
+    "switchLanguage": "Cambiar idioma"
+  },
+  "auth": {
+    "signIn": "Iniciar con Google",
+    "title": "Inicia sesión en Yuthikal AudioTech",
+    "subtitle": "Tu atril digital para guitarra: acordes, canciones y modo karaoke.",
+    "googleButton": "Continuar con Google",
+    "lockNote": "El registro solo está disponible con Google",
+    "account": "Cuenta",
+    "signOut": "Cerrar sesión"
+  },
+  "playlists": {
+    "title": "Mis playlists",
+    "count": "{count, plural, =0 {Sin playlists} one {1 playlist} other {# playlists}}",
+    "newPlaylist": "Nuevo playlist",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar el playlist \"{name}\"? Sus canciones también se eliminarán.",
+    "like": "Me gusta",
+    "difficulty": "Dificultad",
+    "songCount": "{count, plural, =0 {0 canciones} one {1 canción} other {# canciones}}",
+    "emptyTitle": "Aún no tienes playlists",
+    "emptyDesc": "Crea tu primer playlist para empezar a organizar tus canciones con letra y acordes.",
+    "emptyCta": "Crear mi primer playlist",
+    "close": "Cerrar",
+    "cancel": "Cancelar",
+    "create": "Crear playlist",
+    "creating": "Creando…",
+    "form": {
+      "name": "Nombre",
+      "namePlaceholder": "Ej. Noches de bohemia",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Una línea sobre este playlist…",
+      "genre": "Género",
+      "genreOther": "Especifica el género",
+      "genreOtherPlaceholder": "Escribe el género"
+    },
+    "genres": {
+      "rock": "Rock",
+      "pop": "Pop",
+      "ballad": "Balada",
+      "bolero": "Bolero",
+      "ranchera": "Ranchera",
+      "cumbia": "Cumbia",
+      "salsa": "Salsa",
+      "reggae": "Reggae",
+      "blues": "Blues",
+      "country": "Country",
+      "christian": "Cristiana",
+      "other": "Otro"
+    },
+    "errors": {
+      "name": "El nombre es obligatorio (máximo 100 caracteres).",
+      "description": "La descripción no puede superar los 300 caracteres.",
+      "genre": "Elige un género válido.",
+      "genreOther": "Especifica el género (máximo 50 caracteres).",
+      "rating": "Las calificaciones van de 1 a 5 estrellas.",
+      "auth": "Tu sesión expiró. Vuelve a iniciar sesión.",
+      "db": "No se pudo guardar. Intenta de nuevo.",
+      "id": "Identificador inválido."
+    }
   },
   "loading": {
     "eyebrow": "Yuthikal AudioTech",
@@ -83,6 +141,48 @@
     "sharp": "sostenido",
     "flat": "bemol",
     "pianoTitle": "Una octava en el piano"
+  },
+  "finder": {
+    "eyebrow": "Referencia · Guitarra",
+    "title": "Buscador de acordes",
+    "searchPlaceholder": "Busca un acorde… ej. La menor, C#7, Si bemol",
+    "clearSearch": "Limpiar búsqueda",
+    "micLabel": "Búsqueda por voz",
+    "micTitle": "Buscar por voz",
+    "micTitleUnsupported": "Tu navegador no admite búsqueda por voz. Usa Chrome o Edge.",
+    "micNote": "La búsqueda por voz requiere Chrome o Edge.",
+    "micNoteUnsupported": "Búsqueda por voz no disponible en este navegador — usa Chrome o Edge.",
+    "byCategory": "Por categoría",
+    "byNote": "Por nota",
+    "showing": "Mostrando <b>{shown}</b> de {total} acordes",
+    "empty": "Sin resultados para \"{query}\"",
+    "emptyHint": "Prueba con otra notación, p. ej. \"Am\" o \"La menor\".",
+    "loadingMore": "Cargando más acordes…",
+    "barre": "cejilla",
+    "fabDown": "Ir abajo",
+    "fabUp": "Ir arriba",
+    "categories": {
+      "major": "Mayores",
+      "minor": "Menores",
+      "seventh": "Séptimas",
+      "suspended": "Suspendidos",
+      "diminished": "Disminuidos",
+      "augmented": "Aumentados",
+      "extended": "Extendidos",
+      "other": "Otros"
+    }
+  },
+  "chordDetail": {
+    "backToFinder": "Buscador de acordes",
+    "mostUsed": "Más usada",
+    "position": "Posición {n} · traste {fret}",
+    "notes": "Notas",
+    "intervals": "Intervalos",
+    "positionsMeta": "Posiciones",
+    "positionsOnNeck": "{n} en el mástil",
+    "positionsTitle": "Posiciones",
+    "positionsSubtitle": "de más común a menos común",
+    "barre": "cejilla"
   },
   "instruments": {
     "eyebrow": "Comienza aquí",

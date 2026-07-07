@@ -22,7 +22,22 @@
       "Bash(xargs echo \"  link chords:\")",
       "Bash(curl -s -H 'Cookie: yk-locale=en' http://localhost:3000 -o /tmp/e.html)",
       "Bash(xargs echo \"EN hero:\")",
-      "Bash(xargs echo \"EN cta:\")"
+      "Bash(xargs echo \"EN cta:\")",
+      "PowerShell(if \\(Test-Path C:\\\\RepositoriosGit\\\\YuthikalMusic\\\\.env.local\\) { \"env: OK\"; Get-Content C:\\\\RepositoriosGit\\\\YuthikalMusic\\\\.env.local | ForEach-Object { \\($_ -split '='\\)[0] } } else { \"FALTA .env.local\" })",
+      "Bash(node *)",
+      "PowerShell(node scripts/generate-chords-sql.mjs)",
+      "Bash(curl -s http://localhost:3000/guitar/chords/no-existe -o /tmp/nf.html -w \"HTTP %{http_code}\\\\n\")",
+      "Bash(xargs echo \"  not-found ui:\")",
+      "Bash(xargs echo \"  error-db ui:\")",
+      "Bash(curl -s -o /dev/null -w \"curl UA: %{http_code}\\\\n\" http://localhost:3000/guitar/chords/no-existe)",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(compatible; Googlebot/2.1; +http://www.google.com/bot.html\\)\" -o /dev/null -w \"Googlebot UA: %{http_code}\\\\n\" http://localhost:3000/guitar/chords/no-existe)",
+      "Bash(curl -s http://localhost:3000/guitar/chords/no-existe)",
+      "Bash(xargs echo \"UI not-found visible:\")",
+      "Bash(curl -s http://localhost:3000/playlists -o /tmp/pl.html)",
+      "Bash(xargs echo \"instruccion redirect presente:\")",
+      "Bash(xargs echo \"contenido privado filtrado \\(debe ser bajo/payload\\):\")",
+      "Bash(curl -sL http://localhost:3000/playlists -o /tmp/pl2.html)",
+      "Bash(xargs echo \"siguiendo redirects termina en login:\")"
     ]
   }
 }

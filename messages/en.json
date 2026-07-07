@@ -8,8 +8,66 @@
     "chords": "Chords",
     "playlists": "My Playlists",
     "toggleTheme": "Toggle theme",
-    "switchLanguage": "Switch language",
-    "signIn": "Sign in with Google"
+    "switchLanguage": "Switch language"
+  },
+  "auth": {
+    "signIn": "Sign in with Google",
+    "title": "Sign in to Yuthikal AudioTech",
+    "subtitle": "Your digital music stand for guitar: chords, songs and karaoke mode.",
+    "googleButton": "Continue with Google",
+    "lockNote": "Sign-up is only available with Google",
+    "account": "Account",
+    "signOut": "Sign out"
+  },
+  "playlists": {
+    "title": "My playlists",
+    "count": "{count, plural, =0 {No playlists} one {1 playlist} other {# playlists}}",
+    "newPlaylist": "New playlist",
+    "delete": "Delete",
+    "confirmDelete": "Delete the playlist \"{name}\"? Its songs will also be deleted.",
+    "like": "Liked",
+    "difficulty": "Difficulty",
+    "songCount": "{count, plural, =0 {0 songs} one {1 song} other {# songs}}",
+    "emptyTitle": "You have no playlists yet",
+    "emptyDesc": "Create your first playlist to start organizing your songs with lyrics and chords.",
+    "emptyCta": "Create my first playlist",
+    "close": "Close",
+    "cancel": "Cancel",
+    "create": "Create playlist",
+    "creating": "Creating…",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "E.g. Bohemian nights",
+      "description": "Description",
+      "descriptionPlaceholder": "One line about this playlist…",
+      "genre": "Genre",
+      "genreOther": "Specify the genre",
+      "genreOtherPlaceholder": "Type the genre"
+    },
+    "genres": {
+      "rock": "Rock",
+      "pop": "Pop",
+      "ballad": "Ballad",
+      "bolero": "Bolero",
+      "ranchera": "Ranchera",
+      "cumbia": "Cumbia",
+      "salsa": "Salsa",
+      "reggae": "Reggae",
+      "blues": "Blues",
+      "country": "Country",
+      "christian": "Christian",
+      "other": "Other"
+    },
+    "errors": {
+      "name": "Name is required (100 characters max).",
+      "description": "Description cannot exceed 300 characters.",
+      "genre": "Choose a valid genre.",
+      "genreOther": "Specify the genre (50 characters max).",
+      "rating": "Ratings go from 1 to 5 stars.",
+      "auth": "Your session expired. Please sign in again.",
+      "db": "Could not save. Try again.",
+      "id": "Invalid identifier."
+    }
   },
   "loading": {
     "eyebrow": "Yuthikal AudioTech",
@@ -83,6 +141,48 @@
     "sharp": "sharp",
     "flat": "flat",
     "pianoTitle": "One octave on the piano"
+  },
+  "finder": {
+    "eyebrow": "Reference · Guitar",
+    "title": "Chord finder",
+    "searchPlaceholder": "Search a chord… e.g. A minor, C#7, Bb",
+    "clearSearch": "Clear search",
+    "micLabel": "Voice search",
+    "micTitle": "Search by voice",
+    "micTitleUnsupported": "Your browser does not support voice search. Use Chrome or Edge.",
+    "micNote": "Voice search requires Chrome or Edge.",
+    "micNoteUnsupported": "Voice search is not available in this browser — use Chrome or Edge.",
+    "byCategory": "By category",
+    "byNote": "By note",
+    "showing": "Showing <b>{shown}</b> of {total} chords",
+    "empty": "No results for \"{query}\"",
+    "emptyHint": "Try another notation, e.g. \"Am\" or \"A minor\".",
+    "loadingMore": "Loading more chords…",
+    "barre": "barre",
+    "fabDown": "Go to bottom",
+    "fabUp": "Go to top",
+    "categories": {
+      "major": "Major",
+      "minor": "Minor",
+      "seventh": "Sevenths",
+      "suspended": "Suspended",
+      "diminished": "Diminished",
+      "augmented": "Augmented",
+      "extended": "Extended",
+      "other": "Other"
+    }
+  },
+  "chordDetail": {
+    "backToFinder": "Chord finder",
+    "mostUsed": "Most used",
+    "position": "Position {n} · fret {fret}",
+    "notes": "Notes",
+    "intervals": "Intervals",
+    "positionsMeta": "Positions",
+    "positionsOnNeck": "{n} on the neck",
+    "positionsTitle": "Positions",
+    "positionsSubtitle": "from most to least common",
+    "barre": "barre"
   },
   "instruments": {
     "eyebrow": "Start here",

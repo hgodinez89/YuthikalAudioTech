@@ -30,6 +30,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  images: {
+    // Avatares de la cuenta de Google (menú de usuario).
+    remotePatterns: [{ protocol: "https", hostname: "*.googleusercontent.com" }],
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

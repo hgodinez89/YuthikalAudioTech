@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { BrandLogo } from "./brand-logo";
 import { LanguageSwitcher } from "./language-switcher";
 import { ThemeToggle } from "./theme-toggle";
+import { UserMenu } from "./user-menu";
 
 const NAV = [
   { key: "instruments", href: "/guitar" },
@@ -52,22 +53,8 @@ export function SiteHeader() {
       <div className="flex items-center gap-2.5">
         <LanguageSwitcher />
         <ThemeToggle />
-        <Link
-          href="/login"
-          className="yk-gradient hidden items-center gap-[9px] rounded-[11px] px-4 py-2.5 text-[13.5px] font-bold md:inline-flex"
-        >
-          <GoogleGlyph />
-          {t("signIn")}
-        </Link>
+        <UserMenu />
       </div>
     </header>
-  );
-}
-
-function GoogleGlyph() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M21.35 11.1h-9.17v2.98h5.28c-.23 1.5-1.66 4.4-5.28 4.4-3.18 0-5.78-2.63-5.78-5.88s2.6-5.88 5.78-5.88c1.81 0 3.02.77 3.71 1.44l2.53-2.44C17.02 3.7 14.87 2.8 12.18 2.8 7.03 2.8 2.86 6.97 2.86 12.6s4.17 9.8 9.32 9.8c5.38 0 8.94-3.78 8.94-9.1 0-.61-.07-1.08-.17-1.55z" />
-    </svg>
   );
 }
