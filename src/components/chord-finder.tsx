@@ -1,6 +1,14 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Info, Mic, Search, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Info,
+  Mic,
+  Search,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChordCard, type ChordCardData } from "./chord-card";
@@ -21,7 +29,7 @@ type SpeechRecognitionInstance = {
   onresult:
     ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
   start(): void;
   abort(): void;
 };
@@ -29,6 +37,41 @@ type SpeechRecognitionInstance = {
 function getSpeechRecognitionCtor(): (new () => SpeechRecognitionInstance) | undefined {
   const w = window as unknown as Record<string, new () => SpeechRecognitionInstance>;
   return w.SpeechRecognition ?? w.webkitSpeechRecognition;
+}
+
+/* iOS: la Web Speech API está presente pero no entrega resultados en WebKit
+   (Safari/Chrome/Brave usan el mismo motor). No hay forma de feature-detectar
+   ese fallo, así que se detecta la plataforma y se oculta la voz por completo. */
+function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+type VoiceStatus = "ssr" | "ios" | "unsupported" | "ok";
+
+function voiceStatus(): Exclude<VoiceStatus, "ssr"> {
+  if (isIOS()) return "ios";
+  return getSpeechRecognitionCtor() ? "ok" : "unsupported";
+}
+
+/* Código de error del API → clave de mensaje i18n. */
+function voiceErrorKey(error: string): string {
+  switch (error) {
+    case "no-speech":
+      return "noSpeech";
+    case "not-allowed":
+    case "service-not-allowed":
+      return "notAllowed";
+    case "audio-capture":
+      return "audioCapture";
+    case "network":
+      return "network";
+    default:
+      return "generic";
+  }
 }
 
 async function fetchChords(
@@ -93,18 +136,22 @@ export function ChordFinder() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [listening, setListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [atBottom, setAtBottom] = useState(false);
 
   const requestId = useRef(0);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  /* null durante SSR/hidratación; true/false ya montado. */
-  const micSupported = useSyncExternalStore(
+  /* "ssr" durante hidratación; luego ios/unsupported/ok ya montado. */
+  const status = useSyncExternalStore<VoiceStatus>(
     () => () => {},
-    () => Boolean(getSpeechRecognitionCtor()),
-    () => null,
+    voiceStatus,
+    () => "ssr",
   );
+  const showVoice = status !== "ios"; // en iOS no se muestra nada de voz
+  const voiceDisabled = status === "unsupported";
+  const voiceReady = status === "ok";
 
   if (error) throw error; // → error boundary (BD pausada / sin conexión)
 
@@ -167,7 +214,7 @@ export function ChordFinder() {
   }, []);
 
   const toggleMic = () => {
-    if (!micSupported) return;
+    if (!voiceReady) return;
     if (listening) {
       recognitionRef.current?.abort();
       setListening(false);
@@ -177,11 +224,24 @@ export function ChordFinder() {
     if (!Ctor) return;
     const recognition = new Ctor();
     recognition.lang = locale === "es" ? "es-ES" : "en-US";
-    recognition.interimResults = false;
-    recognition.onresult = (event) => setQuery(event.results[0][0].transcript);
+    // interimResults: entrega la transcripción progresivamente (más fiable
+    // y rápido; algunos navegadores no entregan si es solo el resultado final).
+    recognition.interimResults = true;
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setQuery(transcript);
+    };
     recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
+    recognition.onerror = (event) => {
+      // "aborted" ocurre al detener manualmente; no es un error a mostrar.
+      if (event.error !== "aborted") setVoiceError(event.error);
+      setListening(false);
+    };
     recognitionRef.current = recognition;
+    setVoiceError(null);
     setListening(true);
     recognition.start();
   };
@@ -224,37 +284,67 @@ export function ChordFinder() {
             </button>
           )}
         </div>
-        {/* MICRÓFONO */}
-        <div className="relative grid size-[54px] shrink-0 place-items-center">
-          {listening && (
-            <span className="absolute inset-0 rounded-[14px] bg-accent/40 [animation:yk-pulse-ring_1.6s_ease-out_infinite]" />
-          )}
-          <button
-            type="button"
-            onClick={toggleMic}
-            disabled={micSupported === false}
-            aria-label={t("micLabel")}
-            title={micSupported === false ? t("micTitleUnsupported") : t("micTitle")}
-            className={
-              micSupported === false
-                ? "relative grid size-[54px] cursor-not-allowed place-items-center rounded-[14px] border border-edge bg-surface-3 text-disabled"
-                : listening
-                  ? "yk-gradient relative grid size-[54px] cursor-pointer place-items-center rounded-[14px] shadow-[0_0_22px_rgba(53,214,232,0.5)]"
-                  : "relative grid size-[54px] cursor-pointer place-items-center rounded-[14px] border border-edge-2 bg-surface-2 text-accent"
-            }
-          >
-            <Mic size={21} strokeWidth={2} />
-          </button>
-        </div>
+        {/* MICRÓFONO — oculto por completo en iOS (Web Speech no funciona ahí) */}
+        {showVoice && (
+          <div className="relative grid size-[54px] shrink-0 place-items-center">
+            {listening && (
+              <span className="absolute inset-0 rounded-[14px] bg-accent/40 [animation:yk-pulse-ring_1.6s_ease-out_infinite]" />
+            )}
+            <button
+              type="button"
+              onClick={toggleMic}
+              disabled={voiceDisabled}
+              aria-label={t("micLabel")}
+              title={voiceDisabled ? t("micTitleUnsupported") : t("micTitle")}
+              className={
+                voiceDisabled
+                  ? "relative grid size-[54px] cursor-not-allowed place-items-center rounded-[14px] border border-edge bg-surface-3 text-disabled"
+                  : listening
+                    ? "yk-gradient relative grid size-[54px] cursor-pointer place-items-center rounded-[14px] shadow-[0_0_22px_rgba(53,214,232,0.5)]"
+                    : "relative grid size-[54px] cursor-pointer place-items-center rounded-[14px] border border-edge-2 bg-surface-2 text-accent"
+              }
+            >
+              <Mic size={21} strokeWidth={2} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* NOTA DE VOZ */}
-      <div
-        className={`mt-2.5 flex items-center gap-[7px] text-[12.5px] ${micSupported === false ? "text-warn" : "text-tert"}`}
-      >
-        <Info size={14} strokeWidth={2} />
-        <span>{micSupported === false ? t("micNoteUnsupported") : t("micNote")}</span>
-      </div>
+      {/* LÍNEA DE ESTADO DE VOZ — misma ranura, 3 estados (escuchando/error/nota) */}
+      {showVoice && (
+        <div className="mt-2.5 flex min-h-[18px] items-center gap-[7px] text-[12.5px]">
+          {listening ? (
+            <span className="flex items-center gap-2 text-accent">
+              <span className="flex h-[14px] items-end gap-[2px]">
+                {[8, 13, 10, 15].map((h, i) => (
+                  <span
+                    key={i}
+                    className="block w-[3px] origin-bottom rounded-[2px] bg-accent"
+                    style={{
+                      height: h,
+                      animation: "yk-bar 1s ease-in-out infinite",
+                      animationDelay: `${i * 0.12}s`,
+                    }}
+                  />
+                ))}
+              </span>
+              {t("listening")}
+            </span>
+          ) : voiceError ? (
+            <span className="flex items-center gap-[7px] text-warn">
+              <TriangleAlert size={14} strokeWidth={2} />
+              {t(`voiceError.${voiceErrorKey(voiceError)}`)}
+            </span>
+          ) : (
+            <span
+              className={`flex items-center gap-[7px] ${voiceDisabled ? "text-warn" : "text-tert"}`}
+            >
+              <Info size={14} strokeWidth={2} />
+              {voiceDisabled ? t("micNoteUnsupported") : t("micNote")}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* CONTROLES */}
       <div className="mb-2 mt-[22px] flex flex-wrap items-center justify-between gap-3.5">

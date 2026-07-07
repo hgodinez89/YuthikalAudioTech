@@ -305,6 +305,14 @@
     "micTitleUnsupported": "Your browser does not support voice search. Use Chrome or Edge.",
     "micNote": "Voice search requires Chrome or Edge.",
     "micNoteUnsupported": "Voice search is not available in this browser — use Chrome or Edge.",
+    "listening": "Listening…",
+    "voiceError": {
+      "noSpeech": "No speech detected, try again.",
+      "notAllowed": "Couldn't access the microphone.",
+      "audioCapture": "No microphone found.",
+      "network": "Voice recognition network error.",
+      "generic": "Couldn't recognize speech, try again."
+    },
     "byCategory": "By category",
     "byNote": "By note",
     "showing": "Showing <b>{shown}</b> of {total} chords",

@@ -305,6 +305,14 @@
     "micTitleUnsupported": "Tu navegador no admite búsqueda por voz. Usa Chrome o Edge.",
     "micNote": "La búsqueda por voz requiere Chrome o Edge.",
     "micNoteUnsupported": "Búsqueda por voz no disponible en este navegador — usa Chrome o Edge.",
+    "listening": "Escuchando…",
+    "voiceError": {
+      "noSpeech": "No se detectó voz, intenta de nuevo.",
+      "notAllowed": "No se pudo acceder al micrófono.",
+      "audioCapture": "No se detectó ningún micrófono.",
+      "network": "Error de red en el reconocimiento de voz.",
+      "generic": "No se pudo reconocer la voz, intenta de nuevo."
+    },
     "byCategory": "Por categoría",
     "byNote": "Por nota",
     "showing": "Mostrando <b>{shown}</b> de {total} acordes",
