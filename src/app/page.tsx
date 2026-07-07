@@ -207,7 +207,7 @@ export default async function LandingPage() {
             </p>
             <div className="flex flex-wrap gap-[22px]">
               {[
-                ["132", t("statChords")],
+                ["481", t("statChords")],
                 ["2", t("statLanguages")],
                 ["∞", t("statPlaylists")],
               ].map(([value, label]) => (

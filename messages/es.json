@@ -17,6 +17,7 @@
     "googleButton": "Continuar con Google",
     "lockNote": "El registro solo está disponible con Google",
     "account": "Cuenta",
+    "myPlaylists": "Mis playlists",
     "signOut": "Cerrar sesión"
   },
   "playlists": {
@@ -251,13 +252,22 @@
     "fabUp": "Ir arriba",
     "emptyTitle": "Esta canción aún no tiene contenido",
     "emptyDesc": "Abre el editor para escribir la letra con sus acordes en formato ChordPro.",
-    "emptyCta": "Abrir el editor",
-    "comingSoonEyebrow": "Próximamente",
-    "comingSoon": {
-      "edit": "El editor de letra y acordes llega en la siguiente entrega de esta fase.",
-      "calibrate": "La calibración con audio real llega en la Fase 6.",
-      "karaoke": "El modo karaoke llega en la Fase 7."
-    }
+    "emptyCta": "Abrir el editor"
+  },
+  "karaoke": {
+    "now": "Ahora",
+    "next": "Sigue",
+    "variant": { "sync": "Sincronizada", "auto": "Sin calibrar" },
+    "exit": "Salir",
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "restart": "Reiniciar",
+    "prevSection": "Sección anterior",
+    "nextSection": "Sección siguiente",
+    "speed": "Velocidad",
+    "slower": "Más lento",
+    "faster": "Más rápido",
+    "noSyncNote": "Sin sincronización — scroll automático"
   },
   "strings": {
     "eyebrow": "Referencia · Guitarra",

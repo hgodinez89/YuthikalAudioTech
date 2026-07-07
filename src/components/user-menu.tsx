@@ -1,7 +1,7 @@
 "use client";
 
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, Music } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -54,10 +54,10 @@ export function UserMenu() {
     return (
       <Link
         href="/login"
-        className="yk-gradient hidden items-center gap-[9px] rounded-[11px] px-4 py-2.5 text-[13.5px] font-bold md:inline-flex"
+        className="yk-gradient inline-flex items-center gap-[9px] rounded-[11px] px-3 py-2.5 text-[13.5px] font-bold md:px-4"
       >
         <GoogleGlyph />
-        {t("signIn")}
+        <span className="hidden sm:inline">{t("signIn")}</span>
       </Link>
     );
   }
@@ -93,6 +93,14 @@ export function UserMenu() {
               <div className="truncate text-xs text-tert">{user.email}</div>
             </div>
             <div className="p-1.5">
+              <Link
+                href="/playlists"
+                onClick={() => setMenuOpen(false)}
+                className="flex w-full items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-[13.5px] hover:bg-edge"
+              >
+                <Music size={16} strokeWidth={2} />
+                {t("myPlaylists")}
+              </Link>
               <button
                 type="button"
                 onClick={signOut}

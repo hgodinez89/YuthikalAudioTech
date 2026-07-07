@@ -2,6 +2,8 @@
 
 App web responsive para guitarristas: referencia de acordes, canciones con letra + cifrado (ChordPro) y modo karaoke con audio real sincronizado. "Tu atril digital para guitarra".
 
+> **Estado:** todas las fases (0–8) están completadas. Este documento se conserva como **referencia de arquitectura, decisiones de diseño y modelo de datos**; su formato de "plan por fases" refleja cómo se construyó el proyecto.
+
 ## Principios de ingeniería (transversales)
 
 1. **Sin sobreingeniería:** la solución más simple que cumpla el requisito. Sin abstracciones especulativas ni librerías donde baste la plataforma. Cada dependencia nueva debe justificarse.

@@ -7,6 +7,7 @@ import { cache, type ReactNode } from "react";
 import { ChordSheet, type ChordDataMap } from "@/components/chord-sheet";
 import { SongCalibration } from "@/components/song-calibration";
 import { SongEditor } from "@/components/song-editor";
+import { SongKaraoke } from "@/components/song-karaoke";
 import type { SongAudioRow, SongSyncRow } from "@/lib/audio";
 import { chordIdFromName } from "@/lib/chord-search";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
@@ -107,7 +108,10 @@ export default async function SongPage({
   const tSongs = await getTranslations("songs");
 
   const parsed = parseChordPro(song.content);
-  const chordData = mode === "view" ? await loadChordData(collectChords(parsed)) : {};
+  const chordData =
+    mode === "view" || mode === "karaoke"
+      ? await loadChordData(collectChords(parsed))
+      : {};
 
   let audio: SongAudioRow | null = null;
   let sync: SongSyncRow | null = null;
@@ -221,14 +225,28 @@ export default async function SongPage({
 
       {mode === "calibrate" && <SongCalibration song={song} audio={audio} sync={sync} />}
 
-      {mode === "karaoke" && (
-        <div className="flex flex-col items-center rounded-[18px] border border-dashed border-edge-2 bg-surface-3 px-5 py-[60px] text-center">
-          <div className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-accent">
-            {t("comingSoonEyebrow")}
+      {mode === "karaoke" &&
+        (parsed.sections.length > 0 ? (
+          <SongKaraoke
+            song={song}
+            audio={audio}
+            sync={sync}
+            chords={chordData}
+            exitHref={`/playlists/${playlistId}/songs/${songId}`}
+          />
+        ) : (
+          <div className="flex flex-col items-center rounded-[18px] border border-dashed border-edge-2 bg-surface-3 px-5 py-[60px] text-center">
+            <h3 className="mb-2 text-lg font-bold">{t("emptyTitle")}</h3>
+            <p className="mb-[22px] max-w-[380px] text-sm text-tert">{t("emptyDesc")}</p>
+            <Link
+              href={`/playlists/${playlistId}/songs/${songId}?mode=edit`}
+              className="yk-gradient inline-flex items-center gap-2 rounded-xl px-[22px] py-3 text-sm font-bold"
+            >
+              <Pencil size={15} strokeWidth={2.2} />
+              {t("emptyCta")}
+            </Link>
           </div>
-          <p className="max-w-[380px] text-sm text-tert">{t(`comingSoon.${mode}`)}</p>
-        </div>
-      )}
+        ))}
     </div>
   );
 }

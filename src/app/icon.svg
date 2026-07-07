@@ -1,0 +1,24 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="yk" gradientUnits="userSpaceOnUse" x1="8" y1="56" x2="56" y2="8">
+      <stop offset="0" stop-color="#2E6BF0" />
+      <stop offset="1" stop-color="#35D6E8" />
+    </linearGradient>
+  </defs>
+  <!-- tile de fondo -->
+  <rect width="64" height="64" rx="14" fill="#05070A" />
+  <!-- marco redondeado (como el logo) -->
+  <rect x="7" y="7" width="50" height="50" rx="9" fill="none" stroke="url(#yk)" stroke-width="2.5" />
+  <!-- onda de audio: 9 barras con envolvente senoidal, topes redondeados -->
+  <g fill="url(#yk)">
+    <rect x="15.5" y="29" width="3" height="6" rx="1.5" />
+    <rect x="19.25" y="23.25" width="3" height="17.5" rx="1.5" />
+    <rect x="23" y="18.4" width="3" height="27.2" rx="1.5" />
+    <rect x="26.75" y="15.15" width="3" height="33.7" rx="1.5" />
+    <rect x="30.5" y="14" width="3" height="36" rx="1.5" />
+    <rect x="34.25" y="15.15" width="3" height="33.7" rx="1.5" />
+    <rect x="38" y="18.4" width="3" height="27.2" rx="1.5" />
+    <rect x="41.75" y="23.25" width="3" height="17.5" rx="1.5" />
+    <rect x="45.5" y="29" width="3" height="6" rx="1.5" />
+  </g>
+</svg>
