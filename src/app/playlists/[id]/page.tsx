@@ -48,10 +48,23 @@ export default async function PlaylistDetailPage({
 
   const { data: songs } = await supabase
     .from("songs")
-    .select("id,playlist_id,name,description,key_note,content,created_at")
+    .select(
+      "id,playlist_id,name,description,key_note,content,created_at,audio:song_audio(source),sync:song_sync(stamps)",
+    )
     .eq("playlist_id", id)
     .order("created_at")
-    .returns<SongRow[]>();
+    .returns<
+      (SongRow & {
+        audio: { source: "youtube" | "file" }[];
+        sync: { stamps: unknown[] }[];
+      })[]
+    >();
 
-  return <PlaylistDetailView playlist={playlist} songs={songs ?? []} />;
+  const rows = (songs ?? []).map(({ audio, sync, ...song }) => ({
+    ...song,
+    source: audio[0]?.source ?? null,
+    synced: (sync[0]?.stamps?.length ?? 0) > 0,
+  }));
+
+  return <PlaylistDetailView playlist={playlist} songs={rows} />;
 }

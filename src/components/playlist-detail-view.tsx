@@ -3,6 +3,7 @@
 import {
   ChevronLeft,
   Eye,
+  FileMusic,
   Music,
   Pencil,
   Play,
@@ -20,6 +21,16 @@ import { updatePlaylist } from "@/lib/playlist-actions";
 import type { PlaylistInput, PlaylistRow } from "@/lib/playlists";
 import { createSong } from "@/lib/song-actions";
 import { KEY_OPTIONS, keyLabel, validateSong, type SongRow } from "@/lib/songs";
+
+/* Logo de YouTube (Playlist Detail.dc.html) — lucide ya no trae marcas. */
+function YoutubeIcon({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M23 12s0-3.3-.4-4.9a2.6 2.6 0 0 0-1.8-1.8C19.2 5 12 5 12 5s-7.2 0-8.8.4a2.6 2.6 0 0 0-1.8 1.8C1 8.7 1 12 1 12s0 3.3.4 4.9a2.6 2.6 0 0 0 1.8 1.8C4.8 19 12 19 12 19s7.2 0 8.8-.4a2.6 2.6 0 0 0 1.8-1.8C23 15.3 23 12 23 12z" />
+      <path d="M10 9l5 3-5 3z" fill="var(--surface)" />
+    </svg>
+  );
+}
 
 function SongFormModal({
   playlistId,
@@ -140,12 +151,17 @@ function SongFormModal({
   );
 }
 
+export type SongListRow = SongRow & {
+  source: "youtube" | "file" | null;
+  synced: boolean;
+};
+
 export function PlaylistDetailView({
   playlist,
   songs,
 }: {
   playlist: PlaylistRow;
-  songs: SongRow[];
+  songs: SongListRow[];
 }) {
   const t = useTranslations("songs");
   const tPlaylists = useTranslations("playlists");
@@ -251,10 +267,27 @@ export function PlaylistDetailView({
                   )}
                 </div>
                 <div className="mt-2 flex items-center gap-3.5">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-edge-2 bg-surface-2 px-2.5 py-[3px] text-[11.5px] font-semibold text-sub">
-                    <span className="inline-block size-1.5 rounded-full bg-mute" />
-                    {t("statusRaw")}
-                  </span>
+                  {song.source && (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-tert">
+                      {song.source === "youtube" ? (
+                        <YoutubeIcon size={15} />
+                      ) : (
+                        <FileMusic size={14} strokeWidth={2} />
+                      )}
+                      {song.source === "youtube" ? "YouTube" : t("sourceFile")}
+                    </span>
+                  )}
+                  {song.synced ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-[3px] text-[11.5px] font-semibold text-accent">
+                      <span className="inline-block size-1.5 rounded-full bg-accent" />
+                      {t("statusSynced")}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-edge-2 bg-surface-2 px-2.5 py-[3px] text-[11.5px] font-semibold text-sub">
+                      <span className="inline-block size-1.5 rounded-full bg-mute" />
+                      {t("statusRaw")}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">

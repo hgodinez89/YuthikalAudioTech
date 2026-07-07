@@ -5,7 +5,9 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { cache, type ReactNode } from "react";
 import { ChordSheet, type ChordDataMap } from "@/components/chord-sheet";
+import { SongCalibration } from "@/components/song-calibration";
 import { SongEditor } from "@/components/song-editor";
+import type { SongAudioRow, SongSyncRow } from "@/lib/audio";
 import { chordIdFromName } from "@/lib/chord-search";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
 import { keyLabel, type SongRow } from "@/lib/songs";
@@ -107,6 +109,25 @@ export default async function SongPage({
   const parsed = parseChordPro(song.content);
   const chordData = mode === "view" ? await loadChordData(collectChords(parsed)) : {};
 
+  let audio: SongAudioRow | null = null;
+  let sync: SongSyncRow | null = null;
+  if (mode === "calibrate" || mode === "karaoke") {
+    const [audioRes, syncRes] = await Promise.all([
+      supabase
+        .from("song_audio")
+        .select("song_id,source,youtube_id,youtube_title,file_path")
+        .eq("song_id", songId)
+        .maybeSingle<SongAudioRow>(),
+      supabase
+        .from("song_sync")
+        .select("song_id,granularity,stamps")
+        .eq("song_id", songId)
+        .maybeSingle<SongSyncRow>(),
+    ]);
+    audio = audioRes.data;
+    sync = syncRes.data;
+  }
+
   const tabs: { mode: Mode; label: string; icon: ReactNode }[] = [
     { mode: "view", label: tSongs("view"), icon: <Eye size={15} strokeWidth={2} /> },
     { mode: "edit", label: tSongs("edit"), icon: <Pencil size={15} strokeWidth={2} /> },
@@ -124,7 +145,13 @@ export default async function SongPage({
 
   return (
     <div
-      className={`mx-auto px-5 pb-[100px] pt-6 ${mode === "edit" ? "max-w-[1240px]" : "max-w-[860px]"}`}
+      className={`mx-auto px-5 pb-[100px] pt-6 ${
+        mode === "edit"
+          ? "max-w-[1240px]"
+          : mode === "calibrate"
+            ? "max-w-[1180px] pb-[180px]"
+            : "max-w-[860px]"
+      }`}
     >
       <Link
         href={`/playlists/${playlistId}`}
@@ -192,7 +219,9 @@ export default async function SongPage({
 
       {mode === "edit" && <SongEditor song={song} />}
 
-      {mode !== "view" && mode !== "edit" && (
+      {mode === "calibrate" && <SongCalibration song={song} audio={audio} sync={sync} />}
+
+      {mode === "karaoke" && (
         <div className="flex flex-col items-center rounded-[18px] border border-dashed border-edge-2 bg-surface-3 px-5 py-[60px] text-center">
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-accent">
             {t("comingSoonEyebrow")}
