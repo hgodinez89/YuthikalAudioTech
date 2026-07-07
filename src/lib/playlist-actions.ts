@@ -32,6 +32,35 @@ export async function createPlaylist(input: PlaylistInput): Promise<ActionResult
   return { ok: true };
 }
 
+export async function updatePlaylist(
+  id: string,
+  input: PlaylistInput,
+): Promise<ActionResult> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { ok: false, error: "id" };
+  const invalid = validatePlaylist(input);
+  if (invalid) return { ok: false, error: invalid };
+
+  const supabase = await supabaseWithSession();
+  // RLS: solo el dueño puede actualizar.
+  const { error } = await supabase
+    .from("playlists")
+    .update({
+      name: input.name.trim(),
+      description: input.description.trim(),
+      genre: input.genre,
+      genre_other: input.genre === "other" ? input.genreOther.trim() : null,
+      rating_like: input.ratingLike,
+      rating_difficulty: input.ratingDifficulty,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) return { ok: false, error: "db" };
+
+  revalidatePath("/playlists");
+  revalidatePath(`/playlists/${id}`);
+  return { ok: true };
+}
+
 export async function deletePlaylist(id: string): Promise<ActionResult> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { ok: false, error: "id" };
 

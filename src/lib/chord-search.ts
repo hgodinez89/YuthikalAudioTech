@@ -133,6 +133,25 @@ function wordsToSuffix(words: string[]): string | null {
   return null;
 }
 
+/** Slug idéntico al del generador del seed: "C#"+"m7" → "csharp-m7". */
+export function chordSlug(key: string, suffix: string): string {
+  const k = key.toLowerCase().replace("#", "sharp");
+  const s = suffix
+    .toLowerCase()
+    .replace("#", "sharp")
+    .replace(/[^a-z0-9]/g, "-");
+  return `${k}-${s}`;
+}
+
+/** Id del catálogo para un nombre en cifrado ("Em" → "e-minor"), o null. */
+export function chordIdFromName(name: string): string | null {
+  const parsed = parseChordQuery(name);
+  if (parsed.kind !== "chord") return null;
+  // Un nombre suelto sin cualidad ("C") es el acorde mayor.
+  const suffix = parsed.suffixes?.[0] ?? "major";
+  return chordSlug(parsed.keys[0], suffix);
+}
+
 export function parseChordQuery(raw: string): ParsedQuery {
   const norm = normalizeQuery(raw);
   if (!norm) return { kind: "empty" };

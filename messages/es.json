@@ -24,7 +24,12 @@
     "count": "{count, plural, =0 {Sin playlists} one {1 playlist} other {# playlists}}",
     "newPlaylist": "Nuevo playlist",
     "delete": "Eliminar",
-    "confirmDelete": "¿Eliminar el playlist \"{name}\"? Sus canciones también se eliminarán.",
+    "deleteModal": {
+      "title": "¿Eliminar este playlist?",
+      "message": "<b>\"{name}\"</b> y todas sus canciones se eliminarán de forma permanente. Esta acción no se puede deshacer.",
+      "confirm": "Sí, eliminar",
+      "deleting": "Eliminando…"
+    },
     "like": "Me gusta",
     "difficulty": "Dificultad",
     "songCount": "{count, plural, =0 {0 canciones} one {1 canción} other {# canciones}}",
@@ -117,6 +122,63 @@
     "deviceNow": "Ahora",
     "deviceNext": "Sigue",
     "footerCopy": "© 2026 Yuthikal AudioTech"
+  },
+  "songs": {
+    "songsTitle": "Canciones",
+    "newSong": "Nueva canción",
+    "editPlaylist": "Editar playlist",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "view": "Ver",
+    "edit": "Editar",
+    "calibrate": "Calibrar",
+    "karaoke": "Karaoke",
+    "keyChip": "Tonalidad: {key}",
+    "statusRaw": "Sin calibrar",
+    "statusSynced": "Sincronizada",
+    "emptyTitle": "Este playlist aún no tiene canciones",
+    "emptyDesc": "Agrega tu primera canción con su letra y acordes para empezar a tocar.",
+    "close": "Cerrar",
+    "cancel": "Cancelar",
+    "create": "Crear canción",
+    "creating": "Creando…",
+    "form": {
+      "name": "Nombre",
+      "namePlaceholder": "Ej. Bésame mucho",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Autor, versión o una nota sobre esta canción…",
+      "key": "Tonalidad"
+    },
+    "errors": {
+      "name": "El nombre es obligatorio (máximo 150 caracteres).",
+      "description": "La descripción no puede superar los 300 caracteres.",
+      "keyNote": "Elige una tonalidad válida.",
+      "playlist": "Playlist inválido.",
+      "auth": "Tu sesión expiró. Vuelve a iniciar sesión.",
+      "db": "No se pudo guardar. Intenta de nuevo.",
+      "id": "Identificador inválido.",
+      "content": "La canción supera el tamaño máximo permitido."
+    }
+  },
+  "songView": {
+    "backToPlaylist": "Volver al playlist",
+    "keyPrefix": "Tonalidad:",
+    "strum": "Rasgueo",
+    "verse": "Verso",
+    "chorus": "Coro",
+    "bridge": "Puente",
+    "chordsInSong": "Acordes en esta canción",
+    "fabDown": "Ir abajo",
+    "fabUp": "Ir arriba",
+    "emptyTitle": "Esta canción aún no tiene contenido",
+    "emptyDesc": "Abre el editor para escribir la letra con sus acordes en formato ChordPro.",
+    "emptyCta": "Abrir el editor",
+    "comingSoonEyebrow": "Próximamente",
+    "comingSoon": {
+      "edit": "El editor de letra y acordes llega en la siguiente entrega de esta fase.",
+      "calibrate": "La calibración con audio real llega en la Fase 6.",
+      "karaoke": "El modo karaoke llega en la Fase 7."
+    }
   },
   "strings": {
     "eyebrow": "Referencia · Guitarra",

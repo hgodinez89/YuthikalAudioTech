@@ -24,7 +24,12 @@
     "count": "{count, plural, =0 {No playlists} one {1 playlist} other {# playlists}}",
     "newPlaylist": "New playlist",
     "delete": "Delete",
-    "confirmDelete": "Delete the playlist \"{name}\"? Its songs will also be deleted.",
+    "deleteModal": {
+      "title": "Delete this playlist?",
+      "message": "<b>\"{name}\"</b> and all of its songs will be permanently deleted. This action cannot be undone.",
+      "confirm": "Yes, delete",
+      "deleting": "Deleting…"
+    },
     "like": "Liked",
     "difficulty": "Difficulty",
     "songCount": "{count, plural, =0 {0 songs} one {1 song} other {# songs}}",
@@ -117,6 +122,63 @@
     "deviceNow": "Now",
     "deviceNext": "Next",
     "footerCopy": "© 2026 Yuthikal AudioTech"
+  },
+  "songs": {
+    "songsTitle": "Songs",
+    "newSong": "New song",
+    "editPlaylist": "Edit playlist",
+    "save": "Save",
+    "saving": "Saving…",
+    "view": "View",
+    "edit": "Edit",
+    "calibrate": "Calibrate",
+    "karaoke": "Karaoke",
+    "keyChip": "Key: {key}",
+    "statusRaw": "Not calibrated",
+    "statusSynced": "Synced",
+    "emptyTitle": "This playlist has no songs yet",
+    "emptyDesc": "Add your first song with its lyrics and chords to start playing.",
+    "close": "Close",
+    "cancel": "Cancel",
+    "create": "Create song",
+    "creating": "Creating…",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "E.g. Bésame mucho",
+      "description": "Description",
+      "descriptionPlaceholder": "Author, version or a note about this song…",
+      "key": "Key"
+    },
+    "errors": {
+      "name": "Name is required (150 characters max).",
+      "description": "Description cannot exceed 300 characters.",
+      "keyNote": "Choose a valid key.",
+      "playlist": "Invalid playlist.",
+      "auth": "Your session expired. Please sign in again.",
+      "db": "Could not save. Try again.",
+      "id": "Invalid identifier.",
+      "content": "The song exceeds the maximum allowed size."
+    }
+  },
+  "songView": {
+    "backToPlaylist": "Back to playlist",
+    "keyPrefix": "Key:",
+    "strum": "Strumming",
+    "verse": "Verse",
+    "chorus": "Chorus",
+    "bridge": "Bridge",
+    "chordsInSong": "Chords in this song",
+    "fabDown": "Go to bottom",
+    "fabUp": "Go to top",
+    "emptyTitle": "This song has no content yet",
+    "emptyDesc": "Open the editor to write the lyrics with their chords in ChordPro format.",
+    "emptyCta": "Open the editor",
+    "comingSoonEyebrow": "Coming soon",
+    "comingSoon": {
+      "edit": "The lyrics & chords editor arrives in the next delivery of this phase.",
+      "calibrate": "Real-audio calibration arrives in Phase 6.",
+      "karaoke": "Karaoke mode arrives in Phase 7."
+    }
   },
   "strings": {
     "eyebrow": "Reference · Guitar",

@@ -20,12 +20,17 @@ export default async function PlaylistsPage() {
   const { data: playlists, error } = await supabase
     .from("playlists")
     .select(
-      "id,name,description,genre,genre_other,rating_like,rating_difficulty,created_at",
+      "id,name,description,genre,genre_other,rating_like,rating_difficulty,created_at,songs(count)",
     )
     .order("created_at", { ascending: false })
-    .returns<PlaylistRow[]>();
+    .returns<(PlaylistRow & { songs: { count: number }[] })[]>();
 
   if (error) throw new Error(error.message);
 
-  return <PlaylistsView initialPlaylists={playlists ?? []} />;
+  const withCount = (playlists ?? []).map(({ songs, ...p }) => ({
+    ...p,
+    songs_count: songs[0]?.count ?? 0,
+  }));
+
+  return <PlaylistsView playlists={withCount} />;
 }
