@@ -8,7 +8,8 @@
     "chords": "Acordes",
     "playlists": "Mis Playlists",
     "toggleTheme": "Cambiar tema",
-    "switchLanguage": "Cambiar idioma"
+    "switchLanguage": "Cambiar idioma",
+    "menu": "Menú"
   },
   "auth": {
     "signIn": "Iniciar con Google",
