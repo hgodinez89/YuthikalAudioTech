@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { collectChords, parseChordPro } from "./chordpro";
+import {
+  arrowsToStrum,
+  buildVisualModel,
+  collectChords,
+  parseChordPro,
+  parseLyricUnits,
+  setChordAtUnit,
+  setSectionStrum,
+  strumToArrows,
+} from "./chordpro";
 
 const SAMPLE = `{title: St. James Infirmary}
 {artist: Traditional}
@@ -84,6 +93,90 @@ describe("parseChordPro — segmentos acorde/texto", () => {
   it("colapsa líneas en blanco repetidas dentro de una sección", () => {
     const song = parseChordPro("{sov}\n[C]a\n\n\n\n[D]b\n{eov}");
     expect(song.sections[0].lines).toHaveLength(3); // a, blanco, b
+  });
+});
+
+describe("rasgueo — flechas", () => {
+  it("D/U/- a flechas y de regreso", () => {
+    expect(strumToArrows("D - D U - U D U")).toBe("↓ – ↓ ↑ – ↑ ↓ ↑");
+    expect(arrowsToStrum("↓ – ↓ ↑")).toBe("D - D U");
+  });
+});
+
+describe("parseLyricUnits — edición visual", () => {
+  it("palabra con y sin acorde, con offsets crudos", () => {
+    const units = parseLyricUnits("I went [Em]down");
+    expect(units).toEqual([
+      { chord: null, text: "I", textStart: 0, chordStart: null, chordEnd: null },
+      { chord: null, text: "went", textStart: 2, chordStart: null, chordEnd: null },
+      { chord: "Em", text: "down", textStart: 11, chordStart: 7, chordEnd: 11 },
+    ]);
+  });
+
+  it("acorde a mitad de palabra crea una unidad para el fragmento", () => {
+    const units = parseLyricUnits("In[Em]firmary");
+    expect(units.map((u) => u.text)).toEqual(["In", "firmary"]);
+    expect(units[1].chord).toBe("Em");
+  });
+
+  it("acorde colgante al final de línea", () => {
+    const units = parseLyricUnits("so fair [B7]");
+    expect(units[units.length - 1]).toMatchObject({ chord: "B7", text: "" });
+  });
+});
+
+describe("setChordAtUnit", () => {
+  const content = "linea cero\nI went [Em]down to";
+
+  it("inserta acorde en palabra sin acorde", () => {
+    const units = parseLyricUnits("I went [Em]down to");
+    const result = setChordAtUnit(content, 1, units[0], "C");
+    expect(result.split("\n")[1]).toBe("[C]I went [Em]down to");
+  });
+
+  it("reemplaza el acorde existente", () => {
+    const units = parseLyricUnits("I went [Em]down to");
+    const result = setChordAtUnit(content, 1, units[2], "Am7");
+    expect(result.split("\n")[1]).toBe("I went [Am7]down to");
+  });
+
+  it("quita el acorde con chord = null", () => {
+    const units = parseLyricUnits("I went [Em]down to");
+    const result = setChordAtUnit(content, 1, units[2], null);
+    expect(result.split("\n")[1]).toBe("I went down to");
+  });
+});
+
+describe("setSectionStrum", () => {
+  it("inserta {strum} tras el encabezado si no existe", () => {
+    const result = setSectionStrum("{sov}\n[C]hola", 0, "D U");
+    expect(result).toBe("{sov}\n{strum: D U}\n[C]hola");
+  });
+
+  it("reemplaza el {strum} existente", () => {
+    const result = setSectionStrum("{sov}\n{strum: D}\n[C]hola", 0, "D U D");
+    expect(result).toBe("{sov}\n{strum: D U D}\n[C]hola");
+  });
+
+  it("elimina el {strum} con strum = null", () => {
+    const result = setSectionStrum("{sov}\n{strum: D}\n[C]hola", 0, null);
+    expect(result).toBe("{sov}\n[C]hola");
+  });
+});
+
+describe("buildVisualModel", () => {
+  it("expone índices de línea reales del encabezado y las letras", () => {
+    const model = buildVisualModel(
+      "{title: X}\n{sov}\n{strum: D U}\nI went [Em]down\n{eov}",
+    );
+    expect(model).toHaveLength(1);
+    expect(model[0]).toMatchObject({
+      headerLineIndex: 1,
+      type: "verse",
+      strum: "D U",
+    });
+    expect(model[0].lines[0].lineIndex).toBe(3);
+    expect(model[0].lines[0].units[2].chord).toBe("Em");
   });
 });
 

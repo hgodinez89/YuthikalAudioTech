@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { ChordDiagram } from "./chord-diagram";
-import type { SheetSection, SectionType } from "@/lib/chordpro";
+import { strumToArrows, type SheetSection, type SectionType } from "@/lib/chordpro";
 
 export type SheetChordData = {
   name: string;
@@ -29,10 +29,12 @@ export function ChordSheet({
   sections,
   chords,
   showLegend = true,
+  showFab = true,
 }: {
   sections: SheetSection[];
   chords: ChordDataMap;
   showLegend?: boolean;
+  showFab?: boolean;
 }) {
   const t = useTranslations("songView");
   const [popover, setPopover] = useState<{ name: string; x: number; y: number } | null>(
@@ -77,7 +79,9 @@ export function ChordSheet({
                       <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-mute">
                         {t("strum")}
                       </span>
-                      <span className="tracking-[0.14em]">{section.strum}</span>
+                      <span className="tracking-[0.14em]">
+                        {strumToArrows(section.strum)}
+                      </span>
                     </span>
                   )}
                 </div>
@@ -170,23 +174,25 @@ export function ChordSheet({
       )}
 
       {/* FAB DE SCROLL */}
-      <button
-        type="button"
-        onClick={() =>
-          window.scrollTo({
-            top: atBottom ? 0 : document.documentElement.scrollHeight,
-            behavior: "smooth",
-          })
-        }
-        aria-label={atBottom ? t("fabUp") : t("fabDown")}
-        className="yk-gradient fixed bottom-6 right-6 z-50 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-[0_8px_24px_rgba(46,107,240,0.4)]"
-      >
-        {atBottom ? (
-          <ChevronUp size={22} strokeWidth={2.4} />
-        ) : (
-          <ChevronDown size={22} strokeWidth={2.4} />
-        )}
-      </button>
+      {showFab && (
+        <button
+          type="button"
+          onClick={() =>
+            window.scrollTo({
+              top: atBottom ? 0 : document.documentElement.scrollHeight,
+              behavior: "smooth",
+            })
+          }
+          aria-label={atBottom ? t("fabUp") : t("fabDown")}
+          className="yk-gradient fixed bottom-6 right-6 z-50 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-[0_8px_24px_rgba(46,107,240,0.4)]"
+        >
+          {atBottom ? (
+            <ChevronUp size={22} strokeWidth={2.4} />
+          ) : (
+            <ChevronDown size={22} strokeWidth={2.4} />
+          )}
+        </button>
+      )}
     </>
   );
 }

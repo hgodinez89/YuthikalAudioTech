@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { cache, type ReactNode } from "react";
 import { ChordSheet, type ChordDataMap } from "@/components/chord-sheet";
+import { SongEditor } from "@/components/song-editor";
 import { chordIdFromName } from "@/lib/chord-search";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
 import { keyLabel, type SongRow } from "@/lib/songs";
@@ -122,7 +123,9 @@ export default async function SongPage({
   ];
 
   return (
-    <div className="mx-auto max-w-[860px] px-5 pb-[100px] pt-6">
+    <div
+      className={`mx-auto px-5 pb-[100px] pt-6 ${mode === "edit" ? "max-w-[1240px]" : "max-w-[860px]"}`}
+    >
       <Link
         href={`/playlists/${playlistId}`}
         className="mb-6 inline-flex items-center gap-2 text-[13px] text-tert hover:text-ink"
@@ -187,7 +190,9 @@ export default async function SongPage({
           </div>
         ))}
 
-      {mode !== "view" && (
+      {mode === "edit" && <SongEditor song={song} />}
+
+      {mode !== "view" && mode !== "edit" && (
         <div className="flex flex-col items-center rounded-[18px] border border-dashed border-edge-2 bg-surface-3 px-5 py-[60px] text-center">
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-accent">
             {t("comingSoonEyebrow")}
