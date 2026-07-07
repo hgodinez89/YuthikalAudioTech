@@ -14,7 +14,7 @@ export default function ErrorPage({
     console.error(error);
   }, [error]);
 
-  // El único backend es Supabase: un error de datos casi siempre significa
-  // proyecto pausado por inactividad (free tier) o sin conexión.
-  return <ErrorDb onRetry={reset} />;
+  // Boundary genérico: cubre cualquier error del servidor (fallo de datos,
+  // BD temporalmente inaccesible, etc.). El digest permite rastrearlo en logs.
+  return <ErrorDb onRetry={reset} digest={error.digest} />;
 }

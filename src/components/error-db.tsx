@@ -38,7 +38,7 @@ function FlatlineWave() {
   );
 }
 
-export function ErrorDb({ onRetry }: { onRetry: () => void }) {
+export function ErrorDb({ onRetry, digest }: { onRetry: () => void; digest?: string }) {
   const t = useTranslations("errorDb");
   const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
@@ -80,6 +80,12 @@ export function ErrorDb({ onRetry }: { onRetry: () => void }) {
             </a>
           )}
         </div>
+
+        {digest && (
+          <p className="mt-6 text-xs text-mute">
+            {t("errorCode")}: <span className="font-mono">{digest}</span>
+          </p>
+        )}
       </div>
     </div>
   );

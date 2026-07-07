@@ -80,11 +80,12 @@
     "message": "Tuning your session…"
   },
   "errorDb": {
-    "badge": "Service interrupted",
-    "title": "The database is unavailable due to inactivity",
-    "description": "Contact the administrator to restore the service. Your playlists and songs are safe.",
+    "badge": "Something went wrong",
+    "title": "We couldn't load this page",
+    "description": "Try again. If the problem continues, the database might be temporarily unavailable due to inactivity; your playlists and songs are safe.",
     "retry": "Retry",
-    "contact": "Contact administrator"
+    "contact": "Contact administrator",
+    "errorCode": "Error code"
   },
   "notFound": {
     "title": "Page not found",

@@ -80,11 +80,12 @@
     "message": "Afinando tu sesión…"
   },
   "errorDb": {
-    "badge": "Servicio interrumpido",
-    "title": "La base de datos está inaccesible por inactividad",
-    "description": "Contacta al administrador para reactivar el servicio. Tus playlists y canciones están a salvo.",
+    "badge": "Algo salió mal",
+    "title": "No pudimos cargar esta página",
+    "description": "Intenta de nuevo. Si el problema continúa, la base de datos podría estar temporalmente inaccesible por inactividad; tus playlists y canciones están a salvo.",
     "retry": "Reintentar",
-    "contact": "Contactar al administrador"
+    "contact": "Contactar al administrador",
+    "errorCode": "Código de error"
   },
   "notFound": {
     "title": "Página no encontrada",

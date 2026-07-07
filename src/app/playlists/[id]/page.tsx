@@ -53,17 +53,19 @@ export default async function PlaylistDetailPage({
     )
     .eq("playlist_id", id)
     .order("created_at")
+    // song_audio y song_sync son relaciones uno-a-uno (song_id es su PK),
+    // así que PostgREST las devuelve como objeto o null, no como array.
     .returns<
       (SongRow & {
-        audio: { source: "youtube" | "file" }[];
-        sync: { stamps: unknown[] }[];
+        audio: { source: "youtube" | "file" } | null;
+        sync: { stamps: unknown[] } | null;
       })[]
     >();
 
   const rows = (songs ?? []).map(({ audio, sync, ...song }) => ({
     ...song,
-    source: audio[0]?.source ?? null,
-    synced: (sync[0]?.stamps?.length ?? 0) > 0,
+    source: audio?.source ?? null,
+    synced: (sync?.stamps?.length ?? 0) > 0,
   }));
 
   return <PlaylistDetailView playlist={playlist} songs={rows} />;
