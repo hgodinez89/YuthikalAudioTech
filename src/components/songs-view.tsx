@@ -22,7 +22,7 @@ import { StarsRow } from "./stars";
 import type { Instrument } from "@/lib/instruments";
 import { createPlaylist, deletePlaylist, updatePlaylist } from "@/lib/playlist-actions";
 import type { PlaylistInput, PlaylistRow } from "@/lib/playlists";
-import { createSong } from "@/lib/song-actions";
+import { createSong, deleteSong } from "@/lib/song-actions";
 import { keyLabel, validateSong, type SongRow } from "@/lib/songs";
 
 export type SongListRow = Omit<SongRow, "content"> & {
@@ -205,8 +205,15 @@ function NewSongModal({
 }
 
 /** Menú ⋯ de una canción: acciones secundarias fuera de la vista principal. */
-function SongMenu({ songUrl }: { songUrl: (mode?: string) => string }) {
+function SongMenu({
+  songUrl,
+  onDelete,
+}: {
+  songUrl: (mode?: string) => string;
+  onDelete: () => void;
+}) {
   const t = useTranslations("songs");
+  const tEditor = useTranslations("editor");
   const [open, setOpen] = useState(false);
 
   return (
@@ -238,6 +245,18 @@ function SongMenu({ songUrl }: { songUrl: (mode?: string) => string }) {
               <SlidersVertical size={16} strokeWidth={2} />
               {t("syncAudio")}
             </Link>
+            <div className="mx-1.5 my-1 h-px bg-edge" />
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onDelete();
+              }}
+              className="flex w-full cursor-pointer items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-[13.5px] text-warn hover:bg-warn/10"
+            >
+              <Trash2 size={16} strokeWidth={2} />
+              {tEditor("deleteSong")}
+            </button>
           </div>
         </>
       )}
@@ -262,8 +281,11 @@ export function SongsView({
 }) {
   const t = useTranslations("songs");
   const tPlaylists = useTranslations("playlists");
+  const tEditor = useTranslations("editor");
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [songToDelete, setSongToDelete] = useState<SongListRow | null>(null);
+  const [deletingSong, startDeleteSong] = useTransition();
   const [newSongOpen, setNewSongOpen] = useState(false);
   const [newListOpen, setNewListOpen] = useState(false);
   const [editListOpen, setEditListOpen] = useState(false);
@@ -302,6 +324,15 @@ export function SongsView({
     if (!result.ok) return result.error;
     router.refresh();
     return null;
+  };
+
+  const removeSong = () => {
+    if (!songToDelete) return;
+    startDeleteSong(async () => {
+      await deleteSong(songToDelete.id);
+      setSongToDelete(null);
+      router.refresh();
+    });
   };
 
   const removeList = () => {
@@ -476,8 +507,9 @@ export function SongsView({
                     )}
                   </div>
                 </div>
-                <div className="relative z-10 flex shrink-0 items-center gap-1">
-                  <SongMenu songUrl={url} />
+                {/* Con el menú abierto se eleva sobre las filas siguientes. */}
+                <div className="relative z-10 flex shrink-0 items-center gap-1 has-[[aria-expanded=true]]:z-30">
+                  <SongMenu songUrl={url} onDelete={() => setSongToDelete(song)} />
                   <Link
                     href={url("karaoke")}
                     aria-label={t("play")}
@@ -555,6 +587,23 @@ export function SongsView({
           onSubmit={editList}
         />
       )}
+      <ConfirmDialog
+        open={songToDelete !== null}
+        title={tEditor("deleteTitle")}
+        message={
+          songToDelete &&
+          tEditor.rich("deleteMessage", {
+            name: songToDelete.name,
+            b: (chunks) => <span className="font-bold text-ink">{chunks}</span>,
+          })
+        }
+        cancelLabel={t("cancel")}
+        confirmLabel={deletingSong ? tEditor("deleting") : tEditor("deleteConfirm")}
+        confirmIcon={<Trash2 size={15} strokeWidth={2.2} />}
+        pending={deletingSong}
+        onCancel={() => setSongToDelete(null)}
+        onConfirm={removeSong}
+      />
       <ConfirmDialog
         open={deleteListOpen && activeList !== null}
         title={tPlaylists("deleteModal.title")}
