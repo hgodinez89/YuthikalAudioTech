@@ -18,7 +18,7 @@ export function chordDbId(instrument: Instrument, slug: string): string {
 }
 
 /** Secciones de cada instrumento, en el orden de la navegación. */
-export const SECTIONS = ["chords", "songs", "basics"] as const;
+export const SECTIONS = ["basics", "chords", "songs"] as const;
 export type Section = (typeof SECTIONS)[number];
 
 /**

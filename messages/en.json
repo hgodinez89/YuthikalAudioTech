@@ -151,7 +151,16 @@
     "emptyListTitle": "This playlist has no songs yet",
     "noResults": "No results for “{query}”",
     "gateTitle": "Sign in to see your songs",
-    "gateSubtitle": "Your songs and playlists are private and follow you across instruments."
+    "gateSubtitle": "Your songs and playlists are private and follow you across instruments.",
+    "moveToPlaylist": "Move to playlist",
+    "move": {
+      "title": "Move “{name}” to…",
+      "none": "No playlist",
+      "current": "Current",
+      "createNew": "New playlist",
+      "confirm": "Move",
+      "moving": "Moving…"
+    }
   },
   "editor": {
     "textMode": "Text editor",

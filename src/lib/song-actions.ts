@@ -64,6 +64,26 @@ export async function updateSongMeta(
   return { ok: true };
 }
 
+/** Cambia solo la playlist de una canción (null = sin playlist). */
+export async function moveSongToPlaylist(
+  id: string,
+  playlistId: string | null,
+): Promise<ActionResult> {
+  if (!isUuid(id)) return { ok: false, error: "id" };
+  if (playlistId !== null && !isUuid(playlistId)) return { ok: false, error: "playlist" };
+
+  const supabase = await supabaseWithSession();
+  // RLS: la canción y la playlist destino deben ser del mismo usuario.
+  const { error } = await supabase
+    .from("songs")
+    .update({ playlist_id: playlistId, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { ok: false, error: "db" };
+
+  revalidateSongs();
+  return { ok: true };
+}
+
 export async function updateSongContent(
   id: string,
   content: string,

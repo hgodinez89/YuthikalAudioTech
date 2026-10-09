@@ -151,7 +151,16 @@
     "emptyListTitle": "Este playlist aún no tiene canciones",
     "noResults": "Sin resultados para «{query}»",
     "gateTitle": "Inicia sesión para ver tus canciones",
-    "gateSubtitle": "Tus canciones y playlists son privadas y te acompañan en cualquier instrumento."
+    "gateSubtitle": "Tus canciones y playlists son privadas y te acompañan en cualquier instrumento.",
+    "moveToPlaylist": "Mover a playlist",
+    "move": {
+      "title": "Mover «{name}» a…",
+      "none": "Sin playlist",
+      "current": "Actual",
+      "createNew": "Nuevo playlist",
+      "confirm": "Mover",
+      "moving": "Moviendo…"
+    }
   },
   "editor": {
     "textMode": "Editor de texto",

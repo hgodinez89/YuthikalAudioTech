@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  Check,
   Ellipsis,
   FileMusic,
+  FolderInput,
   Music,
   Pencil,
   Play,
@@ -15,14 +17,14 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { ConfirmDialog } from "./confirm-dialog";
 import { FIELD_CLASS, PlaylistFormModal } from "./playlist-form-modal";
 import { StarsRow } from "./stars";
 import type { Instrument } from "@/lib/instruments";
 import { createPlaylist, deletePlaylist, updatePlaylist } from "@/lib/playlist-actions";
 import type { PlaylistInput, PlaylistRow } from "@/lib/playlists";
-import { createSong, deleteSong } from "@/lib/song-actions";
+import { createSong, deleteSong, moveSongToPlaylist } from "@/lib/song-actions";
 import { keyLabel, validateSong, type SongRow } from "@/lib/songs";
 
 export type SongListRow = Omit<SongRow, "content"> & {
@@ -204,12 +206,160 @@ function NewSongModal({
   );
 }
 
+/** Elegir la playlist destino de una canción (o ninguna, o una nueva). */
+function MoveSongModal({
+  song,
+  playlists,
+  onClose,
+  onCreateNew,
+}: {
+  song: SongListRow;
+  playlists: PlaylistWithCount[];
+  onClose: () => void;
+  onCreateNew: () => void;
+}) {
+  const t = useTranslations("songs");
+  const router = useRouter();
+  const [target, setTarget] = useState<string>(song.playlist_id ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const current = song.playlist_id ?? "";
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const submit = () => {
+    setError(null);
+    startTransition(async () => {
+      const result = await moveSongToPlaylist(song.id, target || null);
+      if (!result.ok) {
+        setError(t(`errors.${result.error}`));
+        return;
+      }
+      onClose();
+      router.refresh();
+    });
+  };
+
+  const options = [
+    { id: "", name: t("move.none"), count: null },
+    ...playlists.map((p) => ({ id: p.id, name: p.name, count: p.songs_count })),
+  ];
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-page/70 p-6 backdrop-blur-[6px]"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="move-song-title"
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-hidden rounded-[20px] border border-edge-2 bg-surface shadow-[0_30px_70px_rgba(0,0,0,0.6)]"
+      >
+        <div className="flex items-center justify-between gap-4 border-b border-edge px-6 py-[20px]">
+          <h2
+            id="move-song-title"
+            className="min-w-0 truncate text-[18px] font-extrabold"
+          >
+            {t("move.title", { name: song.name })}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("close")}
+            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-[9px] border border-edge bg-surface-2 text-sub"
+          >
+            <X size={16} strokeWidth={2.2} />
+          </button>
+        </div>
+
+        <div role="radiogroup" className="flex flex-col gap-1 overflow-y-auto p-3">
+          {options.map((o) => {
+            const selected = target === o.id;
+            return (
+              <button
+                key={o.id || "none"}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setTarget(o.id)}
+                className={`flex cursor-pointer items-center gap-3 rounded-[11px] border px-3.5 py-3 text-left text-[14px] ${
+                  selected
+                    ? "border-accent bg-accent/10"
+                    : "border-transparent hover:bg-edge"
+                }`}
+              >
+                <span
+                  className={`grid size-[18px] shrink-0 place-items-center rounded-full border ${
+                    selected ? "border-accent bg-accent text-page" : "border-edge-2"
+                  }`}
+                >
+                  {selected && <Check size={12} strokeWidth={3} />}
+                </span>
+                <span
+                  className={`min-w-0 flex-1 truncate font-semibold ${o.id ? "" : "text-sub"}`}
+                >
+                  {o.name}
+                </span>
+                {o.id === current && (
+                  <span className="rounded-full border border-edge-2 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-tert">
+                    {t("move.current")}
+                  </span>
+                )}
+                {o.count !== null && (
+                  <span className="text-[12px] text-tert">{o.count}</span>
+                )}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={onCreateNew}
+            className="mt-1 flex cursor-pointer items-center gap-3 rounded-[11px] border border-dashed border-edge-2 px-3.5 py-3 text-left text-[14px] font-semibold text-sub hover:text-ink"
+          >
+            <Plus size={16} strokeWidth={2.4} />
+            {t("move.createNew")}
+          </button>
+        </div>
+
+        {error && (
+          <p className="px-6 pb-1 text-[13px] font-semibold text-warn">{error}</p>
+        )}
+        <div className="flex justify-end gap-2.5 border-t border-edge px-6 py-[16px]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="cursor-pointer rounded-[11px] border border-edge-2 bg-surface-2 px-[18px] py-[11px] text-sm font-semibold"
+          >
+            {t("cancel")}
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={pending || target === current}
+            className="yk-gradient cursor-pointer rounded-[11px] px-5 py-[11px] text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pending ? t("move.moving") : t("move.confirm")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Menú ⋯ de una canción: acciones secundarias fuera de la vista principal. */
 function SongMenu({
   songUrl,
+  onMove,
   onDelete,
 }: {
   songUrl: (mode?: string) => string;
+  onMove: () => void;
   onDelete: () => void;
 }) {
   const t = useTranslations("songs");
@@ -245,6 +395,17 @@ function SongMenu({
               <SlidersVertical size={16} strokeWidth={2} />
               {t("syncAudio")}
             </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onMove();
+              }}
+              className="flex w-full cursor-pointer items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-[13.5px] hover:bg-edge"
+            >
+              <FolderInput size={16} strokeWidth={2} />
+              {t("moveToPlaylist")}
+            </button>
             <div className="mx-1.5 my-1 h-px bg-edge" />
             <button
               type="button"
@@ -285,6 +446,8 @@ export function SongsView({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [songToDelete, setSongToDelete] = useState<SongListRow | null>(null);
+  const [songToMove, setSongToMove] = useState<SongListRow | null>(null);
+  const [createForSong, setCreateForSong] = useState<SongListRow | null>(null);
   const [deletingSong, startDeleteSong] = useTransition();
   const [newSongOpen, setNewSongOpen] = useState(false);
   const [newListOpen, setNewListOpen] = useState(false);
@@ -322,6 +485,18 @@ export function SongsView({
     if (!activeList) return null;
     const result = await updatePlaylist(activeList.id, input);
     if (!result.ok) return result.error;
+    router.refresh();
+    return null;
+  };
+
+  /* Nueva playlist desde "Mover a playlist": se crea y la canción se mueve a ella. */
+  const createListForSong = async (input: PlaylistInput) => {
+    if (!createForSong) return null;
+    const created = await createPlaylist(input);
+    if (!created.ok || !created.id) return created.ok ? "db" : created.error;
+    // El formulario muestra errores de "playlists.errors": un fallo al mover es de BD.
+    const moved = await moveSongToPlaylist(createForSong.id, created.id);
+    if (!moved.ok) return "db";
     router.refresh();
     return null;
   };
@@ -509,7 +684,11 @@ export function SongsView({
                 </div>
                 {/* Con el menú abierto se eleva sobre las filas siguientes. */}
                 <div className="relative z-10 flex shrink-0 items-center gap-1 has-[[aria-expanded=true]]:z-30">
-                  <SongMenu songUrl={url} onDelete={() => setSongToDelete(song)} />
+                  <SongMenu
+                    songUrl={url}
+                    onMove={() => setSongToMove(song)}
+                    onDelete={() => setSongToDelete(song)}
+                  />
                   <Link
                     href={url("karaoke")}
                     aria-label={t("play")}
@@ -552,6 +731,27 @@ export function SongsView({
       )}
 
       {/* MODALES */}
+      {songToMove && (
+        <MoveSongModal
+          song={songToMove}
+          playlists={playlists}
+          onClose={() => setSongToMove(null)}
+          onCreateNew={() => {
+            setCreateForSong(songToMove);
+            setSongToMove(null);
+          }}
+        />
+      )}
+      {createForSong && (
+        <PlaylistFormModal
+          title={tPlaylists("newPlaylist")}
+          submitLabel={tPlaylists("create")}
+          submittingLabel={tPlaylists("creating")}
+          initial={EMPTY_PLAYLIST}
+          onClose={() => setCreateForSong(null)}
+          onSubmit={createListForSong}
+        />
+      )}
       {newSongOpen && (
         <NewSongModal
           instrument={instrument}
