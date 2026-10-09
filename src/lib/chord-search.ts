@@ -75,6 +75,13 @@ const COMPACT_SUFFIXES = new Set([
   "mmaj11",
   "add9",
   "madd9",
+  // exclusivos del catálogo de ukelele
+  "7b9#5",
+  "13b9",
+  "13b5b9",
+  "b13b9",
+  "b13#9",
+  "m9b5",
 ]);
 
 function stripAccents(s: string): string {
@@ -157,7 +164,10 @@ export function parseChordQuery(raw: string): ParsedQuery {
   if (!norm) return { kind: "empty" };
 
   const tokens = norm.split(" ");
-  const m = tokens[0].match(/^(do|re|mi|fa|sol|la|si|[a-g])([#b♯♭]?)(.*)$/);
+  // "Faug"/"Fadd9": la "a" pertenece al sufijo, no a la raíz "Fa".
+  const m = /^f(aug|add)/.test(tokens[0])
+    ? tokens[0].match(/^(f)()(.*)$/)
+    : tokens[0].match(/^(do|re|mi|fa|sol|la|si|[a-g])([#b♯♭]?)(.*)$/);
   if (!m) return { kind: "text", text: norm };
 
   const [, rootName, attachedAcc, attachedRest] = m;
@@ -192,4 +202,36 @@ export function parseChordQuery(raw: string): ParsedQuery {
     keys: [key],
     suffixes: rest === "" ? null : [suffix as string],
   };
+}
+
+/* Raíz en español tal como la entiende el parser ("Mib", "Do#"…). */
+const ROOT_ES_QUERY: Record<string, string> = {
+  C: "Do",
+  "C#": "Do#",
+  D: "Re",
+  Eb: "Mib",
+  E: "Mi",
+  F: "Fa",
+  "F#": "Fa#",
+  G: "Sol",
+  Ab: "Lab",
+  A: "La",
+  Bb: "Sib",
+  B: "Si",
+};
+
+/**
+ * Texto de búsqueda para el selector rápido nota + tipo, en el idioma de la
+ * UI: ("A", "minor", "es") → "Lam". El mayor se escribe en palabras porque
+ * la raíz sola significa "todas las cualidades".
+ */
+export function composeChordQuery(
+  key: string,
+  suffix: string | null,
+  locale: "es" | "en",
+): string {
+  const root = locale === "es" ? ROOT_ES_QUERY[key] : key;
+  if (!suffix) return root;
+  if (suffix === "major") return `${root} ${locale === "es" ? "mayor" : "major"}`;
+  return root + (suffix === "minor" ? "m" : suffix);
 }

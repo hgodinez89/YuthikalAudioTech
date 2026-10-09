@@ -1,5 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { INSTRUMENT_COOKIE, isInstrument } from "@/lib/instruments";
+
+/** Recuerda el último instrumento visitado: "/" lleva directo a él. */
+function rememberInstrument(request: NextRequest, response: NextResponse) {
+  const segment = request.nextUrl.pathname.split("/")[1];
+  if (
+    isInstrument(segment) &&
+    request.cookies.get(INSTRUMENT_COOKIE)?.value !== segment
+  ) {
+    response.cookies.set(INSTRUMENT_COOKIE, segment, {
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+  }
+}
 
 /** Mantiene fresca la sesión de Supabase (rota tokens vía cookies). */
 export async function proxy(request: NextRequest) {
@@ -7,7 +22,10 @@ export async function proxy(request: NextRequest) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return response;
+  if (!url || !anonKey) {
+    rememberInstrument(request, response);
+    return response;
+  }
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -25,6 +43,7 @@ export async function proxy(request: NextRequest) {
   // Obligatorio tras crear el cliente: dispara el refresh si el token expiró.
   await supabase.auth.getUser();
 
+  rememberInstrument(request, response);
   return response;
 }
 

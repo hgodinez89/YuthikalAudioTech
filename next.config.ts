@@ -34,6 +34,20 @@ const nextConfig: NextConfig = {
     // Avatares de la cuenta de Google (menú de usuario).
     remotePatterns: [{ protocol: "https", hostname: "*.googleusercontent.com" }],
   },
+  // URLs anteriores a la navegación por instrumento.
+  async redirects() {
+    return [
+      { source: "/guitar/strings", destination: "/guitar/basics", permanent: false },
+      { source: "/guitar/notes", destination: "/guitar/basics", permanent: false },
+      { source: "/playlists", destination: "/guitar/songs", permanent: false },
+      {
+        source: "/playlists/:id/songs/:songId",
+        destination: "/guitar/songs/:songId",
+        permanent: false,
+      },
+      { source: "/playlists/:id", destination: "/guitar/songs?list=:id", permanent: false },
+    ];
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

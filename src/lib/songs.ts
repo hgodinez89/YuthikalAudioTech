@@ -2,7 +2,7 @@ import { DB_KEYS, ROOT_SHORT_ES } from "./chords";
 
 export type SongRow = {
   id: string;
-  playlist_id: string;
+  playlist_id: string | null;
   name: string;
   description: string;
   key_note: string;
@@ -11,7 +11,8 @@ export type SongRow = {
 };
 
 export type SongInput = {
-  playlistId: string;
+  /** Playlist opcional: la lista de canciones es plana. */
+  playlistId: string | null;
   name: string;
   description: string;
   keyNote: string;
@@ -32,7 +33,9 @@ export function keyLabel(keyNote: string): string {
 export type SongValidationError = "name" | "description" | "keyNote" | "playlist";
 
 export function validateSong(input: SongInput): SongValidationError | null {
-  if (!/^[0-9a-f-]{36}$/i.test(input.playlistId)) return "playlist";
+  if (input.playlistId !== null && !/^[0-9a-f-]{36}$/i.test(input.playlistId)) {
+    return "playlist";
+  }
   const name = input.name.trim();
   if (name.length < 1 || name.length > 150) return "name";
   if (input.description.trim().length > 300) return "description";

@@ -13,28 +13,34 @@ import {
   type ChordPositionRow,
   type ChordRow,
 } from "@/lib/chords";
+import { chordDbId, isInstrument } from "@/lib/instruments";
 import { supabaseServer } from "@/lib/supabase";
 
 /* Cacheado por request: lo comparten generateMetadata y la página. Resolverlo
    en metadata garantiza un 404 real antes de que inicie el streaming. */
-const getChord = cache(async (id: string) => {
+const getChord = cache(async (instrument: string, slug: string) => {
+  if (!isInstrument(instrument)) return null;
   const { data } = await supabaseServer()
     .from("chords")
     .select("*")
-    .eq("id", id)
-    .single<ChordRow>();
+    .eq("id", chordDbId(instrument, slug))
+    .eq("instrument", instrument)
+    .maybeSingle<ChordRow>();
   return data;
 });
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ instrument: string; id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const chord = await getChord(id);
+  const { instrument, id } = await params;
+  const chord = await getChord(instrument, id);
   if (!chord) notFound();
-  return { title: `${chord.name_en} · ${chord.name_es} — Yuthikal AudioTech` };
+  const tInstruments = await getTranslations("instruments");
+  return {
+    title: `${chord.name_en} · ${chord.name_es} (${tInstruments(`${instrument}.name`)}) — Yuthikal AudioTech`,
+  };
 }
 
 /** Nombre en cifrado con el sufijo en cian: A#7, Sib7… */
@@ -50,18 +56,18 @@ function ChordName({ root, suffix }: { root: string; suffix: string }) {
 export default async function ChordDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ instrument: string; id: string }>;
 }) {
-  const { id } = await params;
+  const { instrument, id } = await params;
   const t = await getTranslations("chordDetail");
   const tFinder = await getTranslations("finder");
 
   const [chord, { data: positions }] = await Promise.all([
-    getChord(id),
+    getChord(instrument, id),
     supabaseServer()
       .from("chord_positions")
       .select("position,base_fret,frets,fingers,barres,capo")
-      .eq("chord_id", id)
+      .eq("chord_id", isInstrument(instrument) ? chordDbId(instrument, id) : id)
       .order("position")
       .returns<ChordPositionRow[]>(),
   ]);
@@ -74,7 +80,7 @@ export default async function ChordDetailPage({
   return (
     <div className="mx-auto max-w-[1080px] px-7 pb-[90px] pt-6">
       <Link
-        href="/guitar/chords"
+        href={`/${instrument}/chords`}
         className="mb-6 inline-flex items-center gap-2 text-[13px] text-tert hover:text-ink"
       >
         <ChevronLeft size={15} strokeWidth={2} />

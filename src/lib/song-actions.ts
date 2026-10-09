@@ -6,6 +6,9 @@ import { MAX_CONTENT_LENGTH, validateSong, type SongInput } from "./songs";
 
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
+/* Las canciones se ven en /[instrument]/songs para cualquier instrumento. */
+const revalidateSongs = () => revalidatePath("/[instrument]/songs", "page");
+
 const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s);
 
 export async function createSong(input: SongInput): Promise<ActionResult> {
@@ -31,7 +34,7 @@ export async function createSong(input: SongInput): Promise<ActionResult> {
     .single();
   if (error || !data) return { ok: false, error: "db" };
 
-  revalidatePath(`/playlists/${input.playlistId}`);
+  revalidateSongs();
   return { ok: true, id: data.id as string };
 }
 
@@ -50,12 +53,14 @@ export async function updateSongMeta(
       name: input.name.trim(),
       description: input.description.trim(),
       key_note: input.keyNote,
+      // RLS exige que la playlist destino (si la hay) sea del mismo usuario.
+      playlist_id: input.playlistId,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
   if (error) return { ok: false, error: "db" };
 
-  revalidatePath(`/playlists/${input.playlistId}`);
+  revalidateSongs();
   return { ok: true };
 }
 
@@ -77,13 +82,13 @@ export async function updateSongContent(
   return { ok: true };
 }
 
-export async function deleteSong(id: string, playlistId: string): Promise<ActionResult> {
+export async function deleteSong(id: string): Promise<ActionResult> {
   if (!isUuid(id)) return { ok: false, error: "id" };
 
   const supabase = await supabaseWithSession();
   const { error } = await supabase.from("songs").delete().eq("id", id);
   if (error) return { ok: false, error: "db" };
 
-  revalidatePath(`/playlists/${playlistId}`);
+  revalidateSongs();
   return { ok: true };
 }

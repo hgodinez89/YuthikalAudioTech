@@ -1,6 +1,7 @@
 export type ChordShape = {
-  /** 6 valores, cuerdas 6ª→1ª: -1 muteada, 0 al aire, n>0 traste pisado
-   *  (relativo a baseFret, como en chords-db). */
+  /** Un valor por cuerda, de la más grave a la 1ª (6 en guitarra, 4 en
+   *  ukelele): -1 muteada, 0 al aire, n>0 traste pisado (relativo a
+   *  baseFret, como en chords-db). */
   frets: number[];
   /** Trastes (relativos) donde hay cejilla. */
   barres?: number[];
@@ -24,7 +25,7 @@ export function ChordDiagram({
 }: ChordShape & { scale?: number }) {
   const shifted = baseFret > 1;
   const leftPad = PAD_X + (shifted ? 15 : 0);
-  const gridW = STRING_GAP * 5;
+  const gridW = STRING_GAP * (frets.length - 1);
   const svgW = leftPad + gridW + PAD_X;
   const gridH = FRET_GAP * FRETS_SHOWN;
   const svgH = PAD_TOP + gridH + 6;
@@ -53,7 +54,7 @@ export function ChordDiagram({
       aria-hidden
     >
       {/* cuerdas */}
-      {Array.from({ length: 6 }, (_, i) => (
+      {frets.map((_, i) => (
         <line
           key={`s${i}`}
           x1={stringX(i)}

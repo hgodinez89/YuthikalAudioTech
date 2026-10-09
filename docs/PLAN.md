@@ -37,10 +37,10 @@ Next.js (App Router, TypeScript) · Tailwind CSS · next-themes · next-intl (de
 | Tabla | Contenido | Acceso |
 |---|---|---|
 | `profiles` | id (= auth.users), nombre, idioma y tema preferidos | Dueño |
-| `chords` | nota raíz ES/EN, sufijo, categoría paraguas | Público lectura |
+| `chords` | instrumento (guitar/ukulele), nota raíz ES/EN, sufijo, categoría paraguas | Público lectura |
 | `chord_positions` | chord_id, trastes, dedos, cejillas, capo, orden, popularity (reservado) | Público lectura |
 | `playlists` | user_id, nombre, descripción, género (+ "otro"), rating_gusto 1–5, rating_dificultad 1–5 | RLS solo dueño |
-| `songs` | playlist_id, nombre, descripción, tonalidad, ChordPro (con `{key:}` y `{strum:}` por sección) | RLS solo dueño |
+| `songs` | playlist_id (opcional), nombre, descripción, tonalidad, ChordPro (con `{key:}` y `{strum:}` por sección) | RLS solo dueño |
 | `song_audio` | song_id, tipo (youtube/archivo), url o ruta Storage | RLS solo dueño |
 | `song_sync` | song_id, granularidad (línea/palabra), timestamps JSONB | RLS solo dueño |
 
@@ -48,17 +48,17 @@ Género: Rock, Pop, Balada, Bolero, Ranchera, Cumbia, Salsa, Reggae, Blues, Coun
 
 ## Rutas
 
+> Rutas actualizadas tras el rediseño "instrumento primero" (ver `IMPLEMENTATION.md` §8).
+
 ```
-/                                Landing
-/guitar                          Selección de instrumento
-/guitar/strings                  Cuerdas
-/guitar/notes                    Notas musicales
-/guitar/chords                   Chord finder
-/guitar/chords/[id]              Chord detail
-/login                           Login con Google
-/playlists                       Mis playlists (privado)
-/playlists/[id]                  Detalle de playlist
-/playlists/[id]/songs/[songId]   Canción — ?mode=view|edit|calibrate|karaoke
+/                                Landing: elección de instrumento (o redirige al último usado)
+/[instrument]                    guitar | ukulele → redirige a Acordes
+/[instrument]/chords             Chord finder (selector nota + tipo)
+/[instrument]/chords/[slug]      Chord detail
+/[instrument]/songs              Mis canciones — lista plana, ?list=<playlist> filtra (privado)
+/[instrument]/songs/[songId]     Canción — ?mode=view|edit|karaoke, edit con &step=lyrics|audio
+/[instrument]/basics             Cuerdas del instrumento + notas musicales
+/login                           Login con Google (?next= vuelve al origen)
 /api/keepalive                   Cron ping (previene pausa del free tier)
 ```
 

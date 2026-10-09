@@ -29,18 +29,39 @@ function GoogleLogo() {
   );
 }
 
-export function LoginCard() {
+/**
+ * Tarjeta de login con Google. `next` es la ruta a la que se vuelve tras
+ * iniciar sesión; `embedded` la muestra dentro de una página (sin ocupar
+ * toda la pantalla), p. ej. en "Mis canciones" sin sesión.
+ */
+export function LoginCard({
+  next = "/",
+  embedded = false,
+  title,
+  subtitle,
+}: {
+  next?: string;
+  embedded?: boolean;
+  title?: string;
+  subtitle?: string;
+}) {
   const t = useTranslations("auth");
 
   const signIn = () => {
     supabaseBrowser().auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/playlists` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
     });
   };
 
   return (
-    <div className="relative flex min-h-[calc(100vh-71px)] items-center justify-center overflow-hidden px-6 py-10">
+    <div
+      className={`relative flex items-center justify-center overflow-hidden px-6 py-10 ${
+        embedded ? "" : "min-h-[calc(100vh-71px)]"
+      }`}
+    >
       {/* glow radial azul tras la card (solo oscuro) */}
       <div className="pointer-events-none absolute -top-[10%] left-1/2 hidden h-[420px] w-[720px] -translate-x-1/2 bg-[radial-gradient(50%_50%_at_50%_50%,rgba(46,107,240,0.18),transparent_70%)] dark:block" />
 
@@ -49,9 +70,11 @@ export function LoginCard() {
           <BrandLogo height={62} />
         </div>
         <h1 className="mb-2.5 text-[23px] font-extrabold leading-[1.25] tracking-[-0.02em]">
-          {t("title")}
+          {title ?? t("title")}
         </h1>
-        <p className="mb-[30px] text-[14.5px] leading-[1.55] text-sub">{t("subtitle")}</p>
+        <p className="mb-[30px] text-[14.5px] leading-[1.55] text-sub">
+          {subtitle ?? t("subtitle")}
+        </p>
 
         <button
           type="button"

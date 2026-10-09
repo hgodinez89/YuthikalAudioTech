@@ -54,12 +54,15 @@ export function SongKaraoke({
   sync,
   chords,
   exitHref,
+  syncHref,
 }: {
   song: SongRow;
   audio: SongAudioRow | null;
   sync: SongSyncRow | null;
   chords: ChordDataMap;
   exitHref: string;
+  /** Paso "Audio" del editor, para sincronizar desde el aviso sin calibración. */
+  syncHref: string;
 }) {
   const t = useTranslations("karaoke");
   const tSongView = useTranslations("songView");
@@ -492,6 +495,10 @@ export function SongKaraoke({
             <div className="flex items-center gap-[7px] text-xs text-tert">
               <Info size={14} strokeWidth={2} />
               {t("noSyncNote")}
+              <span aria-hidden>·</span>
+              <Link href={syncHref} className="font-semibold text-accent hover:underline">
+                {t("syncNow")}
+              </Link>
             </div>
           </div>
         )}

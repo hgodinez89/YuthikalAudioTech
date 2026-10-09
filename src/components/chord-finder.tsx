@@ -12,13 +12,22 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChordCard, type ChordCardData } from "./chord-card";
-import { escapeLike, parseChordQuery } from "@/lib/chord-search";
-import { NOTE_LABELS, type ChordCategory } from "@/lib/chords";
+import {
+  chordSlug,
+  composeChordQuery,
+  escapeLike,
+  parseChordQuery,
+} from "@/lib/chord-search";
+import { DB_KEYS, NOTE_LABELS, ROOT_SHORT_ES, type ChordCategory } from "@/lib/chords";
+import type { Instrument } from "@/lib/instruments";
 import { supabaseBrowser } from "@/lib/supabase";
 
 const PAGE_SIZE = 36;
 
-type Row = ChordCardData & { key: string; category: ChordCategory };
+type Row = ChordCardData & { key: string; suffix: string; category: ChordCategory };
+
+/* Tipos del selector rápido (los más usados), en el orden de aprendizaje. */
+const QUICK_TYPES = ["major", "minor", "7", "m7", "maj7", "sus4", "dim", "aug", "9"];
 
 type FetchResult = { rows: Row[]; total: number };
 
@@ -75,6 +84,7 @@ function voiceErrorKey(error: string): string {
 }
 
 async function fetchChords(
+  instrument: Instrument,
   rawQuery: string,
   grouping: "cat" | "note",
   offset: number,
@@ -83,9 +93,10 @@ async function fetchChords(
   let qb = supabaseBrowser()
     .from("chords")
     .select(
-      "id,key,name_en,name_es,category,positions:chord_positions!inner(base_fret,frets,barres,position)",
+      "id,key,suffix,name_en,name_es,category,positions:chord_positions!inner(base_fret,frets,barres,position)",
       { count: "exact" },
     )
+    .eq("instrument", instrument)
     .eq("positions.position", 1);
 
   if (parsed.kind === "chord") {
@@ -106,6 +117,7 @@ async function fetchChords(
   const rows: Row[] = (data ?? []).map((r) => ({
     id: r.id as string,
     key: r.key as string,
+    suffix: r.suffix as string,
     name_en: r.name_en as string,
     name_es: r.name_es as string,
     category: r.category as ChordCategory,
@@ -125,8 +137,9 @@ function groupRows(rows: Row[], grouping: "cat" | "note") {
   return groups;
 }
 
-export function ChordFinder() {
+export function ChordFinder({ instrument }: { instrument: Instrument }) {
   const t = useTranslations("finder");
+  const tInstruments = useTranslations("instruments");
   const locale = useLocale() as "es" | "en";
 
   const [query, setQuery] = useState("");
@@ -161,7 +174,7 @@ export function ChordFinder() {
     const timer = setTimeout(
       () => {
         setLoading(true);
-        fetchChords(query, grouping, 0)
+        fetchChords(instrument, query, grouping, 0)
           .then((res) => {
             if (requestId.current !== id) return;
             setRows(res.rows);
@@ -173,20 +186,20 @@ export function ChordFinder() {
       query ? 300 : 0,
     );
     return () => clearTimeout(timer);
-  }, [query, grouping]);
+  }, [instrument, query, grouping]);
 
   const hasMore = rows.length < total;
 
   const loadMore = useCallback(() => {
     const id = requestId.current;
-    fetchChords(query, grouping, rows.length)
+    fetchChords(instrument, query, grouping, rows.length)
       .then((res) => {
         if (requestId.current !== id) return;
         setRows((prev) => [...prev, ...res.rows]);
         setTotal(res.total);
       })
       .catch((e: Error) => requestId.current === id && setError(e));
-  }, [query, grouping, rows.length]);
+  }, [instrument, query, grouping, rows.length]);
 
   /* Scroll infinito: el loader del fondo dispara la siguiente página. */
   useEffect(() => {
@@ -246,6 +259,17 @@ export function ChordFinder() {
     recognition.start();
   };
 
+  /* Selector rápido: su estado se deriva del texto buscado (sin estado propio). */
+  const parsedQuery = parseChordQuery(query);
+  const activeKey = parsedQuery.kind === "chord" ? parsedQuery.keys[0] : null;
+  const activeType =
+    parsedQuery.kind === "chord" ? (parsedQuery.suffixes?.[0] ?? null) : null;
+  const pickNote = (key: string) =>
+    setQuery(key === activeKey ? "" : composeChordQuery(key, activeType, locale));
+  const pickType = (suffix: string) =>
+    activeKey &&
+    setQuery(composeChordQuery(activeKey, suffix === activeType ? null : suffix, locale));
+
   const groups = groupRows(rows, grouping);
   const showEmpty = !loading && rows.length === 0 && query.length > 0;
 
@@ -254,9 +278,57 @@ export function ChordFinder() {
       {/* TÍTULO */}
       <div className="mb-[22px]">
         <div className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-accent">
-          {t("eyebrow")}
+          {t("eyebrow", { instrument: tInstruments(`${instrument}.name`) })}
         </div>
         <h1 className="text-[30px] font-extrabold tracking-[-0.02em]">{t("title")}</h1>
+      </div>
+
+      {/* SELECTOR RÁPIDO: NOTA → TIPO */}
+      <div className="mb-4 flex flex-col gap-2.5">
+        <div
+          role="group"
+          aria-label={t("pickNote")}
+          className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5 [scrollbar-width:none] sm:flex-wrap"
+        >
+          {DB_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => pickNote(key)}
+              aria-pressed={activeKey === key}
+              className={
+                activeKey === key
+                  ? "yk-gradient min-w-[46px] shrink-0 cursor-pointer rounded-[10px] px-2.5 py-2 text-[13.5px] font-bold"
+                  : "min-w-[46px] shrink-0 cursor-pointer rounded-[10px] border border-edge bg-surface-2 px-2.5 py-2 text-[13.5px] font-semibold text-sub hover:border-edge-2 hover:text-ink"
+              }
+            >
+              {locale === "es" ? ROOT_SHORT_ES[key] : key}
+            </button>
+          ))}
+        </div>
+        {activeKey && (
+          <div
+            role="group"
+            aria-label={t("pickType")}
+            className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5 [scrollbar-width:none] sm:flex-wrap"
+          >
+            {QUICK_TYPES.map((suffix) => (
+              <button
+                key={suffix}
+                type="button"
+                onClick={() => pickType(suffix)}
+                aria-pressed={activeType === suffix}
+                className={
+                  activeType === suffix
+                    ? "shrink-0 cursor-pointer rounded-full border border-accent bg-accent/15 px-3.5 py-1.5 text-[13px] font-bold text-accent"
+                    : "shrink-0 cursor-pointer rounded-full border border-edge bg-surface-2 px-3.5 py-1.5 text-[13px] font-semibold text-sub hover:text-ink"
+                }
+              >
+                {suffix === "major" || suffix === "minor" ? t(`types.${suffix}`) : suffix}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* BÚSQUEDA */}
@@ -311,7 +383,7 @@ export function ChordFinder() {
       </div>
 
       {/* LÍNEA DE ESTADO DE VOZ — misma ranura, 3 estados (escuchando/error/nota) */}
-      {showVoice && (
+      {showVoice && (listening || voiceError || voiceDisabled) && (
         <div className="mt-2.5 flex min-h-[18px] items-center gap-[7px] text-[12.5px]">
           {listening ? (
             <span className="flex items-center gap-2 text-accent">
@@ -336,11 +408,9 @@ export function ChordFinder() {
               {t(`voiceError.${voiceErrorKey(voiceError)}`)}
             </span>
           ) : (
-            <span
-              className={`flex items-center gap-[7px] ${voiceDisabled ? "text-warn" : "text-tert"}`}
-            >
+            <span className="flex items-center gap-[7px] text-warn">
               <Info size={14} strokeWidth={2} />
-              {voiceDisabled ? t("micNoteUnsupported") : t("micNote")}
+              {t("micNoteUnsupported")}
             </span>
           )}
         </div>
@@ -389,7 +459,11 @@ export function ChordFinder() {
           </div>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
             {group.rows.map((row) => (
-              <ChordCard key={row.id} chord={row} />
+              <ChordCard
+                key={row.id}
+                chord={row}
+                href={`/${instrument}/chords/${chordSlug(row.key, row.suffix)}`}
+              />
             ))}
           </div>
         </section>
@@ -438,7 +512,7 @@ export function ChordFinder() {
           })
         }
         aria-label={atBottom ? t("fabUp") : t("fabDown")}
-        className="yk-gradient fixed bottom-6 right-6 z-50 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-[0_8px_24px_rgba(46,107,240,0.4)]"
+        className="yk-gradient fixed bottom-[92px] right-5 z-50 sm:bottom-6 sm:right-6 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-[0_8px_24px_rgba(46,107,240,0.4)]"
       >
         {atBottom ? (
           <ChevronUp size={22} strokeWidth={2.4} />

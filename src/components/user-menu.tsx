@@ -1,12 +1,14 @@
 "use client";
 
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, LogOut, Music } from "lucide-react";
+import { ChevronDown, LogOut, Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { LanguageSwitcher } from "./language-switcher";
+import { ThemeToggle } from "./theme-toggle";
 import { supabaseBrowser } from "@/lib/supabase";
 
 function GoogleGlyph() {
@@ -26,9 +28,12 @@ function initialsOf(user: User): string {
     .join("");
 }
 
+/** Menú de cuenta único: sesión, idioma y tema (con o sin sesión). */
 export function UserMenu() {
   const t = useTranslations("auth");
+  const tHeader = useTranslations("header");
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -50,31 +55,23 @@ export function UserMenu() {
     router.refresh();
   };
 
-  if (!user) {
-    return (
-      <Link
-        href="/login"
-        className="yk-gradient inline-flex items-center gap-[9px] rounded-[11px] px-3 py-2.5 text-[13.5px] font-bold md:px-4"
-      >
-        <GoogleGlyph />
-        <span className="hidden sm:inline">{t("signIn")}</span>
-      </Link>
-    );
-  }
-
-  const avatarUrl = user.user_metadata.avatar_url as string | undefined;
-  const fullName = (user.user_metadata.full_name as string | undefined) ?? "";
+  const avatarUrl = user?.user_metadata.avatar_url as string | undefined;
+  const fullName = (user?.user_metadata.full_name as string | undefined) ?? "";
 
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <button
         type="button"
         onClick={() => setMenuOpen((open) => !open)}
-        aria-label={t("account")}
+        aria-label={user ? t("account") : tHeader("settings")}
         aria-expanded={menuOpen}
         className="flex cursor-pointer items-center gap-2 rounded-full border border-edge bg-surface-3 py-1 pl-1 pr-1.5"
       >
-        {avatarUrl ? (
+        {!user ? (
+          <span className="grid size-[30px] place-items-center rounded-full text-sub">
+            <Settings size={18} strokeWidth={2} />
+          </span>
+        ) : avatarUrl ? (
           <Image src={avatarUrl} alt="" width={30} height={30} className="rounded-full" />
         ) : (
           <span className="yk-gradient grid size-[30px] place-items-center rounded-full text-[13px] font-extrabold">
@@ -87,29 +84,46 @@ export function UserMenu() {
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 top-[46px] z-40 w-[220px] overflow-hidden rounded-[14px] border border-edge-2 bg-surface shadow-[0_18px_44px_rgba(0,0,0,0.6)]">
+          <div className="absolute right-0 top-[46px] z-40 w-[250px] overflow-hidden rounded-[14px] border border-edge-2 bg-surface shadow-[0_18px_44px_rgba(0,0,0,0.6)]">
             <div className="border-b border-edge px-4 py-3.5">
-              <div className="truncate text-sm font-bold">{fullName}</div>
-              <div className="truncate text-xs text-tert">{user.email}</div>
+              {user ? (
+                <>
+                  <div className="truncate text-sm font-bold">{fullName}</div>
+                  <div className="truncate text-xs text-tert">{user.email}</div>
+                </>
+              ) : (
+                <Link
+                  href={`/login?next=${encodeURIComponent(pathname === "/login" ? "/" : pathname)}`}
+                  onClick={() => setMenuOpen(false)}
+                  className="yk-gradient flex items-center justify-center gap-[9px] rounded-[11px] px-4 py-2.5 text-[13.5px] font-bold"
+                >
+                  <GoogleGlyph />
+                  {t("signIn")}
+                </Link>
+              )}
             </div>
-            <div className="p-1.5">
-              <Link
-                href="/playlists"
-                onClick={() => setMenuOpen(false)}
-                className="flex w-full items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-[13.5px] hover:bg-edge"
-              >
-                <Music size={16} strokeWidth={2} />
-                {t("myPlaylists")}
-              </Link>
-              <button
-                type="button"
-                onClick={signOut}
-                className="flex w-full cursor-pointer items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-[13.5px] hover:bg-edge"
-              >
-                <LogOut size={16} strokeWidth={2} />
-                {t("signOut")}
-              </button>
+            <div className="flex flex-col gap-3 border-b border-edge px-4 py-3.5 text-[13.5px]">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sub">{tHeader("language")}</span>
+                <LanguageSwitcher />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sub">{tHeader("theme")}</span>
+                <ThemeToggle />
+              </div>
             </div>
+            {user && (
+              <div className="p-1.5">
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="flex w-full cursor-pointer items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-[13.5px] hover:bg-edge"
+                >
+                  <LogOut size={16} strokeWidth={2} />
+                  {t("signOut")}
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}

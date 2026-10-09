@@ -1,43 +1,42 @@
 {
   "metadata": {
     "title": "Yuthikal AudioTech",
-    "description": "Tu atril digital para guitarra: acordes, canciones y modo karaoke con audio real."
+    "description": "Tu atril digital: acordes, canciones y modo karaoke con audio real, para guitarra y ukelele."
   },
   "header": {
-    "instruments": "Instrumentos",
-    "chords": "Acordes",
-    "playlists": "Mis Playlists",
     "toggleTheme": "Cambiar tema",
     "switchLanguage": "Cambiar idioma",
-    "menu": "Menú"
+    "switchInstrument": "Cambiar instrumento",
+    "settings": "Ajustes",
+    "language": "Idioma",
+    "theme": "Tema"
+  },
+  "nav": {
+    "chords": "Acordes",
+    "songs": "Canciones",
+    "basics": "Básicos"
   },
   "auth": {
     "signIn": "Iniciar con Google",
     "title": "Inicia sesión en Yuthikal AudioTech",
-    "subtitle": "Tu atril digital para guitarra: acordes, canciones y modo karaoke.",
+    "subtitle": "Tu atril digital: acordes, canciones y modo karaoke.",
     "googleButton": "Continuar con Google",
     "lockNote": "El registro solo está disponible con Google",
     "account": "Cuenta",
-    "myPlaylists": "Mis playlists",
     "signOut": "Cerrar sesión"
   },
   "playlists": {
     "title": "Mis playlists",
-    "count": "{count, plural, =0 {Sin playlists} one {1 playlist} other {# playlists}}",
     "newPlaylist": "Nuevo playlist",
     "delete": "Eliminar",
     "deleteModal": {
       "title": "¿Eliminar este playlist?",
-      "message": "<b>\"{name}\"</b> y todas sus canciones se eliminarán de forma permanente. Esta acción no se puede deshacer.",
+      "message": "<b>\"{name}\"</b> se eliminará. Sus canciones se conservan en Mis canciones.",
       "confirm": "Sí, eliminar",
       "deleting": "Eliminando…"
     },
     "like": "Me gusta",
     "difficulty": "Dificultad",
-    "songCount": "{count, plural, =0 {0 canciones} one {1 canción} other {# canciones}}",
-    "emptyTitle": "Aún no tienes playlists",
-    "emptyDesc": "Crea tu primer playlist para empezar a organizar tus canciones con letra y acordes.",
-    "emptyCta": "Crear mi primer playlist",
     "close": "Cerrar",
     "cancel": "Cancelar",
     "create": "Crear playlist",
@@ -94,54 +93,30 @@
     "back": "Volver al inicio"
   },
   "landing": {
-    "badge": "Tu atril digital para guitarra",
+    "badge": "Tu atril digital",
     "title": "Tu música, tus acordes, <accent>tu escenario</accent>",
-    "subtitle": "Aprende acordes, escribe tus canciones con letra y cifrado, y tócalas en modo karaoke con audio real sincronizado — todo en un solo lugar.",
-    "ctaStart": "Comenzar",
-    "ctaHow": "Ver cómo funciona",
-    "heroCard": {
-      "songMeta": "Tonalidad Em · Balada",
-      "karaokeBadge": "Karaoke",
-      "verse": "Verso 1"
-    },
-    "featuresEyebrow": "Todo en uno",
-    "featuresTitle": "Del acorde al escenario",
+    "subtitle": "Aprende acordes, escribe tus canciones con letra y cifrado, y tócalas con audio real sincronizado.",
     "features": {
       "finderTitle": "Buscador de acordes",
       "finderDesc": "Busca por voz o texto y consulta todas las posiciones de cada acorde en el mástil.",
-      "referenceTitle": "Referencia musical",
-      "referenceDesc": "Cuerdas y notas en español e inglés, con nombres tradicionales y equivalencias.",
       "songsTitle": "Tus canciones",
       "songsDesc": "Letra con acordes anclados a cada sílaba, en el clásico formato de cifrado.",
       "karaokeTitle": "Modo karaoke",
       "karaokeDesc": "Reproduce el audio real y sigue la letra y los acordes perfectamente sincronizados."
     },
-    "karaokeEyebrow": "Modo karaoke",
-    "karaokeTitle": "Toca el audio real y sigue la letra sincronizada",
-    "karaokeDesc": "La línea actual se ilumina, los acordes aparecen justo cuando cambian y el atril se desplaza solo. Ideal para tenerlo en el móvil o tablet mientras tocas.",
-    "statChords": "acordes en catálogo",
-    "statLanguages": "idiomas ES / EN",
-    "statPlaylists": "playlists privados",
-    "deviceNow": "Ahora",
-    "deviceNext": "Sigue",
-    "footerCopy": "© 2026 Yuthikal AudioTech"
+    "footerCopy": "© 2026 Yuthikal AudioTech",
+    "chooseInstrument": "Elige tu instrumento para empezar"
   },
   "songs": {
-    "songsTitle": "Canciones",
     "newSong": "Nueva canción",
     "editPlaylist": "Editar playlist",
     "save": "Guardar",
     "saving": "Guardando…",
-    "view": "Ver",
     "edit": "Editar",
-    "calibrate": "Calibrar",
-    "karaoke": "Karaoke",
-    "keyChip": "Tonalidad: {key}",
-    "statusRaw": "Sin calibrar",
     "statusSynced": "Sincronizada",
     "sourceFile": "Archivo MP3",
-    "emptyTitle": "Este playlist aún no tiene canciones",
-    "emptyDesc": "Agrega tu primera canción con su letra y acordes para empezar a tocar.",
+    "emptyTitle": "Aún no tienes canciones",
+    "emptyDesc": "Crea una canción y pega su cifrado o escribe la letra con sus acordes.",
     "close": "Cerrar",
     "cancel": "Cancelar",
     "create": "Crear canción",
@@ -151,7 +126,10 @@
       "namePlaceholder": "Ej. Bésame mucho",
       "description": "Descripción",
       "descriptionPlaceholder": "Autor, versión o una nota sobre esta canción…",
-      "key": "Tonalidad"
+      "key": "Tonalidad",
+      "playlist": "Playlist",
+      "noPlaylist": "Sin playlist",
+      "noKey": "Sin definir"
     },
     "errors": {
       "name": "El nombre es obligatorio (máximo 150 caracteres).",
@@ -162,7 +140,18 @@
       "db": "No se pudo guardar. Intenta de nuevo.",
       "id": "Identificador inválido.",
       "content": "La canción supera el tamaño máximo permitido."
-    }
+    },
+    "title": "Mis canciones",
+    "count": "{count, plural, =0 {Sin canciones} one {1 canción} other {# canciones}}",
+    "all": "Todas",
+    "searchPlaceholder": "Buscar canción…",
+    "play": "Tocar",
+    "moreActions": "Más acciones",
+    "syncAudio": "Sincronizar audio",
+    "emptyListTitle": "Este playlist aún no tiene canciones",
+    "noResults": "Sin resultados para «{query}»",
+    "gateTitle": "Inicia sesión para ver tus canciones",
+    "gateSubtitle": "Tus canciones y playlists son privadas y te acompañan en cualquier instrumento."
   },
   "editor": {
     "textMode": "Editor de texto",
@@ -175,7 +164,7 @@
     "legendChord": "acorde",
     "legendDirective": "directiva",
     "preview": "Vista previa",
-    "previewEmpty": "Escribe a la izquierda para ver la vista previa.",
+    "previewEmpty": "Escribe a la izquierda o usa «Pegar cifrado» para ver la vista previa.",
     "visualHint": "Haz clic en una palabra para asignar un acorde encima de esa sílaba.",
     "visualEmpty": "Aún no hay letra. Escríbela primero en el editor de texto.",
     "pickerTitle": "Elegir acorde",
@@ -193,7 +182,15 @@
     "deleteTitle": "¿Eliminar esta canción?",
     "deleteMessage": "<b>\"{name}\"</b> se eliminará de forma permanente, incluida su letra y acordes. Esta acción no se puede deshacer.",
     "deleteConfirm": "Sí, eliminar",
-    "deleting": "Eliminando…"
+    "deleting": "Eliminando…",
+    "paste": {
+      "button": "Pegar cifrado",
+      "title": "Pegar cifrado",
+      "hint": "Pega la letra con los acordes encima (como en los sitios de acordes); se convierte automáticamente.",
+      "placeholder": "Coro:\nAm        F\nBésame, bésame mucho…",
+      "previewEmpty": "La vista previa aparecerá aquí.",
+      "insert": "Insertar en la canción"
+    }
   },
   "calibration": {
     "sourceTitle": "Fuente de audio",
@@ -204,16 +201,19 @@
     "dropTitle": "Arrastra tu MP3 aquí",
     "dropHint": "o haz clic para elegir un archivo (máx. 15 MB)",
     "uploading": "Subiendo…",
-    "granularityTitle": "Granularidad",
+    "granularityTitle": "Precisión",
     "granularity": {
       "line": "Por línea",
       "lineHint": "Recomendado · marca el inicio de cada verso",
       "word": "Por palabra / acorde",
       "wordHint": "Avanzado · máxima precisión, toma más tiempo"
     },
-    "granularityShort": { "line": "por línea", "word": "por palabra" },
+    "granularityShort": {
+      "line": "por línea",
+      "word": "por palabra"
+    },
     "tapTitle": "Presiona <kbd>ESPACIO</kbd> o toca aquí cuando empiece esta línea",
-    "tapProgress": "Marcando {n} de {total} · granularidad {granularity}",
+    "tapProgress": "Marcando {n} de {total} · precisión {granularity}",
     "tapNeedsAudio": "Conecta el audio y presiona play para empezar a marcar",
     "now": "Ahora",
     "remark": "Volver a marcar esta línea",
@@ -228,8 +228,8 @@
     "resetMessage": "Se eliminarán las {count} marcas capturadas. Esta acción no se puede deshacer.",
     "resetConfirm": "Sí, reiniciar",
     "cancel": "Cancelar",
-    "granularityChangeTitle": "¿Cambiar la granularidad?",
-    "granularityChangeMessage": "Las marcas actuales se eliminarán porque pertenecen a otra granularidad.",
+    "granularityChangeTitle": "¿Cambiar la precisión?",
+    "granularityChangeMessage": "Las marcas actuales se eliminarán porque pertenecen a otra precisión.",
     "granularityChangeConfirm": "Cambiar y borrar marcas",
     "errors": {
       "url": "Esa URL de YouTube no es válida.",
@@ -243,7 +243,6 @@
     }
   },
   "songView": {
-    "backToPlaylist": "Volver al playlist",
     "keyPrefix": "Tonalidad:",
     "strum": "Rasgueo",
     "verse": "Verso",
@@ -254,12 +253,21 @@
     "fabUp": "Ir arriba",
     "emptyTitle": "Esta canción aún no tiene contenido",
     "emptyDesc": "Abre el editor para escribir la letra con sus acordes en formato ChordPro.",
-    "emptyCta": "Abrir el editor"
+    "emptyCta": "Abrir el editor",
+    "backToSongs": "Mis canciones",
+    "play": "Tocar",
+    "edit": "Editar",
+    "done": "Listo",
+    "stepLyrics": "Letra",
+    "stepAudio": "Audio"
   },
   "karaoke": {
     "now": "Ahora",
     "next": "Sigue",
-    "variant": { "sync": "Sincronizada", "auto": "Sin calibrar" },
+    "variant": {
+      "sync": "Sincronizada",
+      "auto": "Sin calibrar"
+    },
     "exit": "Salir",
     "play": "Reproducir",
     "pause": "Pausar",
@@ -269,25 +277,40 @@
     "speed": "Velocidad",
     "slower": "Más lento",
     "faster": "Más rápido",
-    "noSyncNote": "Sin sincronización — scroll automático"
+    "noSyncNote": "Sin sincronización — scroll automático",
+    "syncNow": "Sincronizar audio"
   },
   "strings": {
-    "eyebrow": "Referencia · Guitarra",
-    "title": "Las cuerdas de la guitarra",
-    "intro": "De la más aguda y delgada (1ª) a la más grave y gruesa (6ª). En afinación estándar, sus notas son Mi–Si–Sol–Re–La–Mi.",
+    "title": "{instrument, select, ukulele {Las cuerdas del ukelele} other {Las cuerdas de la guitarra}}",
+    "intro": "{instrument, select, ukulele {De la 1ª a la 4ª. En afinación estándar sus notas son Sol–Do–Mi–La, con la 4ª cuerda (Sol) aguda en lugar de grave: afinación reentrante.} other {De la más aguda y delgada (1ª) a la más grave y gruesa (6ª). En afinación estándar, sus notas son Mi–Si–Sol–Re–La–Mi.}}",
     "stringWord": "cuerda",
     "gauge": "Grosor",
-    "pitch1": "La más aguda y delgada",
-    "pitch2": "Aguda",
-    "pitch3": "Media",
-    "pitch4": "Grave (entorchada)",
-    "pitch5": "Grave (entorchada)",
-    "pitch6": "La más grave y gruesa"
+    "pitch": {
+      "guitar": {
+        "1": "La más aguda y delgada",
+        "2": "Aguda",
+        "3": "Media",
+        "4": "Grave (entorchada)",
+        "5": "Grave (entorchada)",
+        "6": "La más grave y gruesa"
+      },
+      "ukulele": {
+        "1": "La más aguda",
+        "2": "Aguda",
+        "3": "La más grave",
+        "4": "Aguda (reentrante)"
+      }
+    }
+  },
+  "basics": {
+    "eyebrow": "Referencia · {instrument}",
+    "title": "Básicos",
+    "strings": "Cuerdas",
+    "notes": "Notas"
   },
   "notes": {
-    "eyebrow": "Referencia · Guitarra",
     "title": "Las notas musicales",
-    "intro": "Las 12 notas de la escala cromática. Las 7 <em>naturales</em> y las 5 <em>alteradas</em> (sostenidos y bemoles), que en la guitarra viven entre traste y traste.",
+    "intro": "Las 12 notas de la escala cromática. Las 7 <em>naturales</em> y las 5 <em>alteradas</em> (sostenidos y bemoles), que en el mástil viven entre traste y traste.",
     "legend": "Cómo leer las tarjetas:",
     "natural": "Natural",
     "altered": "Alterada",
@@ -296,14 +319,13 @@
     "pianoTitle": "Una octava en el piano"
   },
   "finder": {
-    "eyebrow": "Referencia · Guitarra",
+    "eyebrow": "Referencia · {instrument}",
     "title": "Buscador de acordes",
     "searchPlaceholder": "Busca un acorde… ej. La menor, C#7, Si bemol",
     "clearSearch": "Limpiar búsqueda",
     "micLabel": "Búsqueda por voz",
     "micTitle": "Buscar por voz",
     "micTitleUnsupported": "Tu navegador no admite búsqueda por voz. Usa Chrome o Edge.",
-    "micNote": "La búsqueda por voz requiere Chrome o Edge.",
     "micNoteUnsupported": "Búsqueda por voz no disponible en este navegador — usa Chrome o Edge.",
     "listening": "Escuchando…",
     "voiceError": {
@@ -331,6 +353,12 @@
       "augmented": "Aumentados",
       "extended": "Extendidos",
       "other": "Otros"
+    },
+    "pickNote": "Elegir nota",
+    "pickType": "Elegir tipo de acorde",
+    "types": {
+      "major": "Mayor",
+      "minor": "menor"
     }
   },
   "chordDetail": {
@@ -346,14 +374,22 @@
     "barre": "cejilla"
   },
   "instruments": {
-    "eyebrow": "Comienza aquí",
-    "title": "Elige tu instrumento",
-    "subtitle": "Empieza con la guitarra. Pronto sumaremos más instrumentos a tu atril digital.",
-    "explore": "Explorar",
     "soon": "Próximamente",
-    "guitar": { "name": "Guitarra", "desc": "Acordes, cuerdas, notas y tus canciones." },
-    "piano": { "name": "Piano", "desc": "Teclas, escalas y acordes." },
-    "ukulele": { "name": "Ukelele", "desc": "Acordes y canciones." },
-    "bass": { "name": "Bajo", "desc": "Notas y líneas de bajo." }
+    "guitar": {
+      "name": "Guitarra",
+      "desc": "Acordes, cuerdas, notas y tus canciones."
+    },
+    "piano": {
+      "name": "Piano",
+      "desc": "Teclas, escalas y acordes."
+    },
+    "ukulele": {
+      "name": "Ukelele",
+      "desc": "Acordes, cuerdas, notas y tus canciones."
+    },
+    "bass": {
+      "name": "Bajo",
+      "desc": "Notas y líneas de bajo."
+    }
   }
 }

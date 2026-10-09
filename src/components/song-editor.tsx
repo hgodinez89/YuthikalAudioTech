@@ -2,6 +2,7 @@
 
 import {
   Check,
+  ClipboardPaste,
   CloudUpload,
   Code,
   Eye,
@@ -26,6 +27,7 @@ import { ChordPicker } from "./chord-picker";
 import { ChordSheet } from "./chord-sheet";
 import { ConfirmDialog } from "./confirm-dialog";
 import { FIELD_CLASS } from "./playlist-form-modal";
+import { chordsOverLyricsToChordPro } from "@/lib/chord-import";
 import {
   arrowsToStrum,
   buildVisualModel,
@@ -36,6 +38,7 @@ import {
   type LyricUnit,
   type SectionType,
 } from "@/lib/chordpro";
+import type { Instrument } from "@/lib/instruments";
 import { deleteSong, updateSongContent, updateSongMeta } from "@/lib/song-actions";
 import { KEY_OPTIONS, keyLabel, validateSong, type SongRow } from "@/lib/songs";
 
@@ -146,7 +149,104 @@ function StrumBuilder({
 
 /* ---------- editor principal ---------- */
 
-export function SongEditor({ song }: { song: SongRow }) {
+export type PlaylistOption = { id: string; name: string };
+
+/* ---------- pegar cifrado (acordes encima de la letra) ---------- */
+
+function PasteChordsModal({
+  onClose,
+  onInsert,
+}: {
+  onClose: () => void;
+  onInsert: (chordPro: string) => void;
+}) {
+  const t = useTranslations("editor");
+  const tSongs = useTranslations("songs");
+  const [raw, setRaw] = useState("");
+  const converted = useMemo(() => chordsOverLyricsToChordPro(raw), [raw]);
+  const preview = useMemo(() => parseChordPro(converted), [converted]);
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-page/70 p-4 backdrop-blur-[6px] sm:p-6"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[92vh] w-full max-w-[960px] flex-col overflow-hidden rounded-[20px] border border-edge-2 bg-surface shadow-[0_30px_70px_rgba(0,0,0,0.6)]"
+      >
+        <div className="flex items-center justify-between gap-4 border-b border-edge px-6 py-[18px]">
+          <div>
+            <h2 className="text-[19px] font-extrabold">{t("paste.title")}</h2>
+            <p className="mt-0.5 text-[13px] text-tert">{t("paste.hint")}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={tSongs("close")}
+            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-[9px] border border-edge bg-surface-2 text-sub"
+          >
+            <X size={16} strokeWidth={2.2} />
+          </button>
+        </div>
+        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-5 md:grid-cols-2">
+          <textarea
+            autoFocus
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            placeholder={t("paste.placeholder")}
+            spellCheck={false}
+            aria-label={t("paste.title")}
+            className="min-h-[300px] resize-none whitespace-pre rounded-2xl border border-edge bg-surface-3 px-4 py-3.5 font-mono text-[13px] leading-[1.7] text-ink outline-none focus:border-accent dark:bg-[#0b0d12]"
+          />
+          <div className="min-h-[300px] overflow-auto rounded-2xl border border-edge px-5 py-4">
+            <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tert">
+              <Eye size={14} strokeWidth={2} className="text-accent" />
+              {t("preview")}
+            </div>
+            {preview.sections.length ? (
+              <ChordSheet
+                sections={preview.sections}
+                chords={{}}
+                showLegend={false}
+                showFab={false}
+              />
+            ) : (
+              <p className="text-sm text-tert">{t("paste.previewEmpty")}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2.5 border-t border-edge px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="cursor-pointer rounded-[11px] border border-edge-2 bg-surface-2 px-[18px] py-[11px] text-sm font-semibold"
+          >
+            {tSongs("cancel")}
+          </button>
+          <button
+            type="button"
+            disabled={!converted}
+            onClick={() => onInsert(converted)}
+            className="yk-gradient cursor-pointer rounded-[11px] px-5 py-[11px] text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {t("paste.insert")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SongEditor({
+  song,
+  instrument,
+  playlists,
+}: {
+  song: SongRow;
+  instrument: Instrument;
+  playlists: PlaylistOption[];
+}) {
   const t = useTranslations("editor");
   const tSongs = useTranslations("songs");
   const tSongView = useTranslations("songView");
@@ -157,6 +257,7 @@ export function SongEditor({ song }: { song: SongRow }) {
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [metaOpen, setMetaOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pasteOpen, setPasteOpen] = useState(false);
   const [picker, setPicker] = useState<{
     lineIndex: number;
     unit: LyricUnit;
@@ -255,13 +356,21 @@ export function SongEditor({ song }: { song: SongRow }) {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span
             className={`inline-flex items-center gap-[7px] text-[12.5px] font-semibold ${save.cls}`}
           >
             {save.icon}
             {save.label}
           </span>
+          <button
+            type="button"
+            onClick={() => setPasteOpen(true)}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-accent/40 bg-accent/10 px-[15px] py-[9px] text-[13px] font-semibold text-accent"
+          >
+            <ClipboardPaste size={15} strokeWidth={2} />
+            {t("paste.button")}
+          </button>
           <button
             type="button"
             onClick={() => setMetaOpen(true)}
@@ -425,6 +534,7 @@ export function SongEditor({ song }: { song: SongRow }) {
       {/* PICKER DE ACORDES */}
       {picker && (
         <ChordPicker
+          instrument={instrument}
           x={picker.x}
           y={picker.y}
           currentChord={picker.unit.chord}
@@ -450,10 +560,25 @@ export function SongEditor({ song }: { song: SongRow }) {
       {metaOpen && (
         <MetaDrawer
           song={song}
+          playlists={playlists}
           onClose={() => setMetaOpen(false)}
           onDelete={() => {
             setMetaOpen(false);
             setDeleteOpen(true);
+          }}
+        />
+      )}
+
+      {/* PEGAR CIFRADO */}
+      {pasteOpen && (
+        <PasteChordsModal
+          onClose={() => setPasteOpen(false)}
+          onInsert={(chordPro) => {
+            // Canción vacía: reemplaza; si ya hay letra, se agrega al final.
+            setContent((prev) =>
+              prev.trim() ? `${prev.trimEnd()}\n\n${chordPro}` : chordPro,
+            );
+            setPasteOpen(false);
           }}
         />
       )}
@@ -492,8 +617,8 @@ export function SongEditor({ song }: { song: SongRow }) {
         onCancel={onCancel}
         onConfirm={() =>
           startTransition(async () => {
-            await deleteSong(song.id, song.playlist_id);
-            router.push(`/playlists/${song.playlist_id}`);
+            await deleteSong(song.id);
+            router.push(`/${instrument}/songs`);
           })
         }
       />
@@ -505,10 +630,12 @@ export function SongEditor({ song }: { song: SongRow }) {
 
 function MetaDrawer({
   song,
+  playlists,
   onClose,
   onDelete,
 }: {
   song: SongRow;
+  playlists: PlaylistOption[];
   onClose: () => void;
   onDelete: () => void;
 }) {
@@ -519,12 +646,13 @@ function MetaDrawer({
     name: song.name,
     description: song.description,
     keyNote: song.key_note,
+    playlistId: song.playlist_id ?? "",
   });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const submit = () => {
-    const input = { ...form, playlistId: song.playlist_id };
+    const input = { ...form, playlistId: form.playlistId || null };
     const invalid = validateSong(input);
     if (invalid) {
       setError(tSongs(`errors.${invalid}`));
@@ -595,9 +723,27 @@ function MetaDrawer({
               onChange={(e) => setForm({ ...form, keyNote: e.target.value })}
               className={`${FIELD_CLASS} h-11 cursor-pointer`}
             >
+              <option value="">{tSongs("form.noKey")}</option>
               {KEY_OPTIONS.map((k) => (
                 <option key={k} value={k}>
                   {keyLabel(k)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-[7px] block text-[12.5px] font-semibold text-sub">
+              {tSongs("form.playlist")}
+            </label>
+            <select
+              value={form.playlistId}
+              onChange={(e) => setForm({ ...form, playlistId: e.target.value })}
+              className={`${FIELD_CLASS} h-11 cursor-pointer`}
+            >
+              <option value="">{tSongs("form.noPlaylist")}</option>
+              {playlists.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
                 </option>
               ))}
             </select>

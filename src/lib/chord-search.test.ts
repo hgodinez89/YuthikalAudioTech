@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { escapeLike, normalizeQuery, parseChordQuery } from "./chord-search";
+import {
+  composeChordQuery,
+  escapeLike,
+  normalizeQuery,
+  parseChordQuery,
+} from "./chord-search";
 
 describe("parseChordQuery — cifrado compacto", () => {
   it("Am → La menor", () => {
@@ -175,5 +180,66 @@ describe("utilidades", () => {
 
   it("escapeLike escapa comodines de LIKE", () => {
     expect(escapeLike("50%_a\\b")).toBe("50\\%\\_a\\\\b");
+  });
+});
+
+describe("parseChordQuery — sufijos exclusivos de ukelele", () => {
+  it("G13b9", () => {
+    expect(parseChordQuery("G13b9")).toEqual({
+      kind: "chord",
+      keys: ["G"],
+      suffixes: ["13b9"],
+    });
+  });
+
+  it("Am9b5", () => {
+    expect(parseChordQuery("Am9b5")).toEqual({
+      kind: "chord",
+      keys: ["A"],
+      suffixes: ["m9b5"],
+    });
+  });
+});
+
+describe("composeChordQuery — ida y vuelta con el parser", () => {
+  const KEYS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+  const TYPES = [null, "major", "minor", "7", "m7", "maj7", "sus4", "dim", "aug", "9"];
+
+  for (const locale of ["es", "en"] as const) {
+    it(`todas las combinaciones se reconocen (${locale})`, () => {
+      for (const key of KEYS) {
+        for (const suffix of TYPES) {
+          const query = composeChordQuery(key, suffix, locale);
+          expect(parseChordQuery(query), query).toEqual({
+            kind: "chord",
+            keys: [key],
+            suffixes: suffix ? [suffix] : null,
+          });
+        }
+      }
+    });
+  }
+
+  it("ejemplos legibles", () => {
+    expect(composeChordQuery("A", "minor", "es")).toBe("Lam");
+    expect(composeChordQuery("Eb", "major", "en")).toBe("Eb major");
+  });
+});
+
+describe("parseChordQuery — ambigüedad Fa/F", () => {
+  it("Faug es F aumentado, no Fa + 'ug'", () => {
+    expect(parseChordQuery("Faug")).toEqual({
+      kind: "chord",
+      keys: ["F"],
+      suffixes: ["aug"],
+    });
+  });
+
+  it("Fa aumentado (con espacio) sigue funcionando", () => {
+    expect(parseChordQuery("Fa aumentado")).toEqual({
+      kind: "chord",
+      keys: ["F"],
+      suffixes: ["aug"],
+    });
   });
 });

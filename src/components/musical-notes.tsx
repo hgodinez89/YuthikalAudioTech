@@ -36,16 +36,16 @@ const BLACK_KEYS = [
   { label: "La♯ Si♭", left: "81.6%" },
 ];
 
-export default async function MusicalNotesPage() {
+/** Sección "Notas" de Básicos: las 12 notas cromáticas (común a todo instrumento). */
+export async function MusicalNotes() {
   const t = await getTranslations("notes");
 
   return (
-    <div className="mx-auto max-w-[980px] px-7 pb-[90px] pt-14">
+    <section id="notes" className="scroll-mt-24">
       <div className="mb-[30px]">
-        <div className="mb-2.5 text-xs font-bold uppercase tracking-[0.22em] text-accent">
-          {t("eyebrow")}
-        </div>
-        <h1 className="mb-3 text-4xl font-extrabold tracking-[-0.025em]">{t("title")}</h1>
+        <h2 className="mb-3 text-[28px] font-extrabold tracking-[-0.02em]">
+          {t("title")}
+        </h2>
         <p className="max-w-[640px] leading-relaxed text-sub">
           {t.rich("intro", {
             em: (chunks) => <span className="text-ink">{chunks}</span>,
@@ -145,6 +145,6 @@ export default async function MusicalNotesPage() {
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

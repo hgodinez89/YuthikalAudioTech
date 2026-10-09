@@ -35,9 +35,9 @@ Copiar `.env.example` a `.env.local` (local) y configurar las mismas en Vercel (
 | Tabla | Contenido | Acceso |
 |---|---|---|
 | `keepalive` | 1 fila; objetivo del ping del cron | Lectura pública |
-| `chords` / `chord_positions` | Catálogo: 481 acordes / 1,924 posiciones (generado de `@tombatossals/chords-db`) | Lectura pública |
+| `chords` / `chord_positions` | Catálogo por instrumento (`chords.instrument`): guitarra 481 acordes / 1,924 posiciones, ukelele 552 / 2,114 (generado de `@tombatossals/chords-db`) | Lectura pública |
 | `playlists` | Playlists del usuario (género, doble rating 1–5) | RLS solo dueño |
-| `songs` | Canciones: metadatos + contenido ChordPro (con directiva propia `{strum:}`) | RLS solo dueño |
+| `songs` | Canciones: metadatos + contenido ChordPro (con directiva propia `{strum:}`); `playlist_id` opcional (lista plana) | RLS solo dueño |
 | `song_audio` | Fuente de audio por canción: YouTube (video id + título) o archivo (ruta en Storage) | RLS solo dueño |
 | `song_sync` | Sincronización: granularidad (línea/palabra) + timestamps JSONB `[{i, t}]` | RLS solo dueño |
 
@@ -50,14 +50,15 @@ Storage: bucket privado **`audio`** (15 MB máx., solo `audio/mpeg`), políticas
 3. `supabase/migrations/00000000000002_playlists.sql`
 4. `supabase/migrations/00000000000003_songs.sql`
 5. `supabase/migrations/00000000000004_audio_sync.sql` (incluye el bucket de Storage)
+6. `supabase/migrations/00000000000005_instruments_flat_songs.sql` (columna `chords.instrument`, `songs.playlist_id` opcional con `on delete set null`, RLS de inserción/actualización que valida la playlist destino)
 
 ### 3.3 Seed del catálogo de acordes
 
 ```bash
-node scripts/generate-chords-sql.mjs   # regenera supabase/seed_chords.sql (~277 KB)
+node scripts/generate-chords-sql.mjs   # regenera supabase/seed_chords_{guitar,ukulele}.sql (~280/316 KB)
 ```
 
-Luego pegar y ejecutar `supabase/seed_chords.sql` en el SQL Editor (después de la migración 1). El script excluye los acordes con bajo alterado ("/E", "m/B"…) por ser inversiones, no cualidades; calcula notas/intervalos desde los MIDI, asigna categorías paraguas y nombres en español. El campo `popularity` queda reservado para curación manual futura.
+Luego pegar y ejecutar `supabase/seed_chords_guitar.sql` y `supabase/seed_chords_ukulele.sql` en el SQL Editor (después de las migraciones 1 y 5). Cada seed borra e inserta solo su instrumento, así que se pueden correr por separado. **En una BD existente** basta con ejecutar la migración 5 y luego `seed_chords_ukulele.sql` (las filas de guitarra quedan con `instrument = 'guitar'` por defecto). Los ids de guitarra no llevan prefijo (`a-minor`); los de ukelele sí (`ukulele-a-minor`); las URLs usan siempre el slug sin prefijo. Las raíces `Db`/`Gb` del ukelele se normalizan a `C#`/`F#`. El script excluye los acordes con bajo alterado ("/E", "m/B"…) por ser inversiones, no cualidades; calcula notas/intervalos desde los MIDI, asigna categorías paraguas y nombres en español. El campo `popularity` queda reservado para curación manual futura.
 
 ## 4. Ejecución local
 
@@ -85,31 +86,41 @@ Tests cubren: parser de búsqueda de acordes ES/EN, parser/render ChordPro, edic
 ```
 messages/                 Textos ES/EN (next-intl; ES por defecto)
 public/brand/             Logos por tema (crop = oscuro, claro = claro)
-scripts/                  generate-chords-sql.mjs (seed del catálogo)
+scripts/                  generate-chords-sql.mjs (seeds del catálogo por instrumento)
 supabase/migrations/      SQL de esquema + RLS (ver §3.2)
-supabase/seed_chords.sql  Datos del catálogo (generado)
+supabase/seed_chords_*.sql Datos del catálogo por instrumento (generados)
 src/app/                  Rutas (App Router)
   api/keepalive/          Ping del cron
   auth/callback/          Canje del código OAuth (valida redirects internos)
-  guitar/                 Instrumentos, cuerdas, notas, buscador y detalle de acordes
-  login/  playlists/      Auth y área privada; canción en /playlists/[id]/songs/[songId]
-                          con ?mode=view|edit|calibrate|karaoke
+  page.tsx                Landing: elección de instrumento (redirige al último usado)
+  [instrument]/           guitar | ukulele (otro → 404); layout con barra inferior móvil
+    chords/[id]           Buscador (selector nota + tipo) y detalle por slug
+    songs/[songId]        Mis canciones (lista plana, ?list= filtra por playlist) y
+                          canción con ?mode=view|edit|karaoke y &step=lyrics|audio
+    basics/               Cuerdas del instrumento + notas musicales
+  login/                  Login con Google; ?next= regresa a la página de origen
 src/components/           UI (fieles al handoff):
   chord-diagram           Diagrama SVG (spec del handoff; frets/barres/baseFret de chords-db)
-  chord-finder/-card      Buscador con voz, scroll infinito, FAB
+  site-header             Logo, pastilla de instrumento, secciones y menú de cuenta
+  instrument-nav          Barra inferior de secciones en móvil
+  chord-finder/-card      Buscador con selector nota + tipo, voz, scroll infinito, FAB
   chord-sheet             Cifrado clásico: acordes sobre sílabas, popovers, leyenda
-  song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets)
+  songs-view              Lista plana de canciones con playlists como filtros
+  song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets),
+                          "Pegar cifrado" y datos de la canción (incl. playlist)
   song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte
   song-karaoke            Pantalla hero: sincronizada + fallback autoscroll
   confirm-dialog          Confirmación destructiva estándar (no hay diálogos nativos)
 src/lib/                  Lógica y acceso a datos:
   chordpro.ts             Parser/edición ChordPro (+tests)
-  chord-search.ts         Parser de búsqueda ES/EN y slugs (+tests)
+  chord-search.ts         Parser de búsqueda ES/EN, slugs y selector rápido (+tests)
+  chord-import.ts         Cifrado "acordes encima de la letra" → ChordPro (+tests)
+  instruments.ts          Instrumentos activos/próximos, afinaciones, ids y rutas (+tests)
   youtube.ts / audio.ts   Validaciones de audio (+tests)
   use-audio-engine.ts     Reloj unificado YouTube IFrame API / <audio>
   *-actions.ts            Server actions (re-validación en servidor)
   supabase(-server).ts    Clientes anon (público) y con sesión (cookies)
-src/proxy.ts              Refresco de sesión de Supabase (convención proxy de Next 16)
+src/proxy.ts              Refresco de sesión de Supabase + cookie del último instrumento
 src/i18n/                 Configuración next-intl por cookie (sin rutas por idioma)
 ```
 
@@ -138,6 +149,10 @@ Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del
 **Límites de los free tiers**: Supabase 500 MB de BD + 1 GB de Storage (~60 MP3 de 15 MB) + pausa por inactividad; Vercel Hobby: 1 cron diario, funciones con timeout estándar.
 
 **Decisiones registradas**:
+- *Navegación "instrumento primero"* (desviación consciente del handoff, solo en estructura; colores, tokens y componentes visuales se mantienen): `/` elige instrumento; cada instrumento tiene 3 secciones (Acordes · Canciones · Básicos) en el header y en una barra inferior en móvil; una pastilla cambia de instrumento conservando la sección (dentro de una canción conserva la canción y cambian los diagramas). Piano y Bajo se muestran atenuados como "Próximamente". Las URLs anteriores (`/guitar/strings`, `/guitar/notes`, `/playlists/...`) redirigen a las nuevas.
+- *Canciones independientes del instrumento*: el ChordPro solo nombra acordes, así que la misma canción sirve en guitarra y ukelele; el instrumento activo decide qué diagramas se muestran.
+- *Lista plana de canciones*: las playlists son filtros opcionales; borrar una playlist conserva sus canciones. Las playlists mantienen género y doble calificación.
+- *Canción*: Ver (con **Tocar** como acción principal) y Editar en dos pasos, **Letra → Audio** (la antigua "Calibración", ahora "Sincronizar audio"; `?mode=calibrate` sigue funcionando).
 - *Rutas 200 con UI de error/redirect*: por el streaming de Next 16 + la pantalla Loading global, páginas inexistentes o protegidas responden HTTP 200 con la UI correcta (404 visual / redirect a login). Sin impacto para una app personal sin SEO; los datos jamás se filtran (los guards corren antes de cualquier query).
 - *Pantalla de consentimiento de Google* muestra el dominio de Supabase: comportamiento estándar sin dominio propio; se aceptó (opción A) — cambiarlo requiere el add-on Custom Domain de Supabase + verificación de Google.
 - *Búsqueda por voz* solo Chrome/Edge (Web Speech API); la UI lo indica y degrada a escritura.

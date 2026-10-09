@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { ChordDiagram } from "./chord-diagram";
 import { escapeLike, parseChordQuery } from "@/lib/chord-search";
+import type { Instrument } from "@/lib/instruments";
 import { supabaseBrowser } from "@/lib/supabase";
 
 type PickerChord = {
@@ -13,12 +14,16 @@ type PickerChord = {
   position: { base_fret: number; frets: number[]; barres: number[] };
 };
 
-async function searchChords(query: string): Promise<PickerChord[]> {
+async function searchChords(
+  instrument: Instrument,
+  query: string,
+): Promise<PickerChord[]> {
   let qb = supabaseBrowser()
     .from("chords")
     .select(
       "name_en,name_es,positions:chord_positions!inner(base_fret,frets,barres,position)",
     )
+    .eq("instrument", instrument)
     .eq("positions.position", 1);
 
   const parsed = parseChordQuery(query);
@@ -47,6 +52,7 @@ async function searchChords(query: string): Promise<PickerChord[]> {
  * buscador + lista con mini diagramas; opción de quitar el acorde actual.
  */
 export function ChordPicker({
+  instrument,
   x,
   y,
   currentChord,
@@ -54,6 +60,7 @@ export function ChordPicker({
   onRemove,
   onClose,
 }: {
+  instrument: Instrument;
   x: number;
   y: number;
   currentChord: string | null;
@@ -74,7 +81,7 @@ export function ChordPicker({
     let cancelled = false;
     const timer = setTimeout(
       () => {
-        searchChords(query).then((results) => {
+        searchChords(instrument, query).then((results) => {
           if (!cancelled) setChords(results);
         });
       },
@@ -84,7 +91,7 @@ export function ChordPicker({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [instrument, query]);
 
   // Mantener el popover dentro del viewport (ancho fijo de 300px).
   const left = Math.min(Math.max(x - 150, 12), window.innerWidth - 312);

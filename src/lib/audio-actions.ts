@@ -52,7 +52,7 @@ export async function setYouTubeAudio(
   });
   if (error) return { ok: false, error: "db" };
 
-  revalidatePath(`/playlists`);
+  revalidatePath("/[instrument]/songs", "page");
   return { ok: true };
 }
 
@@ -84,7 +84,7 @@ export async function setFileAudio(
   });
   if (error) return { ok: false, error: "db" };
 
-  revalidatePath(`/playlists`);
+  revalidatePath("/[instrument]/songs", "page");
   return { ok: true };
 }
 

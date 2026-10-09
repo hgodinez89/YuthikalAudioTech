@@ -1,43 +1,42 @@
 {
   "metadata": {
     "title": "Yuthikal AudioTech",
-    "description": "Your digital music stand for guitar: chords, songs and karaoke mode with real audio."
+    "description": "Your digital music stand: chords, songs and karaoke mode with real audio, for guitar and ukulele."
   },
   "header": {
-    "instruments": "Instruments",
-    "chords": "Chords",
-    "playlists": "My Playlists",
     "toggleTheme": "Toggle theme",
     "switchLanguage": "Switch language",
-    "menu": "Menu"
+    "switchInstrument": "Switch instrument",
+    "settings": "Settings",
+    "language": "Language",
+    "theme": "Theme"
+  },
+  "nav": {
+    "chords": "Chords",
+    "songs": "Songs",
+    "basics": "Basics"
   },
   "auth": {
     "signIn": "Sign in with Google",
     "title": "Sign in to Yuthikal AudioTech",
-    "subtitle": "Your digital music stand for guitar: chords, songs and karaoke mode.",
+    "subtitle": "Your digital music stand: chords, songs and karaoke mode.",
     "googleButton": "Continue with Google",
     "lockNote": "Sign-up is only available with Google",
     "account": "Account",
-    "myPlaylists": "My playlists",
     "signOut": "Sign out"
   },
   "playlists": {
     "title": "My playlists",
-    "count": "{count, plural, =0 {No playlists} one {1 playlist} other {# playlists}}",
     "newPlaylist": "New playlist",
     "delete": "Delete",
     "deleteModal": {
       "title": "Delete this playlist?",
-      "message": "<b>\"{name}\"</b> and all of its songs will be permanently deleted. This action cannot be undone.",
+      "message": "<b>\"{name}\"</b> will be deleted. Its songs stay in My songs.",
       "confirm": "Yes, delete",
       "deleting": "Deleting…"
     },
     "like": "Liked",
     "difficulty": "Difficulty",
-    "songCount": "{count, plural, =0 {0 songs} one {1 song} other {# songs}}",
-    "emptyTitle": "You have no playlists yet",
-    "emptyDesc": "Create your first playlist to start organizing your songs with lyrics and chords.",
-    "emptyCta": "Create my first playlist",
     "close": "Close",
     "cancel": "Cancel",
     "create": "Create playlist",
@@ -94,54 +93,30 @@
     "back": "Back to home"
   },
   "landing": {
-    "badge": "Your digital music stand for guitar",
+    "badge": "Your digital music stand",
     "title": "Your music, your chords, <accent>your stage</accent>",
-    "subtitle": "Learn chords, write your songs with lyrics and chord charts, and play them karaoke-style with real synchronized audio — all in one place.",
-    "ctaStart": "Get started",
-    "ctaHow": "See how it works",
-    "heroCard": {
-      "songMeta": "Key Em · Ballad",
-      "karaokeBadge": "Karaoke",
-      "verse": "Verse 1"
-    },
-    "featuresEyebrow": "All in one",
-    "featuresTitle": "From the chord to the stage",
+    "subtitle": "Learn chords, write your songs with lyrics and chords, and play them with real synchronized audio.",
     "features": {
       "finderTitle": "Chord finder",
       "finderDesc": "Search by voice or text and browse every position of each chord on the neck.",
-      "referenceTitle": "Music reference",
-      "referenceDesc": "Strings and notes in Spanish and English, with traditional names and equivalences.",
       "songsTitle": "Your songs",
       "songsDesc": "Lyrics with chords anchored to each syllable, in the classic chord-sheet format.",
       "karaokeTitle": "Karaoke mode",
       "karaokeDesc": "Play the real audio and follow the lyrics and chords in perfect sync."
     },
-    "karaokeEyebrow": "Karaoke mode",
-    "karaokeTitle": "Play the real audio and follow the synced lyrics",
-    "karaokeDesc": "The current line lights up, chords appear right when they change and the music stand scrolls by itself. Perfect for your phone or tablet while you play.",
-    "statChords": "chords in the catalog",
-    "statLanguages": "languages ES / EN",
-    "statPlaylists": "private playlists",
-    "deviceNow": "Now",
-    "deviceNext": "Next",
-    "footerCopy": "© 2026 Yuthikal AudioTech"
+    "footerCopy": "© 2026 Yuthikal AudioTech",
+    "chooseInstrument": "Pick your instrument to start"
   },
   "songs": {
-    "songsTitle": "Songs",
     "newSong": "New song",
     "editPlaylist": "Edit playlist",
     "save": "Save",
     "saving": "Saving…",
-    "view": "View",
     "edit": "Edit",
-    "calibrate": "Calibrate",
-    "karaoke": "Karaoke",
-    "keyChip": "Key: {key}",
-    "statusRaw": "Not calibrated",
     "statusSynced": "Synced",
     "sourceFile": "MP3 file",
-    "emptyTitle": "This playlist has no songs yet",
-    "emptyDesc": "Add your first song with its lyrics and chords to start playing.",
+    "emptyTitle": "You have no songs yet",
+    "emptyDesc": "Create a song and paste its chord sheet, or write the lyrics with their chords.",
     "close": "Close",
     "cancel": "Cancel",
     "create": "Create song",
@@ -151,7 +126,10 @@
       "namePlaceholder": "E.g. Bésame mucho",
       "description": "Description",
       "descriptionPlaceholder": "Author, version or a note about this song…",
-      "key": "Key"
+      "key": "Key",
+      "playlist": "Playlist",
+      "noPlaylist": "No playlist",
+      "noKey": "Not set"
     },
     "errors": {
       "name": "Name is required (150 characters max).",
@@ -162,7 +140,18 @@
       "db": "Could not save. Try again.",
       "id": "Invalid identifier.",
       "content": "The song exceeds the maximum allowed size."
-    }
+    },
+    "title": "My songs",
+    "count": "{count, plural, =0 {No songs} one {1 song} other {# songs}}",
+    "all": "All",
+    "searchPlaceholder": "Search songs…",
+    "play": "Play",
+    "moreActions": "More actions",
+    "syncAudio": "Sync audio",
+    "emptyListTitle": "This playlist has no songs yet",
+    "noResults": "No results for “{query}”",
+    "gateTitle": "Sign in to see your songs",
+    "gateSubtitle": "Your songs and playlists are private and follow you across instruments."
   },
   "editor": {
     "textMode": "Text editor",
@@ -175,7 +164,7 @@
     "legendChord": "chord",
     "legendDirective": "directive",
     "preview": "Preview",
-    "previewEmpty": "Type on the left to see the preview.",
+    "previewEmpty": "Type on the left or use “Paste chord sheet” to see the preview.",
     "visualHint": "Click a word to place a chord above that syllable.",
     "visualEmpty": "No lyrics yet. Write them first in the text editor.",
     "pickerTitle": "Pick a chord",
@@ -193,7 +182,15 @@
     "deleteTitle": "Delete this song?",
     "deleteMessage": "<b>\"{name}\"</b> will be permanently deleted, including its lyrics and chords. This action cannot be undone.",
     "deleteConfirm": "Yes, delete",
-    "deleting": "Deleting…"
+    "deleting": "Deleting…",
+    "paste": {
+      "button": "Paste chord sheet",
+      "title": "Paste chord sheet",
+      "hint": "Paste lyrics with chords above them (as on chord websites); it's converted automatically.",
+      "placeholder": "Chorus:\nAm        F\nBesame, besame mucho…",
+      "previewEmpty": "The preview will appear here.",
+      "insert": "Insert into song"
+    }
   },
   "calibration": {
     "sourceTitle": "Audio source",
@@ -204,16 +201,19 @@
     "dropTitle": "Drop your MP3 here",
     "dropHint": "or click to choose a file (max 15 MB)",
     "uploading": "Uploading…",
-    "granularityTitle": "Granularity",
+    "granularityTitle": "Precision",
     "granularity": {
       "line": "By line",
       "lineHint": "Recommended · mark the start of each verse",
       "word": "By word / chord",
       "wordHint": "Advanced · maximum precision, takes longer"
     },
-    "granularityShort": { "line": "by line", "word": "by word" },
+    "granularityShort": {
+      "line": "by line",
+      "word": "by word"
+    },
     "tapTitle": "Press <kbd>SPACE</kbd> or tap here when this line starts",
-    "tapProgress": "Marking {n} of {total} · {granularity} granularity",
+    "tapProgress": "Marking {n} of {total} · {granularity} precision",
     "tapNeedsAudio": "Connect the audio and press play to start marking",
     "now": "Now",
     "remark": "Re-mark this line",
@@ -228,8 +228,8 @@
     "resetMessage": "The {count} captured marks will be deleted. This action cannot be undone.",
     "resetConfirm": "Yes, reset",
     "cancel": "Cancel",
-    "granularityChangeTitle": "Change granularity?",
-    "granularityChangeMessage": "Current marks will be deleted because they belong to a different granularity.",
+    "granularityChangeTitle": "Change precision?",
+    "granularityChangeMessage": "Current marks will be deleted because they belong to a different precision.",
     "granularityChangeConfirm": "Change and delete marks",
     "errors": {
       "url": "That YouTube URL is not valid.",
@@ -243,7 +243,6 @@
     }
   },
   "songView": {
-    "backToPlaylist": "Back to playlist",
     "keyPrefix": "Key:",
     "strum": "Strumming",
     "verse": "Verse",
@@ -254,12 +253,21 @@
     "fabUp": "Go to top",
     "emptyTitle": "This song has no content yet",
     "emptyDesc": "Open the editor to write the lyrics with their chords in ChordPro format.",
-    "emptyCta": "Open the editor"
+    "emptyCta": "Open the editor",
+    "backToSongs": "My songs",
+    "play": "Play",
+    "edit": "Edit",
+    "done": "Done",
+    "stepLyrics": "Lyrics",
+    "stepAudio": "Audio"
   },
   "karaoke": {
     "now": "Now",
     "next": "Next",
-    "variant": { "sync": "Synced", "auto": "Not calibrated" },
+    "variant": {
+      "sync": "Synced",
+      "auto": "Not calibrated"
+    },
     "exit": "Exit",
     "play": "Play",
     "pause": "Pause",
@@ -269,25 +277,40 @@
     "speed": "Speed",
     "slower": "Slower",
     "faster": "Faster",
-    "noSyncNote": "No sync — automatic scroll"
+    "noSyncNote": "No sync — automatic scroll",
+    "syncNow": "Sync audio"
   },
   "strings": {
-    "eyebrow": "Reference · Guitar",
-    "title": "The guitar strings",
-    "intro": "From the highest and thinnest (1st) to the lowest and thickest (6th). In standard tuning, their notes are E–B–G–D–A–E.",
+    "title": "{instrument, select, ukulele {The ukulele strings} other {The guitar strings}}",
+    "intro": "{instrument, select, ukulele {From the 1st to the 4th. In standard tuning their notes are G–C–E–A, with the 4th string (G) tuned high instead of low: re-entrant tuning.} other {From the highest and thinnest (1st) to the lowest and thickest (6th). In standard tuning, their notes are E–B–G–D–A–E.}}",
     "stringWord": "string",
     "gauge": "Gauge",
-    "pitch1": "The highest and thinnest",
-    "pitch2": "High",
-    "pitch3": "Middle",
-    "pitch4": "Low (wound)",
-    "pitch5": "Low (wound)",
-    "pitch6": "The lowest and thickest"
+    "pitch": {
+      "guitar": {
+        "1": "The highest and thinnest",
+        "2": "High",
+        "3": "Middle",
+        "4": "Low (wound)",
+        "5": "Low (wound)",
+        "6": "The lowest and thickest"
+      },
+      "ukulele": {
+        "1": "The highest",
+        "2": "High",
+        "3": "The lowest",
+        "4": "High (re-entrant)"
+      }
+    }
+  },
+  "basics": {
+    "eyebrow": "Reference · {instrument}",
+    "title": "Basics",
+    "strings": "Strings",
+    "notes": "Notes"
   },
   "notes": {
-    "eyebrow": "Reference · Guitar",
     "title": "The musical notes",
-    "intro": "The 12 notes of the chromatic scale: 7 <em>natural</em> and 5 <em>altered</em> notes (sharps and flats), which on the guitar live one fret apart.",
+    "intro": "The 12 notes of the chromatic scale: 7 <em>natural</em> and 5 <em>altered</em> notes (sharps and flats), which on the neck live one fret apart.",
     "legend": "How to read the cards:",
     "natural": "Natural",
     "altered": "Altered",
@@ -296,14 +319,13 @@
     "pianoTitle": "One octave on the piano"
   },
   "finder": {
-    "eyebrow": "Reference · Guitar",
+    "eyebrow": "Reference · {instrument}",
     "title": "Chord finder",
     "searchPlaceholder": "Search a chord… e.g. A minor, C#7, Bb",
     "clearSearch": "Clear search",
     "micLabel": "Voice search",
     "micTitle": "Search by voice",
     "micTitleUnsupported": "Your browser does not support voice search. Use Chrome or Edge.",
-    "micNote": "Voice search requires Chrome or Edge.",
     "micNoteUnsupported": "Voice search is not available in this browser — use Chrome or Edge.",
     "listening": "Listening…",
     "voiceError": {
@@ -331,6 +353,12 @@
       "augmented": "Augmented",
       "extended": "Extended",
       "other": "Other"
+    },
+    "pickNote": "Pick a note",
+    "pickType": "Pick a chord type",
+    "types": {
+      "major": "Major",
+      "minor": "minor"
     }
   },
   "chordDetail": {
@@ -346,14 +374,22 @@
     "barre": "barre"
   },
   "instruments": {
-    "eyebrow": "Start here",
-    "title": "Choose your instrument",
-    "subtitle": "Start with the guitar. More instruments are coming to your digital music stand soon.",
-    "explore": "Explore",
     "soon": "Coming soon",
-    "guitar": { "name": "Guitar", "desc": "Chords, strings, notes and your songs." },
-    "piano": { "name": "Piano", "desc": "Keys, scales and chords." },
-    "ukulele": { "name": "Ukulele", "desc": "Chords and songs." },
-    "bass": { "name": "Bass", "desc": "Notes and bass lines." }
+    "guitar": {
+      "name": "Guitar",
+      "desc": "Chords, strings, notes and your songs."
+    },
+    "piano": {
+      "name": "Piano",
+      "desc": "Keys, scales and chords."
+    },
+    "ukulele": {
+      "name": "Ukulele",
+      "desc": "Chords, strings, notes and your songs."
+    },
+    "bass": {
+      "name": "Bass",
+      "desc": "Notes and bass lines."
+    }
   }
 }
