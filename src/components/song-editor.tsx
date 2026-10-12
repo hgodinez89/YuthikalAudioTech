@@ -382,11 +382,11 @@ export function SongEditor({
         </div>
       </div>
 
-      {/* MODO TEXTO: editor + preview */}
+      {/* MODO TEXTO: editor + preview, cada panel con su propio scroll y cabecera fija */}
       {subMode === "text" && (
-        <div className="grid items-stretch gap-4 lg:grid-cols-2">
-          <div className="flex flex-col overflow-hidden rounded-2xl border border-edge bg-surface-3 dark:bg-[#0b0d12]">
-            <div className="flex items-center justify-between border-b border-edge px-4 py-3">
+        <div className="grid items-stretch gap-4 lg:h-[calc(100dvh-160px)] lg:min-h-[480px] lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)]">
+          <div className="flex h-[65dvh] min-h-[380px] flex-col overflow-hidden rounded-2xl border border-edge bg-surface-3 lg:h-auto lg:min-h-0 dark:bg-[#0b0d12]">
+            <div className="flex shrink-0 items-center justify-between border-b border-edge px-4 py-3">
               <span className="text-xs font-bold uppercase tracking-[0.14em] text-tert">
                 ChordPro
               </span>
@@ -403,7 +403,7 @@ export function SongEditor({
                 </span>
               </div>
             </div>
-            <div className="relative min-h-[460px] flex-1">
+            <div className="relative min-h-0 flex-1">
               <pre
                 ref={highlightRef}
                 aria-hidden
@@ -422,19 +422,19 @@ export function SongEditor({
                 }}
                 spellCheck={false}
                 aria-label="ChordPro"
-                className="absolute inset-0 resize-none overflow-auto whitespace-pre bg-transparent px-[18px] py-4 font-mono text-[13.5px] leading-[1.85] text-transparent caret-[var(--ink)] outline-none"
+                className="absolute inset-0 resize-none overflow-auto overscroll-contain whitespace-pre bg-transparent px-[18px] py-4 font-mono text-[13.5px] leading-[1.85] text-transparent caret-[var(--ink)] outline-none"
               />
             </div>
           </div>
 
-          <div className="flex flex-col overflow-hidden rounded-2xl border border-edge bg-surface">
-            <div className="flex items-center gap-2 border-b border-edge px-4 py-3">
+          <div className="flex h-[65dvh] min-h-[380px] flex-col overflow-hidden rounded-2xl border border-edge bg-surface lg:h-auto lg:min-h-0">
+            <div className="flex shrink-0 items-center gap-2 border-b border-edge px-4 py-3">
               <Eye size={14} strokeWidth={2} className="text-accent" />
               <span className="text-xs font-bold uppercase tracking-[0.14em] text-tert">
                 {t("preview")}
               </span>
             </div>
-            <div className="min-h-[460px] flex-1 overflow-auto px-6 py-[22px]">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-[22px]">
               {parsed.sections.length ? (
                 <ChordSheet
                   sections={parsed.sections}
