@@ -199,7 +199,9 @@
       "placeholder": "Coro:\nAm        F\nBésame, bésame mucho…",
       "previewEmpty": "La vista previa aparecerá aquí.",
       "insert": "Insertar en la canción"
-    }
+    },
+    "legendSection": "sección",
+    "legendNote": "nota"
   },
   "calibration": {
     "sourceTitle": "Fuente de audio",

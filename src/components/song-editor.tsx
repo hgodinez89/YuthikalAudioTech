@@ -16,6 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
+  Fragment,
   useEffect,
   useMemo,
   useRef,
@@ -24,7 +25,7 @@ import {
   type ReactNode,
 } from "react";
 import { ChordPicker } from "./chord-picker";
-import { ChordSheet } from "./chord-sheet";
+import { ChordSheet, SheetNote } from "./chord-sheet";
 import { ConfirmDialog } from "./confirm-dialog";
 import { FIELD_CLASS } from "./playlist-form-modal";
 import { chordsOverLyricsToChordPro } from "@/lib/chord-import";
@@ -32,6 +33,7 @@ import {
   arrowsToStrum,
   buildVisualModel,
   parseChordPro,
+  sectionHeaderLabel,
   setChordAtUnit,
   setSectionStrum,
   strumToArrows,
@@ -47,6 +49,24 @@ type SaveState = "saved" | "dirty" | "saving" | "error";
 /* ---------- resaltado de sintaxis del modo texto ---------- */
 
 function highlightLine(line: string, key: number): ReactNode {
+  // [[Sección]]: encabezado (azul de directivas, en negrita)
+  if (sectionHeaderLabel(line)) {
+    return (
+      <span key={key} className="font-bold text-[#5b8cff]">
+        {line}
+        {"\n"}
+      </span>
+    );
+  }
+  // {c: …}: nota para el músico (tenue, cursiva)
+  if (/^\s*\{\s*(c|comment|ci|comment_italic)\s*:/i.test(line)) {
+    return (
+      <span key={key} className="italic text-tert">
+        {line}
+        {"\n"}
+      </span>
+    );
+  }
   if (/^\s*\{[^}]*\}\s*$/.test(line)) {
     return (
       <span key={key} className="text-[#5b8cff]">
@@ -390,7 +410,7 @@ export function SongEditor({
               <span className="text-xs font-bold uppercase tracking-[0.14em] text-tert">
                 ChordPro
               </span>
-              <div className="flex gap-3 text-[11px] text-mute">
+              <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-[11px] text-mute">
                 <span className="inline-flex items-center gap-[5px]">
                   <span className="size-[9px] rounded-[2px] bg-accent" />[
                   {t("legendChord")}]
@@ -399,6 +419,16 @@ export function SongEditor({
                   <span className="size-[9px] rounded-[2px] bg-[#5b8cff]" />
                   {"{"}
                   {t("legendDirective")}
+                  {"}"}
+                </span>
+                <span className="inline-flex items-center gap-[5px] font-bold">
+                  <span className="size-[9px] rounded-[2px] bg-[#5b8cff]" />
+                  [[{t("legendSection")}]]
+                </span>
+                <span className="inline-flex items-center gap-[5px] italic">
+                  <span className="size-[9px] rounded-[2px] bg-tert" />
+                  {"{c: "}
+                  {t("legendNote")}
                   {"}"}
                 </span>
               </div>
@@ -495,33 +525,49 @@ export function SongEditor({
                       )}
                     </div>
                   )}
+                  {/* Mismo ritmo que la vista previa (ChordSheet), pero clicable */}
                   <div className="text-lg leading-[1.9]">
                     {section.lines.map((line) => (
-                      <div key={line.lineIndex} className="mb-1 flex flex-wrap items-end">
-                        {line.units.map((unit, ui) => (
-                          <span key={ui} className="inline-flex flex-col whitespace-pre">
-                            <span className="min-h-[22px] text-sm font-extrabold leading-relaxed tracking-[0.01em] text-accent">
-                              {unit.chord ?? ""}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                const r = e.currentTarget.getBoundingClientRect();
-                                setPicker({
-                                  lineIndex: line.lineIndex,
-                                  unit,
-                                  x: r.left + r.width / 2,
-                                  y: r.bottom + 8,
-                                });
-                              }}
-                              className="cursor-pointer text-left underline decoration-edge-2 decoration-dotted underline-offset-4 hover:decoration-accent"
-                            >
-                              {unit.text || "␣"}
-                            </button>
-                            <span> </span>
-                          </span>
+                      <Fragment key={line.lineIndex}>
+                        {line.gapBefore && <div className="h-[1.2em]" />}
+                        {line.notesBefore.map((note, ni) => (
+                          <SheetNote key={ni} text={note} />
                         ))}
-                      </div>
+                        <div className="mb-1 flex flex-wrap items-end">
+                          {line.units.map((unit, ui) => (
+                            <span
+                              key={ui}
+                              className={`inline-flex flex-col whitespace-pre ${
+                                unit.spaceAfter ? "mr-[0.3em]" : ""
+                              }`}
+                            >
+                              <span className="min-h-[22px] text-sm font-extrabold leading-relaxed tracking-[0.01em] text-accent">
+                                {unit.chord ?? ""}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  const r = e.currentTarget.getBoundingClientRect();
+                                  setPicker({
+                                    lineIndex: line.lineIndex,
+                                    unit,
+                                    x: r.left + r.width / 2,
+                                    y: r.bottom + 8,
+                                  });
+                                }}
+                                aria-label={unit.text || unit.chord || undefined}
+                                className="min-w-[1.1em] cursor-pointer text-left underline decoration-edge-2 decoration-dotted underline-offset-4 hover:decoration-accent"
+                              >
+                                {/* acorde sin palabra: espacio clicable sin glifo */}
+                                {unit.text || " "}
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </Fragment>
+                    ))}
+                    {section.trailingNotes.map((note, ni) => (
+                      <SheetNote key={ni} text={note} />
                     ))}
                   </div>
                 </section>

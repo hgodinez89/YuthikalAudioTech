@@ -21,6 +21,8 @@ import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
 type KaraokeLine = {
   section: string | null;
   strum: string | null;
+  /** Notas {c: …} que preceden a la línea (no se sincronizan). */
+  notes: string[];
   segments: SheetLine;
 };
 
@@ -33,15 +35,23 @@ function buildLines(
   ) => string | null,
 ): KaraokeLine[] {
   const lines: KaraokeLine[] = [];
+  // Las notas se adjuntan a la siguiente línea de letra (aunque sea de otra sección).
+  let notes: string[] = [];
   for (const section of parseChordPro(content).sections) {
     let first = true;
     for (const segments of section.lines) {
       if (!segments.length) continue; // separadores en blanco no aplican aquí
+      if (segments[0].note) {
+        notes.push(segments[0].text);
+        continue;
+      }
       lines.push({
         section: first ? sectionTitle(section.type, section.number, section.label) : null,
         strum: first && section.strum ? strumToArrows(section.strum) : null,
+        notes,
         segments,
       });
+      notes = [];
       first = false;
     }
   }
@@ -374,6 +384,18 @@ export function SongKaraoke({
                 className="text-center transition-[opacity,transform] duration-[400ms]"
                 style={{ opacity, transform: isCurrent ? "scale(1)" : "scale(0.98)" }}
               >
+                {line.notes.length > 0 && (
+                  <div className="mb-2 flex flex-wrap justify-center gap-2">
+                    {line.notes.map((note, ni) => (
+                      <span
+                        key={ni}
+                        className="rounded-lg border border-edge bg-surface-2 px-2.5 py-[3px] text-[12px] italic text-sub"
+                      >
+                        {note}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {line.section && (
                   <div className="mb-3 flex flex-wrap items-center justify-center gap-3">
                     <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-accent">

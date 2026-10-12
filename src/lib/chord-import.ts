@@ -2,11 +2,10 @@
  * Importador de cifrado "acordes encima de la letra" (el formato de casi
  * todos los sitios de acordes) a ChordPro:
  *
- *   Coro:
- *   Am        F         C
- *   Bésame, bésame mucho        →   {start_of_chorus: Coro}
- *                                    [Am]Bésame, [F]bésame [C]mucho
- *                                    {end_of_chorus}
+ *   Capo 3                      →   {c: Capo 3}
+ *   Coro:                            [[Coro]]
+ *   Am      F      C                 [Am]Bésame, [F]bésame [C]mucho
+ *   Bésame, bésame mucho
  *
  * Una línea es "de acordes" solo si TODOS sus tokens son símbolos de acorde
  * con mayúscula inicial (C#m7, Bb/D, Lam, Sol7…), así una letra como
@@ -25,14 +24,8 @@ const FILLER_RE = /^(?:\|+|-+|\/|\(?x\d+\)?|\*+)$/i;
 const SECTION_RE =
   /^[[(]?\s*(intro|introducci[oó]n|verso|verse|estrofa|pre-?coro|pre-?chorus|coro|chorus|estribillo|refr[aá]n|puente|bridge|interludio|interlude|solo|instrumental|outro|final)(\s*\d+)?\s*[\])]?\s*:?$/i;
 
-type SectionKind = "verse" | "chorus" | "bridge";
-
-function sectionKind(word: string): SectionKind {
-  const w = word.toLowerCase();
-  if (/^(coro|chorus|estribillo|refr)/.test(w)) return "chorus";
-  if (/^(puente|bridge)/.test(w)) return "bridge";
-  return "verse";
-}
+/* Indicaciones para el músico que suelen encabezar un cifrado. */
+const NOTE_RE = /^(capo|cejilla|afinaci[oó]n|tuning)\b/i;
 
 /** Expande tabuladores a espacios (tope cada 8 columnas) para alinear columnas. */
 function expandTabs(line: string): string {
@@ -74,19 +67,6 @@ const isDirective = (line: string) => /^\s*\{.*\}\s*$/.test(line);
 export function chordsOverLyricsToChordPro(text: string): string {
   const lines = text.split(/\r?\n/).map((l) => expandTabs(l).trimEnd());
   const out: string[] = [];
-  let open: SectionKind | null = null;
-
-  // Cierra la sección antes de las líneas en blanco que la separan de la siguiente.
-  const close = () => {
-    if (!open) return;
-    let blanks = 0;
-    while (out.length && out[out.length - 1] === "") {
-      out.pop();
-      blanks++;
-    }
-    out.push(`{end_of_${open}}`, ...Array<string>(blanks).fill(""));
-    open = null;
-  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -98,11 +78,14 @@ export function chordsOverLyricsToChordPro(text: string): string {
     const headerText = inlineChords ? inline[1] : trimmed;
     const header = headerText.match(SECTION_RE);
     if (header) {
-      close();
-      open = sectionKind(header[1]);
       const label = headerText.replace(/^[[(]\s*|\s*[\])]?\s*:?$/g, "").trim();
-      out.push(`{start_of_${open}: ${label}}`);
+      out.push(`[[${label}]]`);
       if (inlineChords) out.push(inlineChords.map((c) => `[${c.chord}]`).join(" "));
+      continue;
+    }
+
+    if (NOTE_RE.test(trimmed)) {
+      out.push(`{c: ${trimmed}}`);
       continue;
     }
 
@@ -129,7 +112,6 @@ export function chordsOverLyricsToChordPro(text: string): string {
       out.push(chords.map((c) => `[${c.chord}]`).join(" "));
     }
   }
-  close();
 
   return out
     .join("\n")

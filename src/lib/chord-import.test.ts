@@ -79,7 +79,7 @@ describe("chordsOverLyricsToChordPro", () => {
     expect(chordsOverLyricsToChordPro(input)).toBe("[Lam]Quiero c[Do/Mi]antar");
   });
 
-  it("encabezados → secciones ChordPro", () => {
+  it("encabezados → [[Sección]]", () => {
     const input = [
       "Verso 1:",
       "C       G",
@@ -91,20 +91,18 @@ describe("chordsOverLyricsToChordPro", () => {
     ].join("\n");
     expect(chordsOverLyricsToChordPro(input)).toBe(
       [
-        "{start_of_verse: Verso 1}",
+        "[[Verso 1]]",
         "[C]Primera [G]línea",
-        "{end_of_verse}",
         "",
-        "{start_of_chorus: Coro}",
+        "[[Coro]]",
         "[F]Estribi[C]llo aquí",
-        "{end_of_chorus}",
       ].join("\n"),
     );
   });
 
   it("encabezado con acordes en la misma línea", () => {
     expect(chordsOverLyricsToChordPro("Intro: C G Am")).toBe(
-      ["{start_of_verse: Intro}", "[C] [G] [Am]", "{end_of_verse}"].join("\n"),
+      ["[[Intro]]", "[C] [G] [Am]"].join("\n"),
     );
   });
 
@@ -123,7 +121,17 @@ describe("chordsOverLyricsToChordPro", () => {
       chordsOverLyricsToChordPro(["Coro:", "Am   F", "Bésame"].join("\n")),
     );
     expect(song.sections).toHaveLength(1);
-    expect(song.sections[0].type).toBe("chorus");
+    expect(song.sections[0].label).toBe("Coro");
     expect(song.sections[0].lines[0][0]).toEqual({ chord: "Am", text: "Bésam" });
+  });
+
+  it("indicaciones de capo/afinación → nota {c:}", () => {
+    expect(chordsOverLyricsToChordPro(["Capo 3", "Afinación: Drop D"].join("\n"))).toBe(
+      ["{c: Capo 3}", "{c: Afinación: Drop D}"].join("\n"),
+    );
+  });
+
+  it("[[Encabezado]] ya escrito pasa sin cambios", () => {
+    expect(chordsOverLyricsToChordPro("[[Intro]]")).toBe("[[Intro]]");
   });
 });

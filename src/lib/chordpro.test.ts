@@ -5,6 +5,7 @@ import {
   collectChords,
   parseChordPro,
   parseLyricUnits,
+  sectionHeaderLabel,
   setChordAtUnit,
   setSectionStrum,
   strumToArrows,
@@ -107,9 +108,54 @@ describe("parseLyricUnits — edición visual", () => {
   it("palabra con y sin acorde, con offsets crudos", () => {
     const units = parseLyricUnits("I went [Em]down");
     expect(units).toEqual([
-      { chord: null, text: "I", textStart: 0, chordStart: null, chordEnd: null },
-      { chord: null, text: "went", textStart: 2, chordStart: null, chordEnd: null },
-      { chord: "Em", text: "down", textStart: 11, chordStart: 7, chordEnd: 11 },
+      {
+        chord: null,
+        text: "I",
+        textStart: 0,
+        chordStart: null,
+        chordEnd: null,
+        spaceAfter: true,
+      },
+      {
+        chord: null,
+        text: "went",
+        textStart: 2,
+        chordStart: null,
+        chordEnd: null,
+        spaceAfter: true,
+      },
+      {
+        chord: "Em",
+        text: "down",
+        textStart: 11,
+        chordStart: 7,
+        chordEnd: 11,
+        spaceAfter: false,
+      },
+    ]);
+  });
+
+  it("espacio tras la palabra solo si existe en el texto", () => {
+    const sep = parseLyricUnits("On a [Em]cobweb");
+    expect(sep.map((u) => [u.text, u.spaceAfter])).toEqual([
+      ["On", true],
+      ["a", true],
+      ["cobweb", false],
+    ]);
+    const joined = parseLyricUnits("Any[Bm]where we");
+    expect(joined.map((u) => [u.text, u.spaceAfter])).toEqual([
+      ["Any", false],
+      ["where", true],
+      ["we", false],
+    ]);
+  });
+
+  it("acordes seguidos sin letra no se pierden", () => {
+    const units = parseLyricUnits("[C] [G] [Am]");
+    expect(units.map((u) => [u.chord, u.text, u.spaceAfter])).toEqual([
+      ["C", "", true],
+      ["G", "", true],
+      ["Am", "", false],
     ]);
   });
 
@@ -187,5 +233,75 @@ describe("collectChords", () => {
 
   it("canción sin acordes devuelve lista vacía", () => {
     expect(collectChords(parseChordPro("solo letra"))).toEqual([]);
+  });
+});
+
+describe("encabezados [[…]] y notas {c:}", () => {
+  const SONG = [
+    "{c: Capo III}",
+    "",
+    "[[Intro]]",
+    "[Em] [D]",
+    "",
+    "[[ Verse 1 ]]",
+    "On a [Em]cobweb",
+    "",
+    "In a [Bm]room",
+    "{c: Repetir x2}",
+    "[[Solo de guitarra]]",
+    "[Em]",
+  ].join("\n");
+
+  it("sectionHeaderLabel solo acepta doble corchete en toda la línea", () => {
+    expect(sectionHeaderLabel("[[Intro]]")).toBe("Intro");
+    expect(sectionHeaderLabel("  [[ Coro 2 ]]  ")).toBe("Coro 2");
+    expect(sectionHeaderLabel("[Intro]")).toBeNull();
+    expect(sectionHeaderLabel("[[Intro]] letra")).toBeNull();
+    expect(sectionHeaderLabel("[[]]")).toBeNull();
+  });
+
+  it("parseChordPro: secciones con etiqueta, notas y acordes reales", () => {
+    const song = parseChordPro(SONG);
+    expect(song.sections.map((s) => s.label)).toEqual([
+      null,
+      "Intro",
+      "Verse 1",
+      "Solo de guitarra",
+    ]);
+    expect(song.sections[0].lines[0]).toEqual([
+      { chord: null, text: "Capo III", note: true },
+    ]);
+    // la nota queda en la sección donde aparece
+    expect(song.sections[2].lines.at(-1)).toEqual([
+      { chord: null, text: "Repetir x2", note: true },
+    ]);
+    expect(collectChords(song)).toEqual(["Em", "D", "Bm"]);
+  });
+
+  it("[Em] solo en su línea sigue siendo acorde", () => {
+    const song = parseChordPro("[Em]");
+    expect(song.sections[0].lines[0][0].chord).toBe("Em");
+  });
+
+  it("buildVisualModel: encabezado, notas fuera de lines y separación de estrofas", () => {
+    const model = buildVisualModel(SONG);
+    expect(model.map((s) => [s.label, s.headerLineIndex])).toEqual([
+      [null, null],
+      ["Intro", 2],
+      ["Verse 1", 5],
+      ["Solo de guitarra", 10],
+    ]);
+    expect(model[0].lines).toHaveLength(0);
+    expect(model[0].trailingNotes).toEqual(["Capo III"]);
+    expect(model[1].lines[0].units.map((u) => u.chord)).toEqual(["Em", "D"]);
+    expect(model[2].lines.map((l) => l.gapBefore)).toEqual([false, true]);
+    expect(model[2].trailingNotes).toEqual(["Repetir x2"]);
+    // solo las líneas de letra cuentan para sincronizar
+    expect(model.flatMap((s) => s.lines)).toHaveLength(4);
+  });
+
+  it("nota antes de una línea de letra", () => {
+    const model = buildVisualModel("{c: suave}\nHola");
+    expect(model[0].lines[0].notesBefore).toEqual(["suave"]);
   });
 });

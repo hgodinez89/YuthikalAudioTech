@@ -199,7 +199,9 @@
       "placeholder": "Chorus:\nAm        F\nBesame, besame mucho…",
       "previewEmpty": "The preview will appear here.",
       "insert": "Insert into song"
-    }
+    },
+    "legendSection": "section",
+    "legendNote": "note"
   },
   "calibration": {
     "sourceTitle": "Audio source",

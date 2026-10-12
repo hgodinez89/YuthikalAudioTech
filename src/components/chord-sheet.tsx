@@ -16,6 +16,17 @@ export type SheetChordData = {
 
 export type ChordDataMap = Record<string, SheetChordData | undefined>;
 
+/** Nota para el músico ({c: …}): indicación aparte, no letra. */
+export function SheetNote({ text }: { text: string }) {
+  return (
+    <div className="my-2">
+      <span className="inline-block rounded-lg border border-edge bg-surface-2 px-3 py-1 text-sm italic leading-normal text-sub">
+        {text}
+      </span>
+    </div>
+  );
+}
+
 function sectionLabel(section: SheetSection, t: (key: string) => string): string | null {
   if (section.label) return section.label;
   if (section.type === "plain") return null;
@@ -89,6 +100,8 @@ export function ChordSheet({
               {section.lines.map((line, li) =>
                 line.length === 0 ? (
                   <div key={li} className="h-[1.2em]" />
+                ) : line[0].note ? (
+                  <SheetNote key={li} text={line[0].text} />
                 ) : (
                   <div key={li} className="mb-1 flex flex-wrap items-end">
                     {line.map((segment, gi) => (

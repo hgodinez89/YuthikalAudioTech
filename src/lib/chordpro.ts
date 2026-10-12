@@ -10,11 +10,20 @@
  *   I went [Em]down to the St. [Am]James In[Em]firmary
  *   {end_of_verse}
  *
+ * Atajos propios de la app:
+ *   [[Intro]]          encabezado de sección con cualquier texto
+ *   {c: Capo III}      nota para el músico (estándar ChordPro {comment:})
+ *
  * El render es SIEMPRE texto React (nunca HTML crudo): el contenido lo
  * escribe el usuario y debe quedar escapado.
  */
 
-export type ChordSegment = { chord: string | null; text: string };
+export type ChordSegment = {
+  chord: string | null;
+  text: string;
+  /** Nota para el músico ({c: …}): se muestra aparte, no es letra. */
+  note?: true;
+};
 export type SheetLine = ChordSegment[];
 export type SectionType = "verse" | "chorus" | "bridge" | "plain";
 
@@ -43,6 +52,16 @@ const SECTION_STARTS: Record<string, SectionType> = {
   start_of_bridge: "bridge",
   sob: "bridge",
 };
+
+/* Notas para el músico (ChordPro estándar). */
+const NOTE_DIRECTIVES = new Set(["c", "comment", "ci", "comment_italic"]);
+
+/** Texto de un encabezado `[[…]]` que ocupa toda la línea, o null. */
+export function sectionHeaderLabel(line: string): string | null {
+  const m = line.trim().match(/^\[\[([^[\]]+)\]\]$/);
+  const label = m?.[1].trim();
+  return label ? label : null;
+}
 
 const SECTION_ENDS = new Set([
   "end_of_verse",
@@ -118,7 +137,17 @@ export function parseChordPro(content: string): ParsedSong {
       } else if (name in SECTION_STARTS) {
         current = open(SECTION_STARTS[name], value || null);
       } else if (SECTION_ENDS.has(name)) current = null;
-      // directivas desconocidas (comment, capo…) se ignoran sin fallar
+      else if (NOTE_DIRECTIVES.has(name) && value) {
+        if (!current) current = open("plain", null);
+        current.lines.push([{ chord: null, text: value, note: true }]);
+      }
+      // directivas desconocidas (capo…) se ignoran sin fallar
+      continue;
+    }
+
+    const header = sectionHeaderLabel(line);
+    if (header) {
+      current = open("plain", header);
       continue;
     }
 
@@ -181,6 +210,8 @@ export type LyricUnit = {
   /** Rango del token [acorde] que lo precede, si existe. */
   chordStart: number | null;
   chordEnd: number | null;
+  /** En el texto original sigue un espacio antes de la próxima unidad. */
+  spaceAfter: boolean;
 };
 
 /** Divide una línea de letra en unidades clicables (palabra + acorde). */
@@ -193,6 +224,17 @@ export function parseLyricUnits(rawLine: string): LyricUnit[] {
 
   while ((match = regex.exec(rawLine)) !== null) {
     if (match[1] !== undefined) {
+      // Dos acordes seguidos ("[C] [G]"): el anterior queda como unidad sin texto.
+      if (pending) {
+        units.push({
+          chord: pending.chord || null,
+          text: "",
+          textStart: match.index,
+          chordStart: pending.start,
+          chordEnd: pending.end,
+          spaceAfter: rawLine.slice(pending.end, match.index).length > 0,
+        });
+      }
       pending = {
         chord: match[1].slice(1, -1).trim(),
         start: match.index,
@@ -207,10 +249,21 @@ export function parseLyricUnits(rawLine: string): LyricUnit[] {
         textStart: match.index,
         chordStart: pending?.start ?? null,
         chordEnd: pending?.end ?? null,
+        spaceAfter: false,
       });
       pending = null;
+      continue;
     }
     // espacios: separan unidades; un acorde pendiente se conserva
+    const last = units[units.length - 1];
+    if (
+      !pending &&
+      last &&
+      last.text &&
+      last.textStart + last.text.length === match.index
+    ) {
+      last.spaceAfter = true;
+    }
   }
   // acorde colgante al final de la línea sin palabra posterior
   if (pending) {
@@ -220,6 +273,7 @@ export function parseLyricUnits(rawLine: string): LyricUnit[] {
       textStart: rawLine.length,
       chordStart: pending.start,
       chordEnd: pending.end,
+      spaceAfter: false,
     });
   }
   return units;
@@ -273,7 +327,14 @@ export function setSectionStrum(
 
 /* Modelo del editor visual: secciones con índices de línea reales. */
 
-export type VisualLyricLine = { lineIndex: number; units: LyricUnit[] };
+export type VisualLyricLine = {
+  lineIndex: number;
+  units: LyricUnit[];
+  /** Hubo línea(s) en blanco antes, dentro de la sección (separación de estrofa). */
+  gapBefore: boolean;
+  /** Notas {c: …} que van justo antes de esta línea. */
+  notesBefore: string[];
+};
 
 export type VisualSection = {
   /** Índice de línea del encabezado {sov}/{soc}/{sob}; null en secciones implícitas. */
@@ -282,7 +343,10 @@ export type VisualSection = {
   number: number;
   label: string | null;
   strum: string | null;
+  /** Solo letra: es lo que se marca al sincronizar (las notas no cuentan). */
   lines: VisualLyricLine[];
+  /** Notas {c: …} al final de la sección, sin letra después. */
+  trailingNotes: string[];
 };
 
 export function buildVisualModel(content: string): VisualSection[] {
@@ -308,9 +372,19 @@ export function buildVisualModel(content: string): VisualSection[] {
       label,
       strum: null,
       lines: [],
+      trailingNotes: [],
     };
     sections.push(section);
     return section;
+  };
+
+  // Notas y separaciones pendientes hasta la próxima línea de letra.
+  let pendingNotes: string[] = [];
+  let pendingGap = false;
+  const flush = () => {
+    if (current && pendingNotes.length) current.trailingNotes.push(...pendingNotes);
+    pendingNotes = [];
+    pendingGap = false;
   };
 
   const rawLines = content.split("\n");
@@ -325,19 +399,42 @@ export function buildVisualModel(content: string): VisualSection[] {
         if (!current) current = open("plain", null, null);
         current.strum = value || null;
       } else if (name in SECTION_STARTS) {
+        flush();
         current = open(SECTION_STARTS[name], value || null, i);
       } else if (SECTION_ENDS.has(name)) {
+        flush();
         current = null;
+      } else if (NOTE_DIRECTIVES.has(name) && value) {
+        if (!current) current = open("plain", null, null);
+        pendingNotes.push(value);
       }
       continue;
     }
 
-    if (!line.trim()) continue;
-    if (!current) current = open("plain", null, null);
-    current.lines.push({ lineIndex: i, units: parseLyricUnits(rawLines[i]) });
-  }
+    const header = sectionHeaderLabel(line);
+    if (header) {
+      flush();
+      current = open("plain", header, i);
+      continue;
+    }
 
-  return sections.filter((s) => s.lines.length > 0);
+    if (!line.trim()) {
+      pendingGap = true;
+      continue;
+    }
+    if (!current) current = open("plain", null, null);
+    current.lines.push({
+      lineIndex: i,
+      units: parseLyricUnits(rawLines[i]),
+      gapBefore: pendingGap && current.lines.length > 0,
+      notesBefore: pendingNotes,
+    });
+    pendingNotes = [];
+    pendingGap = false;
+  }
+  flush();
+
+  return sections.filter((s) => s.lines.length > 0 || s.trailingNotes.length > 0);
 }
 
 /** Acordes únicos de la canción, en orden de aparición. */
