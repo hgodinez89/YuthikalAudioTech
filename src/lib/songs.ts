@@ -44,3 +44,18 @@ export function validateSong(input: SongInput): SongValidationError | null {
 }
 
 export const MAX_CONTENT_LENGTH = 20000;
+
+const MAX_NAME_LENGTH = 150;
+
+/** Nombre sugerido para una copia: "Canción (copia)", sin pasar del máximo. */
+export function copyName(name: string, suffix: string): string {
+  const tail = ` (${suffix})`;
+  return name.trim().slice(0, MAX_NAME_LENGTH - tail.length) + tail;
+}
+
+export type DuplicateInclude = { audio: boolean; sync: boolean };
+
+/** La sincronización solo tiene sentido con el audio al que pertenecen sus marcas. */
+export function normalizeInclude(include: DuplicateInclude): DuplicateInclude {
+  return { audio: include.audio, sync: include.audio && include.sync };
+}

@@ -2,6 +2,7 @@
 
 import {
   Check,
+  Copy,
   Ellipsis,
   FileMusic,
   FolderInput,
@@ -19,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { ConfirmDialog } from "./confirm-dialog";
+import { DuplicateSongModal } from "./duplicate-song-modal";
 import { FIELD_CLASS, PlaylistFormModal } from "./playlist-form-modal";
 import { StarsRow } from "./stars";
 import type { Instrument } from "@/lib/instruments";
@@ -29,7 +31,12 @@ import { keyLabel, validateSong, type SongRow } from "@/lib/songs";
 
 export type SongListRow = Omit<SongRow, "content"> & {
   source: "youtube" | "file" | null;
+  /** Título del video (para mostrarlo al duplicar). */
+  youtubeTitle: string | null;
   synced: boolean;
+  /** Marcas de sincronización y su precisión (para mostrarlas al duplicar). */
+  stampCount: number;
+  granularity: "line" | "word" | null;
 };
 
 export type PlaylistWithCount = PlaylistRow & { songs_count: number };
@@ -356,10 +363,12 @@ function MoveSongModal({
 function SongMenu({
   songUrl,
   onMove,
+  onDuplicate,
   onDelete,
 }: {
   songUrl: (mode?: string) => string;
   onMove: () => void;
+  onDuplicate: () => void;
   onDelete: () => void;
 }) {
   const t = useTranslations("songs");
@@ -406,6 +415,17 @@ function SongMenu({
               <FolderInput size={16} strokeWidth={2} />
               {t("moveToPlaylist")}
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onDuplicate();
+              }}
+              className="flex w-full cursor-pointer items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-[13.5px] hover:bg-edge"
+            >
+              <Copy size={16} strokeWidth={2} />
+              {t("duplicate")}
+            </button>
             <div className="mx-1.5 my-1 h-px bg-edge" />
             <button
               type="button"
@@ -447,6 +467,24 @@ export function SongsView({
   const [search, setSearch] = useState("");
   const [songToDelete, setSongToDelete] = useState<SongListRow | null>(null);
   const [songToMove, setSongToMove] = useState<SongListRow | null>(null);
+  const [songToDuplicate, setSongToDuplicate] = useState<SongListRow | null>(null);
+  /* La copia recién creada se resalta unos segundos; si quedó en otra
+     playlist que la filtrada, un aviso dice dónde está. */
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const onDuplicated = (newId: string, playlistId: string | null) => {
+    setSongToDuplicate(null);
+    router.refresh();
+    setHighlightId(newId);
+    setTimeout(() => setHighlightId((id) => (id === newId ? null : id)), 4000);
+    if (activeListId && playlistId !== activeListId) {
+      const where =
+        playlists.find((p) => p.id === playlistId)?.name ?? t("form.noPlaylist");
+      setNotice(t("duplicatedElsewhere", { name: where }));
+      setTimeout(() => setNotice(null), 5000);
+    }
+  };
   const [createForSong, setCreateForSong] = useState<SongListRow | null>(null);
   const [deletingSong, startDeleteSong] = useTransition();
   const [newSongOpen, setNewSongOpen] = useState(false);
@@ -648,7 +686,11 @@ export function SongsView({
             return (
               <article
                 key={song.id}
-                className="relative flex items-center gap-3 rounded-[14px] border border-edge bg-surface py-3 pl-[18px] pr-3 transition-colors duration-150 hover:border-edge-2"
+                className={`relative flex items-center gap-3 rounded-[14px] border bg-surface py-3 pl-[18px] pr-3 transition-[border-color,box-shadow] duration-300 ${
+                  song.id === highlightId
+                    ? "border-accent shadow-[0_0_0_3px_rgba(53,214,232,0.18)]"
+                    : "border-edge hover:border-edge-2"
+                }`}
               >
                 {/* Toda la fila abre la canción */}
                 <Link href={url()} className="absolute inset-0" aria-label={song.name} />
@@ -687,6 +729,7 @@ export function SongsView({
                   <SongMenu
                     songUrl={url}
                     onMove={() => setSongToMove(song)}
+                    onDuplicate={() => setSongToDuplicate(song)}
                     onDelete={() => setSongToDelete(song)}
                   />
                   <Link
@@ -730,7 +773,25 @@ export function SongsView({
         </div>
       )}
 
+      {/* Aviso: la copia quedó en otra playlist */}
+      {notice && (
+        <div
+          role="status"
+          className="fixed bottom-[92px] left-1/2 z-50 -translate-x-1/2 rounded-[12px] border border-accent/40 bg-surface px-4 py-2.5 text-[13.5px] font-semibold shadow-[0_18px_44px_rgba(0,0,0,0.5)] sm:bottom-8"
+        >
+          {notice}
+        </div>
+      )}
+
       {/* MODALES */}
+      {songToDuplicate && (
+        <DuplicateSongModal
+          song={songToDuplicate}
+          playlists={playlists}
+          onClose={() => setSongToDuplicate(null)}
+          onDone={onDuplicated}
+        />
+      )}
       {songToMove && (
         <MoveSongModal
           song={songToMove}

@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseWithSession } from "./supabase-server";
-import { MAX_CONTENT_LENGTH, validateSong, type SongInput } from "./songs";
+import { validateStamps, type SongAudioRow, type SongSyncRow } from "./audio";
+import {
+  MAX_CONTENT_LENGTH,
+  normalizeInclude,
+  validateSong,
+  type DuplicateInclude,
+  type SongInput,
+} from "./songs";
 
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -111,4 +118,99 @@ export async function deleteSong(id: string): Promise<ActionResult> {
 
   revalidateSongs();
   return { ok: true };
+}
+
+/**
+ * Duplica una canción: metadatos del formulario, la letra del original y,
+ * si se pide, su audio (YouTube, o el MP3 copiado como archivo propio) y su
+ * sincronización. Si un paso falla tras crear la copia, se deshace todo.
+ */
+export async function duplicateSong(
+  sourceId: string,
+  input: SongInput,
+  include: DuplicateInclude,
+): Promise<ActionResult> {
+  if (!isUuid(sourceId)) return { ok: false, error: "id" };
+  const invalid = validateSong(input);
+  if (invalid) return { ok: false, error: invalid };
+  const want = normalizeInclude(include);
+
+  const supabase = await supabaseWithSession();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "auth" };
+
+  // RLS: solo se lee si la canción es del usuario.
+  const { data: source } = await supabase
+    .from("songs")
+    .select(
+      "content,audio:song_audio(source,youtube_id,youtube_title,file_path),sync:song_sync(granularity,stamps)",
+    )
+    .eq("id", sourceId)
+    .maybeSingle<{
+      content: string;
+      audio: Omit<SongAudioRow, "song_id"> | null;
+      sync: Omit<SongSyncRow, "song_id"> | null;
+    }>();
+  if (!source) return { ok: false, error: "id" };
+
+  const { data: created, error: createError } = await supabase
+    .from("songs")
+    .insert({
+      playlist_id: input.playlistId,
+      user_id: user.id,
+      name: input.name.trim(),
+      description: input.description.trim(),
+      key_note: input.keyNote,
+      content: source.content,
+    })
+    .select("id")
+    .single();
+  if (createError || !created) return { ok: false, error: "db" };
+  const newId = created.id as string;
+
+  let copiedFile: string | null = null;
+  const undo = async (error: string): Promise<ActionResult> => {
+    // Borrar la canción arrastra su audio y su sincronización (cascada).
+    await supabase.from("songs").delete().eq("id", newId);
+    if (copiedFile) await supabase.storage.from("audio").remove([copiedFile]);
+    return { ok: false, error };
+  };
+
+  if (want.audio && source.audio) {
+    const audio = source.audio;
+    let filePath: string | null = null;
+    if (audio.source === "file" && audio.file_path) {
+      // Archivo propio para la copia: cambiar o borrar uno no afecta al otro.
+      filePath = `${user.id}/${newId}.mp3`;
+      const { error } = await supabase.storage
+        .from("audio")
+        .copy(audio.file_path, filePath);
+      if (error) return undo("copyAudio");
+      copiedFile = filePath;
+    }
+    const { error } = await supabase.from("song_audio").insert({
+      song_id: newId,
+      user_id: user.id,
+      source: audio.source,
+      youtube_id: audio.source === "youtube" ? audio.youtube_id : null,
+      youtube_title: audio.source === "youtube" ? audio.youtube_title : null,
+      file_path: filePath,
+    });
+    if (error) return undo("db");
+  }
+
+  if (want.sync && source.audio && source.sync && validateStamps(source.sync.stamps)) {
+    const { error } = await supabase.from("song_sync").insert({
+      song_id: newId,
+      user_id: user.id,
+      granularity: source.sync.granularity,
+      stamps: source.sync.stamps,
+    });
+    if (error) return undo("db");
+  }
+
+  revalidateSongs();
+  return { ok: true, id: newId };
 }

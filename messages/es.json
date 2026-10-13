@@ -139,7 +139,8 @@
       "auth": "Tu sesión expiró. Vuelve a iniciar sesión.",
       "db": "No se pudo guardar. Intenta de nuevo.",
       "id": "Identificador inválido.",
-      "content": "La canción supera el tamaño máximo permitido."
+      "content": "La canción supera el tamaño máximo permitido.",
+      "copyAudio": "No se pudo copiar el archivo de audio. Intenta de nuevo."
     },
     "title": "Mis canciones",
     "count": "{count, plural, =0 {Sin canciones} one {1 canción} other {# canciones}}",
@@ -160,7 +161,18 @@
       "createNew": "Nuevo playlist",
       "confirm": "Mover",
       "moving": "Moviendo…"
-    }
+    },
+    "duplicate": "Duplicar",
+    "duplicateTitle": "Duplicar canción",
+    "duplicating": "Duplicando…",
+    "copySuffix": "copia",
+    "copyAlso": "También copiar",
+    "copyLyricsNote": "La letra y los acordes se copian siempre.",
+    "copyAudio": "Audio",
+    "copySync": "Sincronización",
+    "copySyncDetail": "{count, plural, one {1 marca} other {# marcas}} · {granularity, select, word {por palabra} other {por línea}}",
+    "copyFileNote": "El MP3 se copia como un archivo propio de la nueva canción.",
+    "duplicatedElsewhere": "Duplicada en «{name}»"
   },
   "editor": {
     "textMode": "Editor de texto",

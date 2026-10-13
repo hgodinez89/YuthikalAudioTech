@@ -139,7 +139,8 @@
       "auth": "Your session expired. Please sign in again.",
       "db": "Could not save. Try again.",
       "id": "Invalid identifier.",
-      "content": "The song exceeds the maximum allowed size."
+      "content": "The song exceeds the maximum allowed size.",
+      "copyAudio": "The audio file couldn't be copied. Please try again."
     },
     "title": "My songs",
     "count": "{count, plural, =0 {No songs} one {1 song} other {# songs}}",
@@ -160,7 +161,18 @@
       "createNew": "New playlist",
       "confirm": "Move",
       "moving": "Moving…"
-    }
+    },
+    "duplicate": "Duplicate",
+    "duplicateTitle": "Duplicate song",
+    "duplicating": "Duplicating…",
+    "copySuffix": "copy",
+    "copyAlso": "Also copy",
+    "copyLyricsNote": "Lyrics and chords are always copied.",
+    "copyAudio": "Audio",
+    "copySync": "Sync",
+    "copySyncDetail": "{count, plural, one {1 mark} other {# marks}} · {granularity, select, word {by word} other {by line}}",
+    "copyFileNote": "The MP3 is copied as the new song's own file.",
+    "duplicatedElsewhere": "Duplicated into “{name}”"
   },
   "editor": {
     "textMode": "Text editor",

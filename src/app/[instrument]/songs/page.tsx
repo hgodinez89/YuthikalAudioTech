@@ -53,7 +53,7 @@ export default async function SongsPage({
   let query = supabase
     .from("songs")
     .select(
-      "id,playlist_id,name,description,key_note,created_at,audio:song_audio(source),sync:song_sync(stamps)",
+      "id,playlist_id,name,description,key_note,created_at,audio:song_audio(source,youtube_title),sync:song_sync(granularity,stamps)",
     )
     .order("created_at", { ascending: false });
   if (activeList) query = query.eq("playlist_id", activeList.id);
@@ -61,9 +61,9 @@ export default async function SongsPage({
   // song_audio y song_sync son relaciones uno-a-uno (song_id es su PK),
   // así que PostgREST las devuelve como objeto o null, no como array.
   const { data: songs, error: songsError } = await query.returns<
-    (Omit<SongListRow, "source" | "synced"> & {
-      audio: { source: "youtube" | "file" } | null;
-      sync: { stamps: unknown[] } | null;
+    (Omit<SongListRow, "source" | "youtubeTitle" | "synced" | "stampCount" | "granularity"> & {
+      audio: { source: "youtube" | "file"; youtube_title: string | null } | null;
+      sync: { granularity: "line" | "word"; stamps: unknown[] } | null;
     })[]
   >();
   if (songsError) throw new Error(songsError.message);
@@ -71,7 +71,10 @@ export default async function SongsPage({
   const rows: SongListRow[] = (songs ?? []).map(({ audio, sync, ...song }) => ({
     ...song,
     source: audio?.source ?? null,
+    youtubeTitle: audio?.youtube_title ?? null,
     synced: (sync?.stamps?.length ?? 0) > 0,
+    stampCount: sync?.stamps?.length ?? 0,
+    granularity: sync?.granularity ?? null,
   }));
 
   return (
