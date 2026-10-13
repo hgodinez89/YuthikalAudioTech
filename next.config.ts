@@ -26,6 +26,8 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
+  // El login de Google es por redirección (sin popup): aislar la ventana es seguro.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   { key: "Permissions-Policy", value: "camera=(), geolocation=(), microphone=(self)" },
 ];
 
@@ -45,7 +47,11 @@ const nextConfig: NextConfig = {
         destination: "/guitar/songs/:songId",
         permanent: false,
       },
-      { source: "/playlists/:id", destination: "/guitar/songs?list=:id", permanent: false },
+      {
+        source: "/playlists/:id",
+        destination: "/guitar/songs?list=:id",
+        permanent: false,
+      },
     ];
   },
   async headers() {

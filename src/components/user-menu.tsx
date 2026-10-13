@@ -9,7 +9,6 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { LanguageSwitcher } from "./language-switcher";
 import { ThemeToggle } from "./theme-toggle";
-import { supabaseBrowser } from "@/lib/supabase";
 
 function GoogleGlyph() {
   return (
@@ -37,19 +36,30 @@ export function UserMenu() {
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  /* supabase-js se carga tras hidratar (fuera del bundle inicial). La sesión
+     solo pinta el avatar: INITIAL_SESSION la lee de las cookies sin ir a la
+     red; los datos los protegen getUser() en servidor y RLS. */
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) =>
-      setUser(session?.user ?? null),
-    );
-    return () => subscription.unsubscribe();
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+    import("@/lib/supabase").then(({ supabaseBrowser }) => {
+      if (cancelled) return;
+      const {
+        data: { subscription },
+      } = supabaseBrowser().auth.onAuthStateChange((_event, session) =>
+        setUser(session?.user ?? null),
+      );
+      unsubscribe = () => subscription.unsubscribe();
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
   const signOut = async () => {
     setMenuOpen(false);
+    const { supabaseBrowser } = await import("@/lib/supabase");
     await supabaseBrowser().auth.signOut();
     router.push("/");
     router.refresh();

@@ -93,12 +93,15 @@ src/app/                  Rutas (App Router)
   api/keepalive/          Ping del cron
   auth/callback/          Canje del código OAuth (valida redirects internos)
   page.tsx                Landing: elección de instrumento (redirige al último usado)
+  robots.ts / sitemap.ts  robots.txt y sitemap (secciones públicas, escalas y acordes)
   [instrument]/           guitar | ukulele | piano (otro → 404); layout con barra inferior
-    chords/[id]           Buscador (selector nota + tipo) y detalle por slug
+    chords/[id]           Buscador (1.ª página desde el servidor; selector nota + tipo)
+                          y detalle por slug
     scales/[slug]         Escalas: selector nota + tipo, mástil/teclado, posiciones y
                           acordes de la escala (/scales → Do mayor)
     songs/[songId]        Mis canciones (lista plana, ?list= filtra por playlist) y
                           canción con ?mode=view|edit|karaoke y &step=lyrics|audio
+                          (única ruta con loading.tsx)
     basics/               Cuerdas (o teclado en piano) + notas musicales
   login/                  Login con Google; ?next= regresa a la página de origen
 src/components/           UI (fieles al handoff):
@@ -120,6 +123,7 @@ src/components/           UI (fieles al handoff):
 src/lib/                  Lógica y acceso a datos:
   chordpro.ts             Parser/edición ChordPro (+tests)
   chord-search.ts         Parser de búsqueda ES/EN, slugs y selector rápido (+tests)
+  chord-query.ts          Página del buscador de acordes (servidor y cliente)
   chord-import.ts         Cifrado "acordes encima de la letra" → ChordPro (+tests)
   instruments.ts          Instrumentos activos/próximos, afinaciones, ids y rutas (+tests)
   piano.ts                Acordes de piano calculados: voicings, inversiones, dedos (+tests)
@@ -130,6 +134,7 @@ src/lib/                  Lógica y acceso a datos:
   use-audio-engine.ts     Reloj unificado YouTube IFrame API / <audio>
   *-actions.ts            Server actions (re-validación en servidor)
   supabase(-server).ts    Clientes anon (público) y con sesión (cookies)
+  site.ts                 URL pública (VERCEL_PROJECT_PRODUCTION_URL) para metadata y sitemap
 src/proxy.ts              Refresco de sesión de Supabase + cookie del último instrumento
 src/i18n/                 Configuración next-intl por cookie (sin rutas por idioma)
 ```
@@ -164,9 +169,12 @@ Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del
 - *Canciones independientes del instrumento*: el ChordPro solo nombra acordes, así que la misma canción sirve en guitarra, ukelele y piano; el instrumento activo decide qué diagramas se muestran.
 - *Lista plana de canciones*: las playlists son filtros opcionales; borrar una playlist conserva sus canciones. Las playlists mantienen género y doble calificación.
 - *Canción*: Ver (con **Tocar** como acción principal) y Editar en dos pasos, **Letra → Audio** (la antigua "Calibración", ahora "Sincronizar audio"; `?mode=calibrate` sigue funcionando).
-- *Rutas 200 con UI de error/redirect*: por el streaming de Next 16 + la pantalla Loading global, páginas inexistentes o protegidas responden HTTP 200 con la UI correcta (404 visual / redirect a login). Sin impacto para una app personal sin SEO; los datos jamás se filtran (los guards corren antes de cualquier query).
+- *Sin pantalla de carga global* (rendimiento/Lighthouse): el título y el contenido se pintan en el primer render, sin el cambio desde "Afinando tu sesión…". Solo `[instrument]/songs` tiene `loading.tsx` (sesión + BD). Por eso las URLs inexistentes responden 404 real; bajo `/songs`, por el streaming, siguen respondiendo HTTP 200 con la UI correcta (404 visual / redirect a login). Los datos jamás se filtran (los guards corren antes de cualquier query).
+- *Rendimiento del buscador*: la primera página de acordes se consulta en el servidor (catálogo público, anon key) y viaja en el HTML; supabase-js se carga de forma diferida (al buscar/paginar y tras hidratar el menú de cuenta, que lee la sesión con `onAuthStateChange` sin ir a la red). Las tarjetas no se prefetchean al entrar en pantalla (solo al pasar el ratón); los logos por tema no se precargan (solo baja el visible); JetBrains Mono no se precarga.
+- *SEO*: el sitio es indexable; `robots.txt` excluye login, auth, api y playlists; el sitemap incluye básicos, buscador, escalas y detalle de acordes por instrumento (las canciones son de cada usuario). Medir Lighthouse en incógnito: la Vercel Toolbar (sesión de Vercel) inyecta un script que la CSP bloquea a propósito.
 - *Pantalla de consentimiento de Google* muestra el dominio de Supabase: comportamiento estándar sin dominio propio; se aceptó (opción A) — cambiarlo requiere el add-on Custom Domain de Supabase + verificación de Google.
 - *Búsqueda por voz* solo Chrome/Edge (Web Speech API); la UI lo indica y degrada a escritura.
 - *Acordes con bajo alterado* excluidos del catálogo (48); re-incluibles editando `scripts/generate-chords-sql.mjs`.
 - *Tabla `profiles` omitida*: nombre/avatar salen de la sesión de Google; idioma/tema se persisten en el navegador.
-- *CSP*: `script-src` incluye `'unsafe-inline'` (requisito de hidratación de Next sin nonces) y `https://www.youtube.com` (IFrame API); `connect-src` limitado a Supabase; `frame-ancestors 'none'`.
+- *CSP*: `script-src` incluye `'unsafe-inline'` (requisito de hidratación de Next sin nonces) y `https://www.youtube.com` (IFrame API); `connect-src` limitado a Supabase; `frame-ancestors 'none'`. `Cross-Origin-Opener-Policy: same-origin` (el login de Google es por redirección, no popup).
+- *Contraste AA*: `--sub`, `--tert`, `--mute` y `--accent` (claro) y `--mute` (oscuro) se ajustaron respecto al handoff para alcanzar ≥ 4,5:1.

@@ -11,26 +11,19 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ChordCard, type ChordCardData } from "./chord-card";
+import { ChordCard } from "./chord-card";
 import {
-  chordSlug,
-  composeChordQuery,
-  escapeLike,
-  parseChordQuery,
-} from "@/lib/chord-search";
+  fetchChords,
+  type ChordGrouping,
+  type ChordPage,
+  type ChordRow,
+} from "@/lib/chord-query";
+import { chordSlug, composeChordQuery, parseChordQuery } from "@/lib/chord-search";
 import { DB_KEYS, NOTE_LABELS, ROOT_SHORT_ES, type ChordCategory } from "@/lib/chords";
-import { catalogInstrument, isFretted, type Instrument } from "@/lib/instruments";
-import { PIANO_SUFFIXES, pianoRootKeys } from "@/lib/piano";
-import { supabaseBrowser } from "@/lib/supabase";
-
-const PAGE_SIZE = 36;
-
-type Row = ChordCardData & { key: string; suffix: string; category: ChordCategory };
+import type { Instrument } from "@/lib/instruments";
 
 /* Tipos del selector rápido (los más usados), en el orden de aprendizaje. */
 const QUICK_TYPES = ["major", "minor", "7", "m7", "maj7", "sus4", "dim", "aug", "9"];
-
-type FetchResult = { rows: Row[]; total: number };
 
 /* Reconocimiento de voz (Chrome/Edge). Tipado mínimo del API Web Speech. */
 type SpeechRecognitionInstance = {
@@ -84,56 +77,20 @@ function voiceErrorKey(error: string): string {
   }
 }
 
-async function fetchChords(
+/* supabase-js solo se descarga al buscar o paginar: la primera página viene
+   del servidor. */
+async function fetchPage(
   instrument: Instrument,
-  rawQuery: string,
-  grouping: "cat" | "note",
+  query: string,
+  grouping: ChordGrouping,
   offset: number,
-): Promise<FetchResult> {
-  const parsed = parseChordQuery(rawQuery);
-  let qb = supabaseBrowser()
-    .from("chords")
-    .select(
-      "id,key,suffix,name_en,name_es,category,positions:chord_positions!inner(base_fret,frets,barres,position)",
-      { count: "exact" },
-    )
-    .eq("instrument", catalogInstrument(instrument))
-    .eq("positions.position", 1);
-  // Piano: identidad del catálogo de guitarra, solo tipos que se tocan en teclado.
-  if (!isFretted(instrument)) qb = qb.in("suffix", PIANO_SUFFIXES);
-
-  if (parsed.kind === "chord") {
-    qb = qb.in("key", parsed.keys);
-    if (parsed.suffixes) qb = qb.in("suffix", parsed.suffixes);
-  } else if (parsed.kind === "text") {
-    qb = qb.ilike("search_text", `%${escapeLike(parsed.text)}%`);
-  }
-
-  qb =
-    grouping === "cat"
-      ? qb.order("category_order").order("note_order").order("name_en")
-      : qb.order("note_order").order("category_order").order("name_en");
-
-  const { data, count, error } = await qb.range(offset, offset + PAGE_SIZE - 1);
-  if (error) throw new Error(error.message);
-
-  const rows: Row[] = (data ?? []).map((r) => ({
-    id: r.id as string,
-    key: r.key as string,
-    suffix: r.suffix as string,
-    name_en: r.name_en as string,
-    name_es: r.name_es as string,
-    category: r.category as ChordCategory,
-    position: (r.positions as Row["position"][])[0],
-    keys: isFretted(instrument)
-      ? undefined
-      : pianoRootKeys(r.key as string, r.suffix as string),
-  }));
-  return { rows, total: count ?? 0 };
+): Promise<ChordPage> {
+  const { supabaseBrowser } = await import("@/lib/supabase");
+  return fetchChords(supabaseBrowser(), instrument, query, grouping, offset);
 }
 
-function groupRows(rows: Row[], grouping: "cat" | "note") {
-  const groups: { label: string; rows: Row[] }[] = [];
+function groupRows(rows: ChordRow[], grouping: ChordGrouping) {
+  const groups: { label: string; rows: ChordRow[] }[] = [];
   for (const row of rows) {
     const label = grouping === "cat" ? row.category : row.key;
     const last = groups[groups.length - 1];
@@ -143,16 +100,23 @@ function groupRows(rows: Row[], grouping: "cat" | "note") {
   return groups;
 }
 
-export function ChordFinder({ instrument }: { instrument: Instrument }) {
+export function ChordFinder({
+  instrument,
+  initial,
+}: {
+  instrument: Instrument;
+  /** Primera página sin búsqueda (por categoría), ya consultada en el servidor. */
+  initial: ChordPage;
+}) {
   const t = useTranslations("finder");
   const tInstruments = useTranslations("instruments");
   const locale = useLocale() as "es" | "en";
 
   const [query, setQuery] = useState("");
-  const [grouping, setGrouping] = useState<"cat" | "note">("cat");
-  const [rows, setRows] = useState<Row[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [grouping, setGrouping] = useState<ChordGrouping>("cat");
+  const [rows, setRows] = useState<ChordRow[]>(initial.rows);
+  const [total, setTotal] = useState(initial.total);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [listening, setListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
@@ -174,13 +138,15 @@ export function ChordFinder({ instrument }: { instrument: Instrument }) {
 
   if (error) throw error; // → error boundary (BD pausada / sin conexión)
 
-  /* Carga inicial y cada cambio de búsqueda/agrupación (con debounce). */
+  /* Cada cambio de búsqueda/agrupación (con debounce). Sin búsqueda y por
+     categoría se reutiliza la primera página del servidor, sin red ni loader. */
   useEffect(() => {
     const id = ++requestId.current;
+    const isInitial = !query && grouping === "cat";
     const timer = setTimeout(
       () => {
-        setLoading(true);
-        fetchChords(instrument, query, grouping, 0)
+        if (!isInitial) setLoading(true);
+        (isInitial ? Promise.resolve(initial) : fetchPage(instrument, query, grouping, 0))
           .then((res) => {
             if (requestId.current !== id) return;
             setRows(res.rows);
@@ -192,13 +158,13 @@ export function ChordFinder({ instrument }: { instrument: Instrument }) {
       query ? 300 : 0,
     );
     return () => clearTimeout(timer);
-  }, [instrument, query, grouping]);
+  }, [instrument, initial, query, grouping]);
 
   const hasMore = rows.length < total;
 
   const loadMore = useCallback(() => {
     const id = requestId.current;
-    fetchChords(instrument, query, grouping, rows.length)
+    fetchPage(instrument, query, grouping, rows.length)
       .then((res) => {
         if (requestId.current !== id) return;
         setRows((prev) => [...prev, ...res.rows]);
