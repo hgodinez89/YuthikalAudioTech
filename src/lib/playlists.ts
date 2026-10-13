@@ -24,7 +24,6 @@ export type PlaylistRow = {
   genre: Genre;
   genre_other: string | null;
   rating_like: number;
-  rating_difficulty: number;
   created_at: string;
 };
 
@@ -34,7 +33,6 @@ export type PlaylistInput = {
   genre: string;
   genreOther: string;
   ratingLike: number;
-  ratingDifficulty: number;
 };
 
 export type ValidationError = "name" | "description" | "genre" | "genreOther" | "rating";
@@ -49,8 +47,7 @@ export function validatePlaylist(input: PlaylistInput): ValidationError | null {
     const other = input.genreOther.trim();
     if (other.length < 1 || other.length > 50) return "genreOther";
   }
-  for (const rating of [input.ratingLike, input.ratingDifficulty]) {
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return "rating";
-  }
+  const rating = input.ratingLike;
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return "rating";
   return null;
 }

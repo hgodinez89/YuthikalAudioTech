@@ -129,18 +129,11 @@ export function PlaylistFormModal({
               />
             </div>
           )}
-          <div className="flex flex-wrap gap-[26px]">
-            <StarsInput
-              label={t("like")}
-              value={form.ratingLike}
-              onChange={(v) => setForm({ ...form, ratingLike: v })}
-            />
-            <StarsInput
-              label={t("difficulty")}
-              value={form.ratingDifficulty}
-              onChange={(v) => setForm({ ...form, ratingDifficulty: v })}
-            />
-          </div>
+          <StarsInput
+            label={t("like")}
+            value={form.ratingLike}
+            onChange={(v) => setForm({ ...form, ratingLike: v })}
+          />
           {error && <p className="text-[13px] font-semibold text-warn">{error}</p>}
         </div>
 

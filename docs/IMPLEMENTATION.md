@@ -36,7 +36,7 @@ Copiar `.env.example` a `.env.local` (local) y configurar las mismas en Vercel (
 |---|---|---|
 | `keepalive` | 1 fila; objetivo del ping del cron | Lectura pública |
 | `chords` / `chord_positions` | Catálogo por instrumento (`chords.instrument`): guitarra 481 acordes / 1,924 posiciones, ukelele 552 / 2,114 (generado de `@tombatossals/chords-db`) | Lectura pública |
-| `playlists` | Playlists del usuario (género, doble rating 1–5) | RLS solo dueño |
+| `playlists` | Playlists del usuario (género, rating "Me gusta" 1–5) | RLS solo dueño |
 | `songs` | Canciones: metadatos + contenido ChordPro (con directiva propia `{strum:}`); `playlist_id` opcional (lista plana); `instruments` (guitar/ukulele/piano, informativo) | RLS solo dueño |
 | `song_audio` | Fuente de audio por canción: YouTube (video id + título) o archivo (ruta en Storage) | RLS solo dueño |
 | `song_sync` | Sincronización: granularidad (línea/palabra) + timestamps JSONB `[{i, t}]` | RLS solo dueño |
@@ -52,6 +52,7 @@ Storage: bucket privado **`audio`** (15 MB máx., solo `audio/mpeg`), políticas
 5. `supabase/migrations/00000000000004_audio_sync.sql` (incluye el bucket de Storage)
 6. `supabase/migrations/00000000000005_instruments_flat_songs.sql` (columna `chords.instrument`, `songs.playlist_id` opcional con `on delete set null`, RLS de inserción/actualización que valida la playlist destino)
 7. `supabase/migrations/00000000000006_song_instruments.sql` (columna `songs.instruments`; ejecutar **antes** de desplegar el código que la usa)
+8. `supabase/migrations/00000000000007_drop_playlist_difficulty.sql` (borra `playlists.rating_difficulty`; ejecutar **después** de desplegar el código que ya no la usa)
 
 ### 3.3 Seed del catálogo de acordes
 

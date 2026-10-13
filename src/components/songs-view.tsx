@@ -59,7 +59,6 @@ const EMPTY_PLAYLIST: PlaylistInput = {
   genre: "ballad",
   genreOther: "",
   ratingLike: 4,
-  ratingDifficulty: 2,
 };
 
 /* Orden de la lista: preferencia de este navegador. */
@@ -686,15 +685,9 @@ export function SongsView({
                 {activeList.description}
               </p>
             )}
-            <div className="flex flex-wrap gap-6">
-              <div className="flex items-center gap-2">
-                <span className="text-[12.5px] text-sub">{tPlaylists("like")}</span>
-                <StarsRow value={activeList.rating_like} />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[12.5px] text-sub">{tPlaylists("difficulty")}</span>
-                <StarsRow value={activeList.rating_difficulty} />
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[12.5px] text-sub">{tPlaylists("like")}</span>
+              <StarsRow value={activeList.rating_like} />
             </div>
           </div>
           <div className="flex gap-1.5">
@@ -940,7 +933,6 @@ export function SongsView({
             genre: activeList.genre,
             genreOther: activeList.genre_other ?? "",
             ratingLike: activeList.rating_like,
-            ratingDifficulty: activeList.rating_difficulty,
           }}
           onClose={() => setEditListOpen(false)}
           onSubmit={editList}

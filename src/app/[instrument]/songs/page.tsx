@@ -41,9 +41,7 @@ export default async function SongsPage({
 
   const { data: playlists, error: playlistsError } = await supabase
     .from("playlists")
-    .select(
-      "id,name,description,genre,genre_other,rating_like,rating_difficulty,created_at,songs(count)",
-    )
+    .select("id,name,description,genre,genre_other,rating_like,created_at,songs(count)")
     .order("created_at", { ascending: false })
     .returns<(PlaylistRow & { songs: { count: number }[] })[]>();
   if (playlistsError) throw new Error(playlistsError.message);

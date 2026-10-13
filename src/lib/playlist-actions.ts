@@ -29,7 +29,6 @@ export async function createPlaylist(input: PlaylistInput): Promise<ActionResult
       genre: input.genre,
       genre_other: input.genre === "other" ? input.genreOther.trim() : null,
       rating_like: input.ratingLike,
-      rating_difficulty: input.ratingDifficulty,
     })
     .select("id")
     .single();
@@ -57,7 +56,6 @@ export async function updatePlaylist(
       genre: input.genre,
       genre_other: input.genre === "other" ? input.genreOther.trim() : null,
       rating_like: input.ratingLike,
-      rating_difficulty: input.ratingDifficulty,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
