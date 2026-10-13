@@ -8,8 +8,10 @@ import { ChordDiagram } from "./chord-diagram";
 import type { ChordDataMap } from "./chord-sheet";
 import { formatTime, type SongAudioRow, type SongSyncRow } from "@/lib/audio";
 import {
+  isInstrumental,
   parseChordPro,
   strumToArrows,
+  syncPlan,
   type SheetLine,
   type SectionType,
 } from "@/lib/chordpro";
@@ -24,17 +26,58 @@ type KaraokeLine = {
   /** Notas {c: …} que preceden a la línea (no se sincronizan). */
   notes: string[];
   segments: SheetLine;
+  /** Vuelta de una línea con repetición (x2 → 1/2, 2/2), o null. */
+  pass: { n: number; total: number } | null;
+  /** Objetivos de sincronización de esta vuelta (ver `syncPlan`). */
+  firstTarget: number;
+  targets: number;
 };
 
+type BaseLine = Omit<KaraokeLine, "pass" | "firstTarget" | "targets">;
+
+/**
+ * Líneas a mostrar: una por vuelta. Una línea con `x2` aparece dos veces y
+ * dura dos vueltas. Los índices de marca salen de `syncPlan`, el mismo que
+ * usa la calibración.
+ */
 function buildLines(
   content: string,
+  granularity: "line" | "word",
   sectionTitle: (
     type: SectionType,
     number: number,
     label: string | null,
   ) => string | null,
 ): KaraokeLine[] {
-  const lines: KaraokeLine[] = [];
+  const bases = baseLines(content, sectionTitle);
+  return syncPlan(content, granularity).flatMap((step) => {
+    const base = bases[step.line];
+    if (!base) return [];
+    const first = step.pass === 1;
+    return [
+      {
+        ...base,
+        // encabezado y notas solo en la primera vuelta
+        section: first ? base.section : null,
+        strum: first ? base.strum : null,
+        notes: first ? base.notes : [],
+        pass: step.passes > 1 ? { n: step.pass, total: step.passes } : null,
+        firstTarget: step.firstTarget,
+        targets: step.targets,
+      },
+    ];
+  });
+}
+
+function baseLines(
+  content: string,
+  sectionTitle: (
+    type: SectionType,
+    number: number,
+    label: string | null,
+  ) => string | null,
+): BaseLine[] {
+  const lines: BaseLine[] = [];
   // Las notas se adjuntan a la siguiente línea de letra (aunque sea de otra sección).
   let notes: string[] = [];
   for (const section of parseChordPro(content).sections) {
@@ -85,37 +128,25 @@ export function SongKaraoke({
     return number > 1 ? `${base} ${number}` : base;
   };
 
+  const granularity = sync?.granularity ?? "line";
   const lines = useMemo(
-    () => buildLines(song.content, sectionTitle),
+    () => buildLines(song.content, granularity, sectionTitle),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [song.content],
+    [song.content, granularity],
   );
 
-  /* Marcas por línea: en granularidad palabra se toma la primera de la línea. */
+  /* Inicio de cada línea/vuelta: su primera marca (en "por palabra", la menor). */
   const lineStarts = useMemo(() => {
     if (!sync || sync.stamps.length === 0) return null;
     const byIndex = new Map(sync.stamps.map((s) => [s.i, s.t]));
-    const starts: (number | null)[] = [];
-    let target = 0;
-    for (const line of lines) {
-      if (sync.granularity === "line") {
-        starts.push(byIndex.get(target) ?? null);
-        target += 1;
-      } else {
-        const wordCount = Math.max(
-          line.segments.flatMap((s) => s.text.split(/\s+/)).filter(Boolean).length,
-          1,
-        );
-        let first: number | null = null;
-        for (let w = 0; w < wordCount; w++) {
-          const stamp = byIndex.get(target + w);
-          if (stamp !== undefined && (first === null || stamp < first)) first = stamp;
-        }
-        starts.push(first);
-        target += wordCount;
+    return lines.map((line) => {
+      let first: number | null = null;
+      for (let w = 0; w < line.targets; w++) {
+        const stamp = byIndex.get(line.firstTarget + w);
+        if (stamp !== undefined && (first === null || stamp < first)) first = stamp;
       }
-    }
-    return starts;
+      return first;
+    });
   }, [sync, lines]);
 
   const syncAvailable = Boolean(audio && lineStarts?.some((s) => s !== null));
@@ -408,34 +439,69 @@ export function SongKaraoke({
                     )}
                   </div>
                 )}
-                <div className="flex flex-wrap items-end justify-center gap-y-0.5">
-                  {line.segments.map((seg, gi) => (
-                    <span key={gi} className="inline-flex flex-col whitespace-pre">
-                      <span
-                        className="font-extrabold leading-normal tracking-[0.01em] text-accent"
-                        style={{
-                          fontSize: isCurrent ? 17 : 13,
-                          minHeight: isCurrent ? 26 : 20,
-                          textShadow: isCurrent
-                            ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
-                            : "none",
-                        }}
-                      >
-                        {seg.chord ?? ""}
+                {isInstrumental(line.segments) ? (
+                  /* Solo acordes (intro, solo…): acordes en grande + vuelta actual */
+                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                    {line.segments.map((seg, gi) =>
+                      seg.repeat ? null : seg.bar ? (
+                        <span
+                          key={gi}
+                          className="font-light text-edge-2"
+                          style={{ fontSize: isCurrent ? 30 : 21 }}
+                        >
+                          |
+                        </span>
+                      ) : (
+                        <span
+                          key={gi}
+                          className="font-extrabold tracking-[0.01em] text-accent"
+                          style={{
+                            fontSize: isCurrent ? 30 : 21,
+                            textShadow: isCurrent
+                              ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
+                              : "none",
+                          }}
+                        >
+                          {seg.chord}
+                        </span>
+                      ),
+                    )}
+                    {line.pass && (
+                      <span className="rounded-md border border-accent/35 bg-accent/10 px-2 py-0.5 text-[12px] font-bold tabular-nums text-accent">
+                        {t("pass", { n: line.pass.n, total: line.pass.total })}
                       </span>
-                      <span
-                        className="leading-[1.3]"
-                        style={{
-                          fontSize: isCurrent ? 30 : 21,
-                          fontWeight: isCurrent ? 700 : 500,
-                          color: isCurrent ? "var(--ink)" : "var(--sub)",
-                        }}
-                      >
-                        {seg.text}
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-end justify-center gap-y-0.5">
+                    {line.segments.map((seg, gi) => (
+                      <span key={gi} className="inline-flex flex-col whitespace-pre">
+                        <span
+                          className="font-extrabold leading-normal tracking-[0.01em] text-accent"
+                          style={{
+                            fontSize: isCurrent ? 17 : 13,
+                            minHeight: isCurrent ? 26 : 20,
+                            textShadow: isCurrent
+                              ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
+                              : "none",
+                          }}
+                        >
+                          {seg.chord ?? ""}
+                        </span>
+                        <span
+                          className="leading-[1.3]"
+                          style={{
+                            fontSize: isCurrent ? 30 : 21,
+                            fontWeight: isCurrent ? 700 : 500,
+                            color: isCurrent ? "var(--ink)" : "var(--sub)",
+                          }}
+                        >
+                          {seg.text}
+                        </span>
                       </span>
-                    </span>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
                 {isCurrent && (
                   <div className="mx-auto mt-3 h-[3px] w-[180px] overflow-hidden rounded-[3px] bg-edge">
                     <div

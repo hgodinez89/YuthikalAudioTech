@@ -3,12 +3,17 @@ import {
   arrowsToStrum,
   buildVisualModel,
   collectChords,
+  isInstrumental,
+  lineRepeat,
   parseChordPro,
+  parseInstrumentalLine,
   parseLyricUnits,
+  replaceInstrumentalToken,
   sectionHeaderLabel,
   setChordAtUnit,
   setSectionStrum,
   strumToArrows,
+  syncPlan,
 } from "./chordpro";
 
 const SAMPLE = `{title: St. James Infirmary}
@@ -303,5 +308,100 @@ describe("encabezados [[…]] y notas {c:}", () => {
   it("nota antes de una línea de letra", () => {
     const model = buildVisualModel("{c: suave}\nHola");
     expect(model[0].lines[0].notesBefore).toEqual(["suave"]);
+  });
+});
+
+describe("líneas instrumentales", () => {
+  const chordsOf = (raw: string) =>
+    parseInstrumentalLine(raw)
+      ?.tokens.filter((tk) => tk.kind === "chord")
+      .map((tk) => (tk.kind === "chord" ? tk.chord : ""));
+
+  it.each([
+    ["Em D Bm C x2", ["Em", "D", "Bm", "C"], 2],
+    ["| Em | D |", ["Em", "D"], 1],
+    ["Am F (2X)", ["Am", "F"], 2],
+    ["C G 2×", ["C", "G"], 2],
+    ["[Em] [D] x3", ["Em", "D"], 3],
+    ["Lam Re ×4", ["Lam", "Re"], 4],
+  ])("%s → instrumental", (raw, chords, repeat) => {
+    expect(chordsOf(raw)).toEqual(chords);
+    expect(parseInstrumentalLine(raw)?.repeat).toBe(repeat);
+  });
+
+  it.each([
+    "Em D Bm C", // sin | ni repetición: sigue siendo letra
+    "La La La",
+    "x2 Em D", // repetición no final
+    "Em casa x2",
+    "| x2",
+    "",
+  ])("%s → no es instrumental", (raw) => {
+    expect(parseInstrumentalLine(raw)).toBeNull();
+  });
+
+  it("parseChordPro: segmentos de acorde, compás y repetición", () => {
+    const line = parseChordPro("| Em D | Bm C | x2").sections[0].lines[0];
+    expect(line).toEqual([
+      { chord: null, text: "|", bar: true },
+      { chord: "Em", text: "" },
+      { chord: "D", text: "" },
+      { chord: null, text: "|", bar: true },
+      { chord: "Bm", text: "" },
+      { chord: "C", text: "" },
+      { chord: null, text: "|", bar: true },
+      { chord: null, text: "×2", repeat: 2 },
+    ]);
+    expect(isInstrumental(line)).toBe(true);
+    expect(lineRepeat(line)).toBe(2);
+    expect(collectChords(parseChordPro("Em D Bm C x2"))).toEqual(["Em", "D", "Bm", "C"]);
+  });
+
+  it("una línea de letra no es instrumental", () => {
+    const line = parseChordPro("On a [Em]cobweb").sections[0].lines[0];
+    expect(isInstrumental(line)).toBe(false);
+    expect(lineRepeat(line)).toBe(1);
+  });
+
+  it("replaceInstrumentalToken cambia y quita acordes escritos como texto", () => {
+    const content = "[[Intro]]\nEm D Bm C x2";
+    const tokens = parseInstrumentalLine("Em D Bm C x2")!.tokens;
+    expect(replaceInstrumentalToken(content, 1, tokens[1], "G")).toBe(
+      "[[Intro]]\nEm G Bm C x2",
+    );
+    expect(replaceInstrumentalToken(content, 1, tokens[2], null)).toBe(
+      "[[Intro]]\nEm D C x2",
+    );
+  });
+});
+
+describe("syncPlan — calibración y karaoke comparten índices", () => {
+  const SONG = ["[[Intro]]", "Em D Bm C x2", "", "[[Verse]]", "On a [Em]cobweb"].join(
+    "\n",
+  );
+
+  it("granularidad línea: una marca por vuelta", () => {
+    expect(syncPlan(SONG, "line")).toEqual([
+      { line: 0, pass: 1, passes: 2, targets: 1, firstTarget: 0 },
+      { line: 0, pass: 2, passes: 2, targets: 1, firstTarget: 1 },
+      { line: 1, pass: 1, passes: 1, targets: 1, firstTarget: 2 },
+    ]);
+  });
+
+  it("granularidad palabra: cada acorde de cada vuelta y cada palabra", () => {
+    expect(syncPlan(SONG, "word")).toEqual([
+      { line: 0, pass: 1, passes: 2, targets: 4, firstTarget: 0 },
+      { line: 0, pass: 2, passes: 2, targets: 4, firstTarget: 4 },
+      { line: 1, pass: 1, passes: 1, targets: 3, firstTarget: 8 },
+    ]);
+  });
+
+  it("mismo número de líneas que parseChordPro (sin notas ni encabezados)", () => {
+    const song = "{c: Capo III}\n" + SONG;
+    const lyricLines = parseChordPro(song)
+      .sections.flatMap((s) => s.lines)
+      .filter((l) => l.length && !l[0].note);
+    const plan = syncPlan(song, "line");
+    expect(new Set(plan.map((p) => p.line)).size).toBe(lyricLines.length);
   });
 });

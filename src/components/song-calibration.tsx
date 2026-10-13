@@ -25,7 +25,7 @@ import {
   type SyncStamp,
 } from "@/lib/audio";
 import { saveSync, setFileAudio, setYouTubeAudio } from "@/lib/audio-actions";
-import { buildVisualModel, type SectionType } from "@/lib/chordpro";
+import { buildVisualModel, syncPlan, type SectionType } from "@/lib/chordpro";
 import type { SongRow } from "@/lib/songs";
 import { supabaseBrowser } from "@/lib/supabase";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
@@ -33,9 +33,19 @@ import { youtubeThumbnail } from "@/lib/youtube";
 
 type Row =
   | { kind: "section"; title: string }
-  | { kind: "line"; words: string[]; firstTarget: number; targetCount: number };
+  | {
+      kind: "line";
+      words: string[];
+      firstTarget: number;
+      targetCount: number;
+      /** Vuelta de una línea con repetición (x2 → 1/2, 2/2). */
+      pass: { n: number; total: number } | null;
+    };
 
-/** Filas de la hoja + total de objetivos según granularidad. */
+/**
+ * Filas de la hoja + total de objetivos según granularidad. Los objetivos
+ * salen de `syncPlan`, el mismo que usa el karaoke: una fila por vuelta.
+ */
 function buildRows(
   content: string,
   granularity: "line" | "word",
@@ -46,18 +56,34 @@ function buildRows(
   ) => string | null,
 ): { rows: Row[]; totalTargets: number } {
   const rows: Row[] = [];
-  let target = 0;
+  const plan = syncPlan(content, granularity);
+  let p = 0;
+  let lineNo = 0;
   for (const section of buildVisualModel(content)) {
     const title = sectionTitle(section.type, section.number, section.label);
     if (title) rows.push({ kind: "section", title });
     for (const line of section.lines) {
-      const words = line.units.map((u) => u.text).filter(Boolean);
-      const targetCount = granularity === "line" ? 1 : Math.max(words.length, 1);
-      rows.push({ kind: "line", words, firstTarget: target, targetCount });
-      target += targetCount;
+      // En líneas instrumentales cada acorde es un objetivo "por palabra".
+      const words = line.instrumental
+        ? line.instrumental.tokens.flatMap((tk) =>
+            tk.kind === "chord" ? [tk.chord] : [],
+          )
+        : line.units.map((u) => u.text).filter(Boolean);
+      for (; p < plan.length && plan[p].line === lineNo; p++) {
+        const step = plan[p];
+        rows.push({
+          kind: "line",
+          words,
+          firstTarget: step.firstTarget,
+          targetCount: step.targets,
+          pass: step.passes > 1 ? { n: step.pass, total: step.passes } : null,
+        });
+      }
+      lineNo++;
     }
   }
-  return { rows, totalTargets: target };
+  const last = plan.at(-1);
+  return { rows, totalTargets: last ? last.firstTarget + last.targets : 0 };
 }
 
 export function SongCalibration({
@@ -599,6 +625,11 @@ export function SongCalibration({
                           </span>
                         );
                       })}
+                    </span>
+                  )}
+                  {row.pass && (
+                    <span className="ml-2 rounded-md border border-accent/35 bg-accent/10 px-1.5 py-px text-[11px] font-bold tabular-nums text-accent">
+                      {t("pass", { n: row.pass.n, total: row.pass.total })}
                     </span>
                   )}
                   {granularity === "word" && row.targetCount > 1 && (

@@ -2,9 +2,14 @@
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { ChordDiagram } from "./chord-diagram";
-import { strumToArrows, type SheetSection, type SectionType } from "@/lib/chordpro";
+import {
+  isInstrumental,
+  strumToArrows,
+  type SheetSection,
+  type SectionType,
+} from "@/lib/chordpro";
 
 export type SheetChordData = {
   name: string;
@@ -24,6 +29,15 @@ export function SheetNote({ text }: { text: string }) {
         {text}
       </span>
     </div>
+  );
+}
+
+/** Repetición de una línea instrumental (x2 → "×2"). */
+export function RepeatBadge({ times }: { times: number }) {
+  return (
+    <span className="rounded-md border border-accent/35 bg-accent/10 px-2 py-0.5 text-[13px] font-bold leading-normal text-accent">
+      ×{times}
+    </span>
   );
 }
 
@@ -70,6 +84,18 @@ export function ChordSheet({
   );
   const popoverChord = popover ? chords[popover.name] : undefined;
 
+  /* Popover de diagrama al pasar el mouse sobre un acorde conocido. */
+  const chordHover = (chord: string | null) => ({
+    onMouseEnter:
+      chord && chords[chord]
+        ? (e: MouseEvent<HTMLSpanElement>) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            setPopover({ name: chord, x: r.left + r.width / 2, y: r.top });
+          }
+        : undefined,
+    onMouseLeave: chord ? () => setPopover(null) : undefined,
+  });
+
   return (
     <>
       {/* LETRA CON ACORDES */}
@@ -102,26 +128,36 @@ export function ChordSheet({
                   <div key={li} className="h-[1.2em]" />
                 ) : line[0].note ? (
                   <SheetNote key={li} text={line[0].text} />
+                ) : isInstrumental(line) ? (
+                  /* Solo acordes (intro, solo…): una fila, sin letra vacía */
+                  <div
+                    key={li}
+                    className="mb-1 flex flex-wrap items-center gap-x-3.5 gap-y-1"
+                  >
+                    {line.map((segment, gi) =>
+                      segment.bar ? (
+                        <span key={gi} className="font-light text-edge-2">
+                          |
+                        </span>
+                      ) : segment.repeat ? (
+                        <RepeatBadge key={gi} times={segment.repeat} />
+                      ) : (
+                        <span
+                          key={gi}
+                          {...chordHover(segment.chord)}
+                          className="font-extrabold tracking-[0.01em] text-accent"
+                        >
+                          {segment.chord}
+                        </span>
+                      ),
+                    )}
+                  </div>
                 ) : (
                   <div key={li} className="mb-1 flex flex-wrap items-end">
                     {line.map((segment, gi) => (
                       <span key={gi} className="inline-flex flex-col whitespace-pre">
                         <span
-                          onMouseEnter={
-                            segment.chord && chords[segment.chord]
-                              ? (e) => {
-                                  const r = e.currentTarget.getBoundingClientRect();
-                                  setPopover({
-                                    name: segment.chord!,
-                                    x: r.left + r.width / 2,
-                                    y: r.top,
-                                  });
-                                }
-                              : undefined
-                          }
-                          onMouseLeave={
-                            segment.chord ? () => setPopover(null) : undefined
-                          }
+                          {...chordHover(segment.chord)}
                           className="min-h-[22px] text-sm font-extrabold leading-relaxed tracking-[0.01em] text-accent"
                         >
                           {segment.chord ?? ""}

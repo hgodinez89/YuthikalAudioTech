@@ -25,7 +25,7 @@ import {
   type ReactNode,
 } from "react";
 import { ChordPicker } from "./chord-picker";
-import { ChordSheet, SheetNote } from "./chord-sheet";
+import { ChordSheet, RepeatBadge, SheetNote } from "./chord-sheet";
 import { ConfirmDialog } from "./confirm-dialog";
 import { FIELD_CLASS } from "./playlist-form-modal";
 import { chordsOverLyricsToChordPro } from "@/lib/chord-import";
@@ -33,10 +33,13 @@ import {
   arrowsToStrum,
   buildVisualModel,
   parseChordPro,
+  parseInstrumentalLine,
+  replaceInstrumentalToken,
   sectionHeaderLabel,
   setChordAtUnit,
   setSectionStrum,
   strumToArrows,
+  type InstrumentalToken,
   type LyricUnit,
   type SectionType,
 } from "@/lib/chordpro";
@@ -63,6 +66,33 @@ function highlightLine(line: string, key: number): ReactNode {
     return (
       <span key={key} className="italic text-tert">
         {line}
+        {"\n"}
+      </span>
+    );
+  }
+  // Línea instrumental ("Em D Bm C x2"): acordes en cian, compás/repetición tenues
+  const instrumental = parseInstrumentalLine(line);
+  if (instrumental) {
+    let cursor = 0;
+    return (
+      <span key={key}>
+        {instrumental.tokens.map((tk, i) => {
+          const gap = line.slice(cursor, tk.start);
+          cursor = tk.end;
+          return (
+            <Fragment key={i}>
+              {gap}
+              <span
+                className={
+                  tk.kind === "chord" ? "font-semibold text-accent" : "text-mute"
+                }
+              >
+                {line.slice(tk.start, tk.end)}
+              </span>
+            </Fragment>
+          );
+        })}
+        {line.slice(cursor)}
         {"\n"}
       </span>
     );
@@ -171,6 +201,13 @@ function StrumBuilder({
 
 export type PlaylistOption = { id: string; name: string };
 
+type InstrumentalChord = Extract<InstrumentalToken, { kind: "chord" }>;
+
+/** Lo que edita el selector: una palabra de letra o un acorde de una línea instrumental. */
+type PickerTarget = { lineIndex: number; x: number; y: number } & (
+  { unit: LyricUnit; token?: undefined } | { token: InstrumentalChord; unit?: undefined }
+);
+
 /* ---------- pegar cifrado (acordes encima de la letra) ---------- */
 
 function PasteChordsModal({
@@ -278,12 +315,7 @@ export function SongEditor({
   const [metaOpen, setMetaOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
-  const [picker, setPicker] = useState<{
-    lineIndex: number;
-    unit: LyricUnit;
-    x: number;
-    y: number;
-  } | null>(null);
+  const [picker, setPicker] = useState<PickerTarget | null>(null);
   const [strumTarget, setStrumTarget] = useState<{
     headerLineIndex: number;
     strum: string | null;
@@ -314,7 +346,13 @@ export function SongEditor({
 
   const applyChord = (chord: string | null) => {
     if (!picker) return;
-    setContent(setChordAtUnit(content, picker.lineIndex, picker.unit, chord));
+    if (picker.token) {
+      // Acorde escrito como texto (o entre corchetes) en una línea instrumental.
+      const text = chord && picker.token.bracketed ? `[${chord}]` : chord;
+      setContent(replaceInstrumentalToken(content, picker.lineIndex, picker.token, text));
+    } else {
+      setContent(setChordAtUnit(content, picker.lineIndex, picker.unit, chord));
+    }
     setPicker(null);
   };
 
@@ -533,37 +571,69 @@ export function SongEditor({
                         {line.notesBefore.map((note, ni) => (
                           <SheetNote key={ni} text={note} />
                         ))}
-                        <div className="mb-1 flex flex-wrap items-end">
-                          {line.units.map((unit, ui) => (
-                            <span
-                              key={ui}
-                              className={`inline-flex flex-col whitespace-pre ${
-                                unit.spaceAfter ? "mr-[0.3em]" : ""
-                              }`}
-                            >
-                              <span className="min-h-[22px] text-sm font-extrabold leading-relaxed tracking-[0.01em] text-accent">
-                                {unit.chord ?? ""}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  const r = e.currentTarget.getBoundingClientRect();
-                                  setPicker({
-                                    lineIndex: line.lineIndex,
-                                    unit,
-                                    x: r.left + r.width / 2,
-                                    y: r.bottom + 8,
-                                  });
-                                }}
-                                aria-label={unit.text || unit.chord || undefined}
-                                className="min-w-[1.1em] cursor-pointer text-left underline decoration-edge-2 decoration-dotted underline-offset-4 hover:decoration-accent"
+                        {line.instrumental ? (
+                          /* Solo acordes: cada acorde clicable; compás y ×N fijos */
+                          <div className="mb-1 flex flex-wrap items-center gap-x-3.5 gap-y-1">
+                            {line.instrumental.tokens.map((tk, ti) =>
+                              tk.kind === "bar" ? (
+                                <span key={ti} className="font-light text-edge-2">
+                                  |
+                                </span>
+                              ) : tk.kind === "repeat" ? (
+                                <RepeatBadge key={ti} times={tk.times} />
+                              ) : (
+                                <button
+                                  key={ti}
+                                  type="button"
+                                  onClick={(e) => {
+                                    const r = e.currentTarget.getBoundingClientRect();
+                                    setPicker({
+                                      lineIndex: line.lineIndex,
+                                      token: tk,
+                                      x: r.left + r.width / 2,
+                                      y: r.bottom + 8,
+                                    });
+                                  }}
+                                  className="cursor-pointer font-extrabold text-accent underline decoration-edge-2 decoration-dotted underline-offset-4 hover:decoration-accent"
+                                >
+                                  {tk.chord}
+                                </button>
+                              ),
+                            )}
+                          </div>
+                        ) : (
+                          <div className="mb-1 flex flex-wrap items-end">
+                            {line.units.map((unit, ui) => (
+                              <span
+                                key={ui}
+                                className={`inline-flex flex-col whitespace-pre ${
+                                  unit.spaceAfter ? "mr-[0.3em]" : ""
+                                }`}
                               >
-                                {/* acorde sin palabra: espacio clicable sin glifo */}
-                                {unit.text || " "}
-                              </button>
-                            </span>
-                          ))}
-                        </div>
+                                <span className="min-h-[22px] text-sm font-extrabold leading-relaxed tracking-[0.01em] text-accent">
+                                  {unit.chord ?? ""}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    const r = e.currentTarget.getBoundingClientRect();
+                                    setPicker({
+                                      lineIndex: line.lineIndex,
+                                      unit,
+                                      x: r.left + r.width / 2,
+                                      y: r.bottom + 8,
+                                    });
+                                  }}
+                                  aria-label={unit.text || unit.chord || undefined}
+                                  className="min-w-[1.1em] cursor-pointer text-left underline decoration-edge-2 decoration-dotted underline-offset-4 hover:decoration-accent"
+                                >
+                                  {/* acorde sin palabra: espacio clicable sin glifo */}
+                                  {unit.text || " "}
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </Fragment>
                     ))}
                     {section.trailingNotes.map((note, ni) => (
@@ -583,7 +653,7 @@ export function SongEditor({
           instrument={instrument}
           x={picker.x}
           y={picker.y}
-          currentChord={picker.unit.chord}
+          currentChord={picker.token ? picker.token.chord : picker.unit.chord}
           onPick={applyChord}
           onRemove={() => applyChord(null)}
           onClose={() => setPicker(null)}

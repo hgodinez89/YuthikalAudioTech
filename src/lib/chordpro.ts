@@ -23,6 +23,10 @@ export type ChordSegment = {
   text: string;
   /** Nota para el músico ({c: …}): se muestra aparte, no es letra. */
   note?: true;
+  /** Separador de compás `|` de una línea instrumental. */
+  bar?: true;
+  /** Repetición (`x2`) al final de una línea instrumental. */
+  repeat?: number;
 };
 export type SheetLine = ChordSegment[];
 export type SectionType = "verse" | "chorus" | "bridge" | "plain";
@@ -92,6 +96,95 @@ function parseLine(raw: string): SheetLine {
     segments.push({ chord: pendingChord, text: tail });
   }
   return segments;
+}
+
+/* ------------------------------------------------------------------ */
+/* Líneas instrumentales: solo acordes, con compases y repeticiones    */
+/*   Em D Bm C x2      | Em | D | (2x)      [Em] [D] ×3                 */
+/* ------------------------------------------------------------------ */
+
+const ROOT = "(?:Do|Re|Mi|Fa|Sol|La|Si|[A-G])(?:#|b|♯|♭)?";
+const QUALITY =
+  "(?:maj|min|m|M|dim|aug|sus|add|°|º|ø|\\+)?\\d*(?:(?:maj|sus|add|b|#|♭|♯|\\+|-)\\d+)*(?:\\([^)\\s]*\\))?";
+const CHORD_RE = new RegExp(`^${ROOT}${QUALITY}(?:/${ROOT})?$`);
+const REPEAT_RE = /^\(?(?:[x×](\d+)|(\d+)[x×])\)?$/i;
+const BAR_RE = /^\|{1,2}$/;
+
+/** Símbolo de acorde con mayúscula inicial (C#m7, Bb/D, Lam, Sol7…). */
+export function isChordSymbol(token: string): boolean {
+  return CHORD_RE.test(token);
+}
+
+export type InstrumentalToken =
+  | { kind: "chord"; chord: string; start: number; end: number; bracketed: boolean }
+  | { kind: "bar"; start: number; end: number }
+  | { kind: "repeat"; times: number; start: number; end: number };
+
+export type InstrumentalLine = { tokens: InstrumentalToken[]; repeat: number };
+
+/**
+ * Línea solo de acordes. Para no confundir letra con acordes ("La La La")
+ * solo se reconoce si tiene al menos un `|` o una repetición final
+ * (x2, ×2, 2x, (x2)…); si no, sigue siendo letra.
+ */
+export function parseInstrumentalLine(raw: string): InstrumentalLine | null {
+  const matches = [...raw.matchAll(/\S+/g)];
+  if (matches.length === 0) return null;
+  const tokens: InstrumentalToken[] = [];
+  let repeat = 1;
+  let marked = false;
+
+  for (const [n, m] of matches.entries()) {
+    const text = m[0];
+    const start = m.index;
+    const end = start + text.length;
+    const repeatMatch = text.match(REPEAT_RE);
+    const bracket = text.match(/^\[([^\]]+)\]$/);
+
+    if (repeatMatch && n === matches.length - 1) {
+      repeat = Number(repeatMatch[1] ?? repeatMatch[2]);
+      tokens.push({ kind: "repeat", times: repeat, start, end });
+      marked = true;
+    } else if (BAR_RE.test(text)) {
+      tokens.push({ kind: "bar", start, end });
+      marked = true;
+    } else if (bracket) {
+      tokens.push({
+        kind: "chord",
+        chord: bracket[1].trim(),
+        start,
+        end,
+        bracketed: true,
+      });
+    } else if (isChordSymbol(text)) {
+      tokens.push({ kind: "chord", chord: text, start, end, bracketed: false });
+    } else {
+      return null;
+    }
+  }
+
+  const hasChord = tokens.some((tk) => tk.kind === "chord");
+  return hasChord && marked && repeat >= 1 ? { tokens, repeat } : null;
+}
+
+/** Línea instrumental ya parseada (segmentos de acordes, compases, repetición). */
+export function isInstrumental(line: SheetLine): boolean {
+  return line.length > 0 && line.every((s) => s.bar || s.repeat || (s.chord && !s.text));
+}
+
+/** Vueltas de una línea (1 si no tiene repetición). */
+export function lineRepeat(line: SheetLine): number {
+  return line.find((s) => s.repeat)?.repeat ?? 1;
+}
+
+function instrumentalSegments(line: InstrumentalLine): SheetLine {
+  return line.tokens.map((tk) =>
+    tk.kind === "chord"
+      ? { chord: tk.chord, text: "" }
+      : tk.kind === "bar"
+        ? { chord: null, text: "|", bar: true }
+        : { chord: null, text: `×${tk.times}`, repeat: tk.times },
+  );
 }
 
 export function parseChordPro(content: string): ParsedSong {
@@ -164,7 +257,10 @@ export function parseChordPro(content: string): ParsedSong {
     }
 
     if (!current) current = open("plain", null);
-    current.lines.push(parseLine(line));
+    const instrumental = parseInstrumentalLine(line);
+    current.lines.push(
+      instrumental ? instrumentalSegments(instrumental) : parseLine(line),
+    );
   }
 
   // limpiar: quitar líneas en blanco finales y secciones vacías
@@ -334,6 +430,8 @@ export type VisualLyricLine = {
   gapBefore: boolean;
   /** Notas {c: …} que van justo antes de esta línea. */
   notesBefore: string[];
+  /** Línea solo de acordes (con compases/repetición), o null si es letra. */
+  instrumental: InstrumentalLine | null;
 };
 
 export type VisualSection = {
@@ -428,6 +526,7 @@ export function buildVisualModel(content: string): VisualSection[] {
       units: parseLyricUnits(rawLines[i]),
       gapBefore: pendingGap && current.lines.length > 0,
       notesBefore: pendingNotes,
+      instrumental: parseInstrumentalLine(line),
     });
     pendingNotes = [];
     pendingGap = false;
@@ -435,6 +534,66 @@ export function buildVisualModel(content: string): VisualSection[] {
   flush();
 
   return sections.filter((s) => s.lines.length > 0 || s.trailingNotes.length > 0);
+}
+
+/**
+ * Cambia (o quita, con chord = null) un acorde de una línea instrumental
+ * escrito como texto ("Em D Bm C x2"). Al quitarlo también se va el espacio
+ * que lo sigue, para no dejar huecos dobles.
+ */
+export function replaceInstrumentalToken(
+  content: string,
+  lineIndex: number,
+  token: { start: number; end: number },
+  chord: string | null,
+): string {
+  const lines = content.split("\n");
+  const line = lines[lineIndex];
+  if (line === undefined) return content;
+  if (chord) {
+    lines[lineIndex] = line.slice(0, token.start) + chord + line.slice(token.end);
+  } else {
+    const end = line.slice(token.end).match(/^\s*/)![0].length + token.end;
+    lines[lineIndex] = line.slice(0, token.start) + line.slice(end);
+  }
+  return lines.join("\n");
+}
+
+/* ------------------------------------------------------------------ */
+/* Plan de sincronización: lo comparten calibración y karaoke para que  */
+/* el índice de cada marca signifique lo mismo en ambos.               */
+/* ------------------------------------------------------------------ */
+
+export type SyncPass = {
+  /** Índice de la línea de letra (orden de aparición, sin notas ni encabezados). */
+  line: number;
+  /** Vuelta actual (1…passes) y total de vueltas de la línea (x2 → 2). */
+  pass: number;
+  passes: number;
+  /** Objetivos a marcar en esta vuelta y el índice global del primero. */
+  targets: number;
+  firstTarget: number;
+};
+
+export function syncPlan(content: string, granularity: "line" | "word"): SyncPass[] {
+  const plan: SyncPass[] = [];
+  let line = 0;
+  let target = 0;
+  for (const section of buildVisualModel(content)) {
+    for (const lyric of section.lines) {
+      const passes = lyric.instrumental?.repeat ?? 1;
+      const words = lyric.instrumental
+        ? lyric.instrumental.tokens.filter((tk) => tk.kind === "chord").length
+        : lyric.units.filter((u) => u.text).length;
+      const targets = granularity === "line" ? 1 : Math.max(words, 1);
+      for (let pass = 1; pass <= passes; pass++) {
+        plan.push({ line, pass, passes, targets, firstTarget: target });
+        target += targets;
+      }
+      line++;
+    }
+  }
+  return plan;
 }
 
 /** Acordes únicos de la canción, en orden de aparición. */

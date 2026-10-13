@@ -251,7 +251,8 @@
       "db": "No se pudo guardar. Intenta de nuevo.",
       "id": "Identificador inválido.",
       "path": "Ruta de archivo inválida."
-    }
+    },
+    "pass": "Vuelta {n}/{total}"
   },
   "songView": {
     "keyPrefix": "Tonalidad:",
@@ -289,7 +290,8 @@
     "slower": "Más lento",
     "faster": "Más rápido",
     "noSyncNote": "Sin sincronización — scroll automático",
-    "syncNow": "Sincronizar audio"
+    "syncNow": "Sincronizar audio",
+    "pass": "Vuelta {n} de {total}"
   },
   "strings": {
     "title": "{instrument, select, ukulele {Las cuerdas del ukelele} other {Las cuerdas de la guitarra}}",

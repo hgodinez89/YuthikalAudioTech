@@ -131,6 +131,12 @@ describe("chordsOverLyricsToChordPro", () => {
     );
   });
 
+  it("línea instrumental con repetición o compases se conserva tal cual", () => {
+    expect(chordsOverLyricsToChordPro(["Em D Bm C x2", "| Am | F |"].join("\n"))).toBe(
+      ["Em D Bm C x2", "| Am | F |"].join("\n"),
+    );
+  });
+
   it("[[Encabezado]] ya escrito pasa sin cambios", () => {
     expect(chordsOverLyricsToChordPro("[[Intro]]")).toBe("[[Intro]]");
   });

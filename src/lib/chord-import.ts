@@ -13,10 +13,9 @@
  * ChordPro (directivas, [acordes] en línea) pasa sin cambios.
  */
 
-const ROOT = "(?:Do|Re|Mi|Fa|Sol|La|Si|[A-G])(?:#|b|♯|♭)?";
-const QUALITY =
-  "(?:maj|min|m|M|dim|aug|sus|add|°|º|ø|\\+)?\\d*(?:(?:maj|sus|add|b|#|♭|♯|\\+|-)\\d+)*(?:\\([^)\\s]*\\))?";
-const CHORD_RE = new RegExp(`^${ROOT}${QUALITY}(?:/${ROOT})?$`);
+import { isChordSymbol, parseInstrumentalLine } from "./chordpro";
+
+export { isChordSymbol };
 
 /* Tokens de relleno habituales en líneas de acordes: barras, repeticiones. */
 const FILLER_RE = /^(?:\|+|-+|\/|\(?x\d+\)?|\*+)$/i;
@@ -34,10 +33,6 @@ function expandTabs(line: string): string {
     out += ch === "\t" ? " ".repeat(8 - (out.length % 8)) : ch;
   }
   return out;
-}
-
-export function isChordSymbol(token: string): boolean {
-  return CHORD_RE.test(token);
 }
 
 /** Acordes de la línea con su columna, o null si no es una línea de acordes. */
@@ -90,7 +85,9 @@ export function chordsOverLyricsToChordPro(text: string): string {
     }
 
     const chords = isDirective(line) ? null : chordsInLine(line);
-    if (!chords) {
+    // Sin acordes, o línea instrumental con compases/repetición ("Em D x2"),
+    // que la app ya reconoce tal cual: se conserva.
+    if (!chords || parseInstrumentalLine(line)) {
       out.push(line);
       continue;
     }

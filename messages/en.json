@@ -251,7 +251,8 @@
       "db": "Could not save. Try again.",
       "id": "Invalid identifier.",
       "path": "Invalid file path."
-    }
+    },
+    "pass": "Round {n}/{total}"
   },
   "songView": {
     "keyPrefix": "Key:",
@@ -289,7 +290,8 @@
     "slower": "Slower",
     "faster": "Faster",
     "noSyncNote": "No sync — automatic scroll",
-    "syncNow": "Sync audio"
+    "syncNow": "Sync audio",
+    "pass": "Round {n} of {total}"
   },
   "strings": {
     "title": "{instrument, select, ukulele {The ukulele strings} other {The guitar strings}}",
