@@ -27,6 +27,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(SITE_URL),
     title: t("title"),
     description: t("description"),
+    // Nombre bajo el icono al añadir a la pantalla de inicio en iOS.
+    appleWebApp: { title: "Yuthikal" },
   };
 }
 

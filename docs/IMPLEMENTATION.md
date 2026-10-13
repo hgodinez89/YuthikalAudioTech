@@ -85,7 +85,7 @@ Tests cubren: parser de búsqueda de acordes ES/EN, parser/render ChordPro, edic
 
 ```
 messages/                 Textos ES/EN (next-intl; ES por defecto)
-public/brand/             Logos por tema (crop = oscuro, claro = claro)
+public/brand/             Logos por tema (crop = oscuro, claro = claro) e iconos del manifest
 scripts/                  generate-chords-sql.mjs (seeds del catálogo por instrumento)
 supabase/migrations/      SQL de esquema + RLS (ver §3.2)
 supabase/seed_chords_*.sql Datos del catálogo por instrumento (generados)
@@ -94,6 +94,7 @@ src/app/                  Rutas (App Router)
   auth/callback/          Canje del código OAuth (valida redirects internos)
   page.tsx                Landing: elección de instrumento (redirige al último usado)
   robots.ts / sitemap.ts  robots.txt y sitemap (secciones públicas, escalas y acordes)
+  manifest.ts, apple-icon.png  Acceso directo en la pantalla de inicio (Android/iOS)
   [instrument]/           guitar | ukulele | piano (otro → 404); layout con barra inferior
     chords/[id]           Buscador (1.ª página desde el servidor; selector nota + tipo)
                           y detalle por slug
@@ -177,4 +178,5 @@ Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del
 - *Acordes con bajo alterado* excluidos del catálogo (48); re-incluibles editando `scripts/generate-chords-sql.mjs`.
 - *Tabla `profiles` omitida*: nombre/avatar salen de la sesión de Google; idioma/tema se persisten en el navegador.
 - *CSP*: `script-src` incluye `'unsafe-inline'` (requisito de hidratación de Next sin nonces) y `https://www.youtube.com` (IFrame API); `connect-src` limitado a Supabase; `frame-ancestors 'none'`. `Cross-Origin-Opener-Policy: same-origin` (el login de Google es por redirección, no popup).
+- *Icono en la pantalla de inicio*: iOS no usa `icon.svg`; sin `apple-icon.png` (180×180, opaco y sin esquinas) genera una letra con el título. El manifest usa `display: "browser"`: en iOS una app standalone guarda cookies aparte y el login con Google por redirección perdería la sesión.
 - *Contraste AA*: `--sub`, `--tert`, `--mute` y `--accent` (claro) y `--mute` (oscuro) se ajustaron respecto al handoff para alcanzar ≥ 4,5:1.
