@@ -404,5 +404,23 @@
       "name": "Bajo",
       "desc": "Notas y líneas de bajo."
     }
+  },
+  "book": {
+    "bookMode": "Modo libro",
+    "continuous": "Continuo",
+    "continuousMode": "Ver como una sola columna con scroll",
+    "page": "Página {n} de {total}",
+    "pages": "Páginas {from}–{to} de {total}",
+    "first": "Primera página",
+    "previous": "Página anterior",
+    "next": "Página siguiente",
+    "last": "Última página",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "zoomReset": "Tamaño normal (100 %)",
+    "fit": "Ajustar",
+    "fitHint": "Agrandar la letra al máximo que entra en pantalla",
+    "fullscreen": "Pantalla completa",
+    "exitFullscreen": "Salir de pantalla completa"
   }
 }

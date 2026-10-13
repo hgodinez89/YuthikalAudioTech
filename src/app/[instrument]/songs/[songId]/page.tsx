@@ -4,7 +4,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { cache } from "react";
-import { ChordSheet, type ChordDataMap } from "@/components/chord-sheet";
+import type { ChordDataMap } from "@/components/chord-sheet";
+import { SongBook } from "@/components/song-book";
 import { SongCalibration } from "@/components/song-calibration";
 import { SongEditor } from "@/components/song-editor";
 import { SongKaraoke } from "@/components/song-karaoke";
@@ -176,16 +177,20 @@ export default async function SongPage({
   return (
     <div
       className={`mx-auto px-5 pb-[100px] pt-6 ${
-        mode !== "edit"
-          ? "max-w-[860px]"
-          : step === "audio"
-            ? "max-w-[1180px] pb-[180px]"
-            : "max-w-[1240px]"
+        mode === "view"
+          ? // Modo libro: la vista ocupa la altura bajo el header (~71,3 px; 72 evita
+            // una barra de scroll por fracciones de píxel).
+            "max-w-[1600px] has-[[data-book]]:flex has-[[data-book]]:h-[calc(100dvh-72px)] has-[[data-book]]:flex-col has-[[data-book]]:pb-4"
+          : mode === "karaoke"
+            ? "max-w-[860px]"
+            : step === "audio"
+              ? "max-w-[1180px] pb-[180px]"
+              : "max-w-[1240px]"
       }`}
     >
       <Link
         href={`/${instrument}/songs`}
-        className="mb-6 inline-flex items-center gap-2 text-[13px] text-tert hover:text-ink"
+        className="mb-6 inline-flex items-center gap-2 self-start text-[13px] text-tert hover:text-ink"
       >
         <ChevronLeft size={15} strokeWidth={2} />
         {t("backToSongs")}
@@ -273,7 +278,7 @@ export default async function SongPage({
       {/* CONTENIDO SEGÚN MODO */}
       {mode === "view" &&
         (parsed.sections.length > 0 ? (
-          <ChordSheet sections={parsed.sections} chords={chordData} />
+          <SongBook songId={songId} sections={parsed.sections} chords={chordData} />
         ) : (
           emptyState
         ))}

@@ -404,5 +404,23 @@
       "name": "Bass",
       "desc": "Notes and bass lines."
     }
+  },
+  "book": {
+    "bookMode": "Book mode",
+    "continuous": "Continuous",
+    "continuousMode": "View as a single scrolling column",
+    "page": "Page {n} of {total}",
+    "pages": "Pages {from}–{to} of {total}",
+    "first": "First page",
+    "previous": "Previous page",
+    "next": "Next page",
+    "last": "Last page",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Normal size (100%)",
+    "fit": "Fit",
+    "fitHint": "Make the lyrics as large as fits on screen",
+    "fullscreen": "Full screen",
+    "exitFullscreen": "Exit full screen"
   }
 }

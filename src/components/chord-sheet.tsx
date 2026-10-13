@@ -21,11 +21,14 @@ export type SheetChordData = {
 
 export type ChordDataMap = Record<string, SheetChordData | undefined>;
 
+/* Tamaño base de la letra (text-lg); el resto de medidas son relativas (em). */
+const BASE_FONT_PX = 18;
+
 /** Nota para el músico ({c: …}): indicación aparte, no letra. */
 export function SheetNote({ text }: { text: string }) {
   return (
-    <div className="my-2">
-      <span className="inline-block rounded-lg border border-edge bg-surface-2 px-3 py-1 text-sm italic leading-normal text-sub">
+    <div className="my-[0.44em]">
+      <span className="inline-block rounded-lg border border-edge bg-surface-2 px-[0.857em] py-[0.286em] text-[0.778em] italic leading-normal text-sub">
         {text}
       </span>
     </div>
@@ -35,7 +38,7 @@ export function SheetNote({ text }: { text: string }) {
 /** Repetición de una línea instrumental (x2 → "×2"). */
 export function RepeatBadge({ times }: { times: number }) {
   return (
-    <span className="rounded-md border border-accent/35 bg-accent/10 px-2 py-0.5 text-[13px] font-bold leading-normal text-accent">
+    <span className="rounded-md border border-accent/35 bg-accent/10 px-[0.615em] py-[0.154em] text-[0.722em] font-bold leading-normal text-accent">
       ×{times}
     </span>
   );
@@ -55,11 +58,14 @@ export function ChordSheet({
   chords,
   showLegend = true,
   showFab = true,
+  zoom = 1,
 }: {
   sections: SheetSection[];
   chords: ChordDataMap;
   showLegend?: boolean;
   showFab?: boolean;
+  /** Escala de la letra (modo libro); 1 = tamaño normal. */
+  zoom?: number;
 }) {
   const t = useTranslations("songView");
   const [popover, setPopover] = useState<{ name: string; x: number; y: number } | null>(
@@ -98,78 +104,99 @@ export function ChordSheet({
 
   return (
     <>
-      {/* LETRA CON ACORDES */}
-      <div className="text-lg leading-[1.9]">
+      {/* LETRA CON ACORDES — tamaños en em: el zoom solo cambia el tamaño base */}
+      <div
+        className="text-lg leading-[1.9]"
+        style={zoom === 1 ? undefined : { fontSize: `${BASE_FONT_PX * zoom}px` }}
+      >
         {sections.map((section, si) => {
           const label = sectionLabel(section, t);
+          const header = (label || section.strum) && (
+            <div className="mb-[0.78em] flex flex-wrap items-center gap-[0.67em]">
+              {label && (
+                <span className="text-[0.667em] font-bold uppercase tracking-[0.22em] text-accent">
+                  {label}
+                </span>
+              )}
+              {section.strum && (
+                <span className="inline-flex items-center gap-[0.67em] rounded-lg border border-edge bg-surface-2 px-[0.92em] py-[0.33em] text-[0.667em] leading-normal text-sub">
+                  <span className="text-[0.875em] font-semibold uppercase tracking-[0.08em] text-mute">
+                    {t("strum")}
+                  </span>
+                  <span className="tracking-[0.14em]">
+                    {strumToArrows(section.strum)}
+                  </span>
+                </span>
+              )}
+            </div>
+          );
+          // Cada línea es indivisible: en modo libro nunca se parte entre páginas.
+          const lines = section.lines.map((line, li) =>
+            line.length === 0 ? (
+              <div key={li} className="h-[1.2em]" />
+            ) : line[0].note ? (
+              <div key={li} data-line className="break-inside-avoid">
+                <SheetNote text={line[0].text} />
+              </div>
+            ) : isInstrumental(line) ? (
+              /* Solo acordes (intro, solo…): una fila, sin letra vacía */
+              <div
+                key={li}
+                data-line
+                className="mb-[0.22em] flex break-inside-avoid flex-wrap items-center gap-x-[0.78em] gap-y-[0.22em]"
+              >
+                {line.map((segment, gi) =>
+                  segment.bar ? (
+                    <span key={gi} className="font-light text-edge-2">
+                      |
+                    </span>
+                  ) : segment.repeat ? (
+                    <RepeatBadge key={gi} times={segment.repeat} />
+                  ) : (
+                    <span
+                      key={gi}
+                      {...chordHover(segment.chord)}
+                      className="font-extrabold tracking-[0.01em] text-accent"
+                    >
+                      {segment.chord}
+                    </span>
+                  ),
+                )}
+              </div>
+            ) : (
+              <div
+                key={li}
+                data-line
+                className="mb-[0.22em] flex break-inside-avoid flex-wrap items-end"
+              >
+                {line.map((segment, gi) => (
+                  <span key={gi} className="inline-flex flex-col whitespace-pre">
+                    <span
+                      {...chordHover(segment.chord)}
+                      className="min-h-[1.571em] text-[0.778em] font-extrabold leading-relaxed tracking-[0.01em] text-accent"
+                    >
+                      {segment.chord ?? ""}
+                    </span>
+                    {/* acorde al final sin palabra: espacio duro para que la
+                        columna mida una línea y el acorde no se hunda */}
+                    <span>{segment.text || " "}</span>
+                  </span>
+                ))}
+              </div>
+            ),
+          );
           return (
-            <section key={si} className="mb-[34px]">
-              {(label || section.strum) && (
-                <div className="mb-3.5 flex flex-wrap items-center gap-3">
-                  {label && (
-                    <span className="text-xs font-bold uppercase tracking-[0.22em] text-accent">
-                      {label}
-                    </span>
-                  )}
-                  {section.strum && (
-                    <span className="inline-flex items-center gap-2 rounded-lg border border-edge bg-surface-2 px-[11px] py-1 text-xs text-sub">
-                      <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-mute">
-                        {t("strum")}
-                      </span>
-                      <span className="tracking-[0.14em]">
-                        {strumToArrows(section.strum)}
-                      </span>
-                    </span>
-                  )}
+            <section key={si} className="mb-[1.89em]">
+              {/* El título nunca queda solo al pie de una página: va con su primera línea */}
+              {header ? (
+                <div className="break-inside-avoid">
+                  {header}
+                  {lines[0]}
                 </div>
+              ) : (
+                lines[0]
               )}
-              {section.lines.map((line, li) =>
-                line.length === 0 ? (
-                  <div key={li} className="h-[1.2em]" />
-                ) : line[0].note ? (
-                  <SheetNote key={li} text={line[0].text} />
-                ) : isInstrumental(line) ? (
-                  /* Solo acordes (intro, solo…): una fila, sin letra vacía */
-                  <div
-                    key={li}
-                    className="mb-1 flex flex-wrap items-center gap-x-3.5 gap-y-1"
-                  >
-                    {line.map((segment, gi) =>
-                      segment.bar ? (
-                        <span key={gi} className="font-light text-edge-2">
-                          |
-                        </span>
-                      ) : segment.repeat ? (
-                        <RepeatBadge key={gi} times={segment.repeat} />
-                      ) : (
-                        <span
-                          key={gi}
-                          {...chordHover(segment.chord)}
-                          className="font-extrabold tracking-[0.01em] text-accent"
-                        >
-                          {segment.chord}
-                        </span>
-                      ),
-                    )}
-                  </div>
-                ) : (
-                  <div key={li} className="mb-1 flex flex-wrap items-end">
-                    {line.map((segment, gi) => (
-                      <span key={gi} className="inline-flex flex-col whitespace-pre">
-                        <span
-                          {...chordHover(segment.chord)}
-                          className="min-h-[22px] text-sm font-extrabold leading-relaxed tracking-[0.01em] text-accent"
-                        >
-                          {segment.chord ?? ""}
-                        </span>
-                        {/* acorde al final sin palabra: espacio duro para que la
-                            columna mida una línea y el acorde no se hunda */}
-                        <span>{segment.text || " "}</span>
-                      </span>
-                    ))}
-                  </div>
-                ),
-              )}
+              {lines.slice(1)}
             </section>
           );
         })}
@@ -177,21 +204,25 @@ export function ChordSheet({
 
       {/* ACORDES EN ESTA CANCIÓN */}
       {showLegend && legendChords.length > 0 && (
-        <div className="mt-[46px] border-t border-edge pt-[26px]">
+        <div data-legend className="mt-[46px] border-t border-edge pt-[26px]">
           <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-sub">
             {t("chordsInSong")}
           </div>
-          <div className="flex flex-wrap gap-3">
+          {/* Tarjetas en línea (no flex-wrap): en modo libro se reparten entre
+              páginas como texto y nunca se parten. */}
+          <div className="-mb-3">
             {legendChords.map((chord) => (
               <article
                 key={chord.name}
-                className="flex min-w-[118px] flex-col items-center rounded-2xl border border-edge bg-surface px-3.5 pb-3 pt-3.5"
+                data-legend
+                className="mb-3 mr-3 inline-flex min-w-[118px] break-inside-avoid flex-col items-center rounded-2xl border border-edge bg-surface px-3.5 pb-3 pt-3.5 align-top"
               >
                 <div className="pb-2">
                   <ChordDiagram
                     frets={chord.frets}
                     barres={chord.barres}
                     baseFret={chord.baseFret}
+                    scale={zoom}
                   />
                 </div>
                 <span className="font-extrabold">{chord.name}</span>
