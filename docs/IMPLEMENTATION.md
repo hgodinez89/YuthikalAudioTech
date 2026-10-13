@@ -93,16 +93,22 @@ src/app/                  Rutas (App Router)
   api/keepalive/          Ping del cron
   auth/callback/          Canje del código OAuth (valida redirects internos)
   page.tsx                Landing: elección de instrumento (redirige al último usado)
-  [instrument]/           guitar | ukulele (otro → 404); layout con barra inferior móvil
+  [instrument]/           guitar | ukulele | piano (otro → 404); layout con barra inferior
     chords/[id]           Buscador (selector nota + tipo) y detalle por slug
+    scales/[slug]         Escalas: selector nota + tipo, mástil/teclado, posiciones y
+                          acordes de la escala (/scales → Do mayor)
     songs/[songId]        Mis canciones (lista plana, ?list= filtra por playlist) y
                           canción con ?mode=view|edit|karaoke y &step=lyrics|audio
-    basics/               Cuerdas del instrumento + notas musicales
+    basics/               Cuerdas (o teclado en piano) + notas musicales
   login/                  Login con Google; ?next= regresa a la página de origen
 src/components/           UI (fieles al handoff):
   chord-diagram           Diagrama SVG (spec del handoff; frets/barres/baseFret de chords-db)
   site-header             Logo, pastilla de instrumento, secciones y menú de cuenta
-  instrument-nav          Barra inferior de secciones en móvil
+  instrument-nav          Barra inferior de secciones en móvil y tablet (< md)
+  chord-visual            Diagrama de trastes o teclado mini según el instrumento
+  piano-keyboard/-chord   Teclado SVG (nombres, dedos, sonido) e inversiones de piano
+  fretboard               Mástil SVG (escalas: mástil completo y posiciones)
+  scale-picker/-view      Selector de escalas (enlaces) y vista con Notas/Grados y Escuchar
   chord-finder/-card      Buscador con selector nota + tipo, voz, scroll infinito, FAB
   chord-sheet             Cifrado clásico: acordes sobre sílabas, popovers, leyenda
   songs-view              Lista plana de canciones con playlists como filtros
@@ -116,6 +122,10 @@ src/lib/                  Lógica y acceso a datos:
   chord-search.ts         Parser de búsqueda ES/EN, slugs y selector rápido (+tests)
   chord-import.ts         Cifrado "acordes encima de la letra" → ChordPro (+tests)
   instruments.ts          Instrumentos activos/próximos, afinaciones, ids y rutas (+tests)
+  piano.ts                Acordes de piano calculados: voicings, inversiones, dedos (+tests)
+  scales.ts               Escalas calculadas: ortografía, mástil, posiciones, acordes (+tests)
+  chord-data.ts           Diagramas de acordes por nombre (canción, escala) según instrumento
+  use-piano-synth.ts      Sintetizador Web Audio (piano, escalas)
   youtube.ts / audio.ts   Validaciones de audio (+tests)
   use-audio-engine.ts     Reloj unificado YouTube IFrame API / <audio>
   *-actions.ts            Server actions (re-validación en servidor)
@@ -128,7 +138,7 @@ src/i18n/                 Configuración next-intl por cookie (sin rutas por idi
 
 | Paquete | Versión | Propósito |
 |---|---|---|
-| `next` | 16.2.10 | Framework (App Router, Turbopack) |
+| `next` | 16.4.0 | Framework (App Router, Turbopack) |
 | `react` / `react-dom` | 19.2.4 | UI |
 | `@supabase/supabase-js` | ^2.110 | Cliente de datos/auth/storage |
 | `@supabase/ssr` | ^0.12 | Sesión por cookies para App Router |
@@ -138,7 +148,7 @@ src/i18n/                 Configuración next-intl por cookie (sin rutas por idi
 | `@tombatossals/chords-db` | ^0.5 | Fuente del catálogo (solo para el script de seed) |
 | dev: `tailwindcss` ^4, `typescript` ^5, `eslint`+`eslint-config-next`, `prettier` ^3.9, `vitest` ^4.1 | | Estilos, tipos, calidad y tests |
 
-Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del postcss anidado de Next). `npm audit`: 0 vulnerabilidades.
+Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del postcss anidado de Next). `npm audit --omit=dev`: 0 vulnerabilidades. En dev queda un aviso de `braces` (vía `eslint-config-next` → `fast-glob`) sin versión corregida publicada; solo afecta al lint.
 
 ## 8. Operación y decisiones conocidas
 
@@ -149,8 +159,9 @@ Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del
 **Límites de los free tiers**: Supabase 500 MB de BD + 1 GB de Storage (~60 MP3 de 15 MB) + pausa por inactividad; Vercel Hobby: 1 cron diario, funciones con timeout estándar.
 
 **Decisiones registradas**:
-- *Navegación "instrumento primero"* (desviación consciente del handoff, solo en estructura; colores, tokens y componentes visuales se mantienen): `/` elige instrumento; cada instrumento tiene 3 secciones (Acordes · Canciones · Básicos) en el header y en una barra inferior en móvil; una pastilla cambia de instrumento conservando la sección (dentro de una canción conserva la canción y cambian los diagramas). Piano y Bajo se muestran atenuados como "Próximamente". Las URLs anteriores (`/guitar/strings`, `/guitar/notes`, `/playlists/...`) redirigen a las nuevas.
-- *Canciones independientes del instrumento*: el ChordPro solo nombra acordes, así que la misma canción sirve en guitarra y ukelele; el instrumento activo decide qué diagramas se muestran.
+- *Navegación "instrumento primero"* (desviación consciente del handoff, solo en estructura; colores, tokens y componentes visuales se mantienen): `/` elige instrumento; cada instrumento tiene 4 secciones (Básicos · Acordes · Escalas · Canciones) en el header y en una barra inferior en móvil y tablet; una pastilla cambia de instrumento conservando la sección (dentro de una canción o una escala conserva la ruta y cambian los diagramas). Bajo se muestra atenuado como "Próximamente". Las URLs anteriores (`/guitar/strings`, `/guitar/notes`, `/playlists/...`) redirigen a las nuevas.
+- *Piano y escalas sin BD*: los acordes de piano (voicing, inversiones, digitación) y todas las escalas (notas bien escritas, mástil, posiciones de 4 trastes, acordes de la escala) se calculan en `piano.ts` / `scales.ts`. El piano toma la identidad de los acordes (nombres, categoría, búsqueda) del catálogo de guitarra.
+- *Canciones independientes del instrumento*: el ChordPro solo nombra acordes, así que la misma canción sirve en guitarra, ukelele y piano; el instrumento activo decide qué diagramas se muestran.
 - *Lista plana de canciones*: las playlists son filtros opcionales; borrar una playlist conserva sus canciones. Las playlists mantienen género y doble calificación.
 - *Canción*: Ver (con **Tocar** como acción principal) y Editar en dos pasos, **Letra → Audio** (la antigua "Calibración", ahora "Sincronizar audio"; `?mode=calibrate` sigue funcionando).
 - *Rutas 200 con UI de error/redirect*: por el streaming de Next 16 + la pantalla Loading global, páginas inexistentes o protegidas responden HTTP 200 con la UI correcta (404 visual / redirect a login). Sin impacto para una app personal sin SEO; los datos jamás se filtran (los guards corren antes de cualquier query).

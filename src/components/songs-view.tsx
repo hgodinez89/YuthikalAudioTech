@@ -777,7 +777,7 @@ export function SongsView({
       {notice && (
         <div
           role="status"
-          className="fixed bottom-[92px] left-1/2 z-50 -translate-x-1/2 rounded-[12px] border border-accent/40 bg-surface px-4 py-2.5 text-[13.5px] font-semibold shadow-[0_18px_44px_rgba(0,0,0,0.5)] sm:bottom-8"
+          className="fixed bottom-[92px] left-1/2 z-50 -translate-x-1/2 rounded-[12px] border border-accent/40 bg-surface px-4 py-2.5 text-[13.5px] font-semibold shadow-[0_18px_44px_rgba(0,0,0,0.5)] md:bottom-8"
         >
           {notice}
         </div>

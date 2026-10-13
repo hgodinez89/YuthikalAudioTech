@@ -109,9 +109,9 @@ export function SiteHeader() {
           {instrument && <InstrumentSwitcher instrument={instrument} />}
         </div>
 
-        {/* Secciones del instrumento (en móvil viven en la barra inferior) */}
+        {/* Secciones del instrumento (en móvil y tablet viven en la barra inferior) */}
         {instrument && (
-          <nav className="hidden gap-1 text-sm font-semibold text-sub sm:flex">
+          <nav className="hidden gap-1 text-sm font-semibold text-sub md:flex">
             {SECTIONS.map((section) => {
               const href = `/${instrument}/${section}`;
               const active = pathname.startsWith(href);
@@ -128,7 +128,7 @@ export function SiteHeader() {
                   <Icon
                     size={16}
                     strokeWidth={2}
-                    className={active ? "text-accent" : ""}
+                    className={`hidden lg:block ${active ? "text-accent" : ""}`}
                   />
                   {t(section)}
                 </Link>

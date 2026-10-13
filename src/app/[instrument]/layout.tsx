@@ -14,7 +14,7 @@ export default async function InstrumentLayout({
   if (!isInstrument(instrument)) notFound();
 
   return (
-    <div className="pb-[76px] sm:pb-0">
+    <div className="pb-[76px] md:pb-0">
       {children}
       <InstrumentNav instrument={instrument} />
     </div>

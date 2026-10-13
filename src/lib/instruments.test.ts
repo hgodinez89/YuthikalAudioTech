@@ -12,6 +12,13 @@ describe("switchInstrumentPath", () => {
     );
   });
 
+  it("dentro de una escala conserva la escala", () => {
+    expect(switchInstrumentPath("/guitar/scales/a-blues", "piano")).toBe(
+      "/piano/scales/a-blues",
+    );
+    expect(switchInstrumentPath("/guitar/scales", "piano")).toBe("/piano/scales");
+  });
+
   it("desde el detalle de un acorde vuelve al buscador", () => {
     expect(switchInstrumentPath("/ukulele/chords/c-7sg", "guitar")).toBe(
       "/guitar/chords",

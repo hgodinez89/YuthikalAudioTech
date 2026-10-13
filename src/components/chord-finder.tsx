@@ -518,7 +518,7 @@ export function ChordFinder({ instrument }: { instrument: Instrument }) {
           })
         }
         aria-label={atBottom ? t("fabUp") : t("fabDown")}
-        className="yk-gradient fixed bottom-[92px] right-5 z-50 sm:bottom-6 sm:right-6 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-[0_8px_24px_rgba(46,107,240,0.4)]"
+        className="yk-gradient fixed bottom-[92px] right-5 z-50 md:bottom-6 sm:right-6 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-[0_8px_24px_rgba(46,107,240,0.4)]"
       >
         {atBottom ? (
           <ChevronUp size={22} strokeWidth={2.4} />

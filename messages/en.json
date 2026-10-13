@@ -13,6 +13,7 @@
   },
   "nav": {
     "chords": "Chords",
+    "scales": "Scales",
     "songs": "Songs",
     "basics": "Basics"
   },
@@ -442,15 +443,15 @@
     "soon": "Coming soon",
     "guitar": {
       "name": "Guitar",
-      "desc": "Chords, strings, notes and your songs."
+      "desc": "Chords, scales, strings and your songs."
     },
     "piano": {
       "name": "Piano",
-      "desc": "Chords with inversions, the keyboard and your songs."
+      "desc": "Chords with inversions, scales, the keyboard and your songs."
     },
     "ukulele": {
       "name": "Ukulele",
-      "desc": "Chords, strings, notes and your songs."
+      "desc": "Chords, scales, strings and your songs."
     },
     "bass": {
       "name": "Bass",
@@ -527,5 +528,80 @@
     "semitoneBlack": "C–C♯: from one key to the very next.",
     "toneTitle": "Whole step",
     "tone": "C–D: two half steps (skipping the black key in between)."
+  },
+  "scales": {
+    "eyebrow": "Scales · {instrument}",
+    "pickNote": "Pick the note",
+    "pickScale": "Scale type",
+    "category": {
+      "basic": "Basic",
+      "pentatonic": "Pentatonic & blues",
+      "minor": "Minor",
+      "modes": "Modes"
+    },
+    "label": {
+      "major": "Major",
+      "minor": "Natural minor",
+      "pentatonic-major": "Major pentatonic",
+      "pentatonic-minor": "Minor pentatonic",
+      "blues": "Blues",
+      "harmonic-minor": "Harmonic minor",
+      "melodic-minor": "Melodic minor",
+      "dorian": "Dorian",
+      "phrygian": "Phrygian",
+      "lydian": "Lydian",
+      "mixolydian": "Mixolydian",
+      "locrian": "Locrian"
+    },
+    "title": "{root} {name}",
+    "name": {
+      "major": "major",
+      "minor": "natural minor",
+      "pentatonic-major": "major pentatonic",
+      "pentatonic-minor": "minor pentatonic",
+      "blues": "blues",
+      "harmonic-minor": "harmonic minor",
+      "melodic-minor": "melodic minor",
+      "dorian": "Dorian",
+      "phrygian": "Phrygian",
+      "lydian": "Lydian",
+      "mixolydian": "Mixolydian",
+      "locrian": "Locrian"
+    },
+    "desc": {
+      "major": "Bright and happy: the foundation of Western music. Also called the Ionian mode.",
+      "minor": "Melancholic and dark; the relative minor of the major scale. Also called the Aeolian mode.",
+      "pentatonic-major": "Five notes with no half steps: it almost always sounds right. Great for country, pop and melodic solos.",
+      "pentatonic-minor": "The go-to scale for improvising in rock, blues and pop. Five notes, easy to move around the neck.",
+      "blues": "The minor pentatonic plus the “blue note” (♭5), which gives it its signature sound.",
+      "harmonic-minor": "Minor with a raised 7th: sounds classical, Spanish or Middle Eastern. The V chord is major.",
+      "melodic-minor": "Minor with a raised 6th and 7th (ascending form). Widely used in jazz.",
+      "dorian": "Minor with a major 6th: less sad. Funk, jazz, rock (Santana, “Oye Como Va”).",
+      "phrygian": "Minor with a minor 2nd: a flamenco and metal sound.",
+      "lydian": "Major with a raised 4th: a dreamy sound, common in film scores.",
+      "mixolydian": "Major with a minor 7th: the scale of the dominant chord. Rock, blues and funk.",
+      "locrian": "The most unstable: diminished 2nd and 5th. Used over the half-diminished chord."
+    },
+    "notes": "Notes",
+    "degrees": "Degrees",
+    "formula": "Formula",
+    "step": {
+      "1": "H",
+      "2": "W",
+      "3": "1½"
+    },
+    "formulaHint": "W = whole step · H = half step · 1½ = step and a half",
+    "listen": "Listen",
+    "show": "Show",
+    "fullNeck": "Full neck",
+    "fullNeckHint": "Frets 0–12; the tonic ({root}) is highlighted. Tap a note to hear it.",
+    "keyboard": "Keyboard",
+    "keyboardHint": "One octave from the tonic ({root}), highlighted. Tap a key to hear it.",
+    "positions": "Positions",
+    "positionsIntro": "Practice the scale by zones: each position spans 4 frets, one finger per fret (1 = index … 4 = pinky; 0 = open string).",
+    "position": "Position {n}",
+    "positionFrets": "Frets {from}–{to}",
+    "chordsTitle": "Chords in the scale",
+    "chordsIntro": "The chords built from its notes (stacked thirds). Tap one to see all its shapes."
   }
 }

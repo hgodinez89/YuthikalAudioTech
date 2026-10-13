@@ -28,6 +28,9 @@ const BLACK_AFTER = [
  * - `pressed`: teclas a resaltar (MIDI); `fingers`: dedo por tecla.
  * - `labels`: nombres de nota bajo las teclas resaltadas ("pressed"), en
  *   todas las teclas ("all") o ninguno.
+ * - `noteLabels`: textos propios bajo las teclas resaltadas (escalas: Mi♯,
+ *   grados) en lugar del nombre calculado.
+ * - `strong`: teclas destacadas (tónica); con él, el resto se atenúa.
  * - `onKey`: tocar una tecla (p. ej. para que suene).
  */
 export function PianoKeyboard({
@@ -41,6 +44,8 @@ export function PianoKeyboard({
   whiteWidth = 24,
   height = 110,
   marks,
+  noteLabels,
+  strong,
   onKey,
   className = "",
 }: {
@@ -56,6 +61,10 @@ export function PianoKeyboard({
   height?: number;
   /** Texto marcado sobre una tecla (p. ej. "C4" en el Do central). */
   marks?: Record<number, string>;
+  /** Etiquetas propias por tecla: [principal, secundaria]. */
+  noteLabels?: Record<number, [string, string?]>;
+  /** Teclas destacadas entre las resaltadas (p. ej. la tónica). */
+  strong?: number[];
   onKey?: (midi: number) => void;
   className?: string;
 }) {
@@ -72,6 +81,14 @@ export function PianoKeyboard({
     noteName(midi, l, flats || Boolean(flatNotes?.includes(midi)));
   const width = whiteCount * W;
   const isOn = (midi: number) => pressed.includes(midi);
+  const keyFill = (midi: number, off: string) =>
+    !isOn(midi)
+      ? off
+      : strong && !strong.includes(midi)
+        ? "url(#yk-key-soft)"
+        : "url(#yk-key-on)";
+  const label = (midi: number): [string, string?] =>
+    noteLabels?.[midi] ?? [name(midi, lang), name(midi, other)];
 
   const whites = Array.from({ length: whiteCount }, (_, i) => ({
     i,
@@ -128,6 +145,11 @@ export function PianoKeyboard({
           <stop offset="0" stopColor="var(--grad-to)" />
           <stop offset="1" stopColor="var(--grad-from)" />
         </linearGradient>
+        <linearGradient id="yk-key-soft" x1="0" y1="0" x2="0" y2="1">
+          {/* versión clara del gradiente: opaca, para que no se vea el fondo */}
+          <stop offset="0" stopColor="#a9eef6" />
+          <stop offset="1" stopColor="#a8c2f8" />
+        </linearGradient>
       </defs>
 
       {/* blancas */}
@@ -139,7 +161,7 @@ export function PianoKeyboard({
             width={W - 1}
             height={H}
             rx={Math.min(4, W / 6)}
-            fill={isOn(midi) ? "url(#yk-key-on)" : "#e9edf3"}
+            fill={keyFill(midi, "#e9edf3")}
             stroke="#9aa3b2"
             strokeWidth={0.6}
           />
@@ -181,7 +203,7 @@ export function PianoKeyboard({
             width={bw}
             height={bh}
             rx={Math.min(3, bw / 6)}
-            fill={isOn(midi) ? "url(#yk-key-on)" : "#151922"}
+            fill={keyFill(midi, "#151922")}
             stroke="#05070a"
             strokeWidth={0.6}
           />
@@ -254,7 +276,7 @@ export function PianoKeyboard({
               fill="var(--accent)"
               fontFamily="var(--font-inter), sans-serif"
             >
-              {name(midi, lang)}
+              {label(midi)[0]}
             </text>
             <text
               x={centerX(midi)}
@@ -265,7 +287,7 @@ export function PianoKeyboard({
               fill="var(--tert)"
               fontFamily="var(--font-inter), sans-serif"
             >
-              {name(midi, other)}
+              {label(midi)[1]}
             </text>
           </g>
         ))}

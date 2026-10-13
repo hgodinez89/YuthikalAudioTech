@@ -13,6 +13,7 @@
   },
   "nav": {
     "chords": "Acordes",
+    "scales": "Escalas",
     "songs": "Canciones",
     "basics": "Básicos"
   },
@@ -442,15 +443,15 @@
     "soon": "Próximamente",
     "guitar": {
       "name": "Guitarra",
-      "desc": "Acordes, cuerdas, notas y tus canciones."
+      "desc": "Acordes, escalas, cuerdas y tus canciones."
     },
     "piano": {
       "name": "Piano",
-      "desc": "Acordes con inversiones, el teclado y tus canciones."
+      "desc": "Acordes con inversiones, escalas, el teclado y tus canciones."
     },
     "ukulele": {
       "name": "Ukelele",
-      "desc": "Acordes, cuerdas, notas y tus canciones."
+      "desc": "Acordes, escalas, cuerdas y tus canciones."
     },
     "bass": {
       "name": "Bajo",
@@ -527,5 +528,80 @@
     "semitoneBlack": "Do–Do♯: de una tecla a la inmediata siguiente.",
     "toneTitle": "Tono",
     "tone": "Do–Re: dos semitonos (se salta la tecla negra del medio)."
+  },
+  "scales": {
+    "eyebrow": "Escalas · {instrument}",
+    "pickNote": "Elige la nota",
+    "pickScale": "Tipo de escala",
+    "category": {
+      "basic": "Básicas",
+      "pentatonic": "Pentatónicas y blues",
+      "minor": "Menores",
+      "modes": "Modos"
+    },
+    "label": {
+      "major": "Mayor",
+      "minor": "Menor natural",
+      "pentatonic-major": "Pentatónica mayor",
+      "pentatonic-minor": "Pentatónica menor",
+      "blues": "Blues",
+      "harmonic-minor": "Menor armónica",
+      "melodic-minor": "Menor melódica",
+      "dorian": "Dórico",
+      "phrygian": "Frigio",
+      "lydian": "Lidio",
+      "mixolydian": "Mixolidio",
+      "locrian": "Locrio"
+    },
+    "title": "{root} {name}",
+    "name": {
+      "major": "mayor",
+      "minor": "menor natural",
+      "pentatonic-major": "pentatónica mayor",
+      "pentatonic-minor": "pentatónica menor",
+      "blues": "blues",
+      "harmonic-minor": "menor armónica",
+      "melodic-minor": "menor melódica",
+      "dorian": "dórico",
+      "phrygian": "frigio",
+      "lydian": "lidio",
+      "mixolydian": "mixolidio",
+      "locrian": "locrio"
+    },
+    "desc": {
+      "major": "Brillante y alegre: la base de la música occidental. También se llama modo jónico.",
+      "minor": "Melancólica y oscura; la relativa menor de la escala mayor. También se llama modo eólico.",
+      "pentatonic-major": "Cinco notas sin semitonos: suena bien casi siempre. Ideal para country, pop y solos melódicos.",
+      "pentatonic-minor": "La más usada para improvisar en rock, blues y pop. Cinco notas, fáciles de recorrer en el mástil.",
+      "blues": "La pentatónica menor más la «nota blue» (♭5), que le da su sonido característico.",
+      "harmonic-minor": "Menor con la 7.ª elevada: suena clásica, española o de Oriente Medio. El V es mayor.",
+      "melodic-minor": "Menor con la 6.ª y la 7.ª elevadas (forma ascendente). Muy usada en jazz.",
+      "dorian": "Menor con la 6.ª mayor: suena menos triste. Funk, jazz, rock (Santana, «Oye cómo va»).",
+      "phrygian": "Menor con la 2.ª menor: sonido flamenco y de metal.",
+      "lydian": "Mayor con la 4.ª aumentada: sonido soñador, típico de bandas sonoras.",
+      "mixolydian": "Mayor con la 7.ª menor: la escala del acorde dominante. Rock, blues y funk.",
+      "locrian": "La más inestable: 2.ª y 5.ª disminuidas. Se usa sobre el acorde semidisminuido."
+    },
+    "notes": "Notas",
+    "degrees": "Grados",
+    "formula": "Fórmula",
+    "step": {
+      "1": "S",
+      "2": "T",
+      "3": "1½"
+    },
+    "formulaHint": "T = tono · S = semitono · 1½ = tono y medio",
+    "listen": "Escuchar",
+    "show": "Mostrar",
+    "fullNeck": "Mástil completo",
+    "fullNeckHint": "Trastes 0–12; la tónica ({root}) va resaltada. Toca una nota para escucharla.",
+    "keyboard": "Teclado",
+    "keyboardHint": "Una octava desde la tónica ({root}), resaltada. Toca una tecla para escucharla.",
+    "positions": "Posiciones",
+    "positionsIntro": "Practica la escala por zonas: cada posición abarca 4 trastes, un dedo por traste (1 = índice … 4 = meñique; 0 = cuerda al aire).",
+    "position": "Posición {n}",
+    "positionFrets": "Trastes {from}–{to}",
+    "chordsTitle": "Acordes de la escala",
+    "chordsIntro": "Los acordes que se forman con sus notas (terceras apiladas). Toca uno para ver todas sus formas."
   }
 }
