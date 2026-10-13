@@ -154,6 +154,15 @@
     "count": "{count, plural, =0 {Sin canciones} one {1 canción} other {# canciones}}",
     "all": "Todas",
     "searchPlaceholder": "Buscar canción…",
+    "sort": {
+      "label": "Ordenar por",
+      "recent": "Fecha",
+      "name": "Nombre",
+      "instruments": "Instrumento",
+      "playlist": "Playlist",
+      "asc": "Ascendente",
+      "desc": "Descendente"
+    },
     "play": "Tocar",
     "moreActions": "Más acciones",
     "syncAudio": "Sincronizar audio",

@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
   Check,
   Copy,
   Ellipsis,
@@ -17,8 +19,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DuplicateSongModal } from "./duplicate-song-modal";
 import { SongInstruments } from "./instrument-toggles";
@@ -28,7 +30,16 @@ import type { Instrument } from "@/lib/instruments";
 import { createPlaylist, deletePlaylist, updatePlaylist } from "@/lib/playlist-actions";
 import type { PlaylistInput, PlaylistRow } from "@/lib/playlists";
 import { createSong, deleteSong, moveSongToPlaylist } from "@/lib/song-actions";
-import { keyLabel, validateSong, type SongRow } from "@/lib/songs";
+import {
+  DEFAULT_DIR,
+  SONG_SORTS,
+  keyLabel,
+  sortSongs,
+  validateSong,
+  type SongRow,
+  type SongSort,
+  type SortDir,
+} from "@/lib/songs";
 
 export type SongListRow = Omit<SongRow, "content"> & {
   source: "youtube" | "file" | null;
@@ -50,6 +61,25 @@ const EMPTY_PLAYLIST: PlaylistInput = {
   ratingLike: 4,
   ratingDifficulty: 2,
 };
+
+/* Orden de la lista: preferencia de este navegador. */
+const SORT_KEY = "yk-song-sort";
+const DEFAULT_SORT = { by: "recent", dir: DEFAULT_DIR.recent } as const;
+type SortPref = { by: SongSort; dir: SortDir };
+const noopSubscribe = () => () => {};
+
+function readSort(): SortPref {
+  try {
+    const saved: unknown = JSON.parse(window.localStorage.getItem(SORT_KEY) ?? "null");
+    if (saved && typeof saved === "object" && "by" in saved && "dir" in saved) {
+      const { by, dir } = saved;
+      if (SONG_SORTS.includes(by as SongSort) && (dir === "asc" || dir === "desc")) {
+        return { by: by as SongSort, dir };
+      }
+    }
+  } catch {}
+  return DEFAULT_SORT;
+}
 
 /* Logo de YouTube (Playlist Detail.dc.html) — lucide ya no trae marcas. */
 function YoutubeIcon({ size = 15 }: { size?: number }) {
@@ -472,7 +502,17 @@ export function SongsView({
   const tPlaylists = useTranslations("playlists");
   const tEditor = useTranslations("editor");
   const router = useRouter();
+  const locale = useLocale();
   const [search, setSearch] = useState("");
+  /* Antes de montar, el orden por defecto (el del servidor): sin desajuste de hidratación. */
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+  const [savedSort, setSavedSort] = useState<SortPref>(() =>
+    typeof window === "undefined" ? DEFAULT_SORT : readSort(),
+  );
   const [songToDelete, setSongToDelete] = useState<SongListRow | null>(null);
   const [songToMove, setSongToMove] = useState<SongListRow | null>(null);
   const [songToDuplicate, setSongToDuplicate] = useState<SongListRow | null>(null);
@@ -515,10 +555,22 @@ export function SongsView({
       ? p.genre_other
       : tPlaylists(`genres.${p.genre}`);
 
+  const sort = mounted ? savedSort : DEFAULT_SORT;
+  /* Con una playlist filtrada, ordenar por playlist no aporta: se usa el nombre. */
+  const sortBy = activeList && sort.by === "playlist" ? "name" : sort.by;
+  const sortDir = sortBy === sort.by ? sort.dir : DEFAULT_DIR.name;
+  const saveSort = (next: SortPref) => {
+    setSavedSort(next);
+    try {
+      window.localStorage.setItem(SORT_KEY, JSON.stringify(next));
+    } catch {}
+  };
+
   const needle = search.trim().toLowerCase();
-  const visible = needle
-    ? songs.filter((s) => s.name.toLowerCase().includes(needle))
-    : songs;
+  const visible = sortSongs(
+    needle ? songs.filter((s) => s.name.toLowerCase().includes(needle)) : songs,
+    { by: sortBy, dir: sortDir, instrument, playlistNames: playlistName, locale },
+  );
 
   const createList = async (input: PlaylistInput) => {
     const result = await createPlaylist(input);
@@ -666,21 +718,58 @@ export function SongsView({
         </div>
       )}
 
-      {/* BÚSQUEDA */}
+      {/* BÚSQUEDA Y ORDEN */}
       {songs.length > 0 && (
-        <div className="relative mb-4 flex items-center">
-          <Search
-            size={17}
-            strokeWidth={2}
-            className="pointer-events-none absolute left-3.5 text-tert"
-          />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("searchPlaceholder")}
-            aria-label={t("searchPlaceholder")}
-            className={`${FIELD_CLASS} h-11 pl-10`}
-          />
+        <div className="mb-4 flex flex-wrap gap-2">
+          <div className="relative flex min-w-[220px] flex-1 items-center">
+            <Search
+              size={17}
+              strokeWidth={2}
+              className="pointer-events-none absolute left-3.5 text-tert"
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
+              className={`${FIELD_CLASS} h-11 pl-10`}
+            />
+          </div>
+          {songs.length > 1 && (
+            <div className="flex gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  const by = e.target.value as SongSort;
+                  saveSort({ by, dir: DEFAULT_DIR[by] });
+                }}
+                aria-label={t("sort.label")}
+                title={t("sort.label")}
+                className={`${FIELD_CLASS} h-11 w-auto cursor-pointer`}
+              >
+                {SONG_SORTS.filter((s) => !(activeList && s === "playlist")).map((s) => (
+                  <option key={s} value={s}>
+                    {t(`sort.${s}`)}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() =>
+                  saveSort({ by: sortBy, dir: sortDir === "asc" ? "desc" : "asc" })
+                }
+                aria-label={`${t("sort.label")}: ${t(`sort.${sortDir}`)}`}
+                title={t(`sort.${sortDir}`)}
+                className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-[11px] border border-edge bg-surface-2 text-sub hover:text-ink"
+              >
+                {sortDir === "asc" ? (
+                  <ArrowUpNarrowWide size={18} strokeWidth={2} />
+                ) : (
+                  <ArrowDownWideNarrow size={18} strokeWidth={2} />
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

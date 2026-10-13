@@ -39,6 +39,64 @@ export function sortInstruments(list: readonly Instrument[]): Instrument[] {
   return INSTRUMENTS.filter((i) => list.includes(i));
 }
 
+export type SongSort = "recent" | "name" | "instruments" | "playlist";
+export type SortDir = "asc" | "desc";
+export const SONG_SORTS: SongSort[] = ["recent", "name", "instruments", "playlist"];
+/** Dirección natural al elegir cada criterio. */
+export const DEFAULT_DIR: Record<SongSort, SortDir> = {
+  recent: "desc",
+  name: "asc",
+  instruments: "asc",
+  playlist: "asc",
+};
+
+type SortableSong = Pick<SongRow, "name" | "created_at" | "instruments" | "playlist_id">;
+
+/**
+ * Orden de la lista de canciones. "instruments" agrupa: preparadas para el
+ * instrumento actual, para otros, sin definir. Las canciones sin playlist van
+ * al final en cualquier dirección.
+ */
+export function sortSongs<T extends SortableSong>(
+  songs: readonly T[],
+  opts: {
+    by: SongSort;
+    dir: SortDir;
+    instrument: Instrument;
+    playlistNames: Map<string, string>;
+    locale: string;
+  },
+): T[] {
+  const collator = new Intl.Collator(opts.locale, { sensitivity: "base", numeric: true });
+  const sign = opts.dir === "asc" ? 1 : -1;
+  const byName = (a: T, b: T) => collator.compare(a.name, b.name);
+  const byDate = (a: T, b: T) => a.created_at.localeCompare(b.created_at);
+  const group = (s: T) =>
+    s.instruments.includes(opts.instrument) ? 0 : s.instruments.length > 0 ? 1 : 2;
+  const listName = (s: T) =>
+    s.playlist_id ? (opts.playlistNames.get(s.playlist_id) ?? null) : null;
+
+  const compare = (a: T, b: T): number => {
+    switch (opts.by) {
+      case "recent":
+        return sign * byDate(a, b);
+      case "name":
+        return sign * byName(a, b) || -byDate(a, b);
+      case "instruments":
+        return sign * (group(a) - group(b)) || byName(a, b);
+      case "playlist": {
+        const la = listName(a);
+        const lb = listName(b);
+        if (la === null || lb === null) {
+          return (la === null ? 1 : 0) - (lb === null ? 1 : 0) || byName(a, b);
+        }
+        return sign * collator.compare(la, lb) || byName(a, b);
+      }
+    }
+  };
+  return [...songs].sort(compare);
+}
+
 export type SongValidationError =
   "name" | "description" | "keyNote" | "instruments" | "playlist";
 
