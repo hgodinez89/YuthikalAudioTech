@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type RefObject } from "react";
+import { clampTime } from "./audio";
 
 export type AudioSource =
   { type: "youtube"; videoId: string } | { type: "file"; url: string };
@@ -10,8 +11,19 @@ export type AudioEngine = {
   playing: boolean;
   currentTime: number;
   duration: number;
+  /** Velocidad de reproducción (1 = normal). */
+  rate: number;
+  /** Volumen 0–100 y silencio. */
+  volume: number;
+  muted: boolean;
   toggle: () => void;
+  play: () => void;
   seekTo: (seconds: number) => void;
+  /** Avanza (positivo) o retrocede (negativo), dentro de la canción. */
+  skip: (seconds: number) => void;
+  setRate: (rate: number) => void;
+  setVolume: (volume: number) => void;
+  toggleMute: () => void;
   /** Lectura precisa del reloj en el instante de la marca. */
   now: () => number;
 };
@@ -24,6 +36,10 @@ type YTPlayer = {
   getCurrentTime(): number;
   getDuration(): number;
   getPlayerState(): number;
+  setPlaybackRate(rate: number): void;
+  setVolume(volume: number): void;
+  mute(): void;
+  unMute(): void;
   destroy(): void;
 };
 type YTNamespace = {
@@ -31,6 +47,8 @@ type YTNamespace = {
     el: HTMLElement,
     opts: {
       videoId: string;
+      width: string;
+      height: string;
       playerVars: Record<string, number>;
       events: {
         onReady: () => void;
@@ -76,13 +94,20 @@ type Snapshot = {
   playing: boolean;
   currentTime: number;
   duration: number;
+  rate: number;
+  volume: number;
+  muted: boolean;
 };
 
 /* Controles activos (viven fuera de React; solo los usan event handlers). */
 type Controls = {
   now: () => number;
   toggle: () => void;
+  play: () => void;
   seekTo: (seconds: number) => void;
+  setRate: (rate: number) => void;
+  setVolume: (volume: number) => void;
+  setMuted: (muted: boolean) => void;
 };
 
 /**
@@ -111,7 +136,17 @@ export function useAudioEngine(
       setSnapshot((prev) =>
         prev && prev.key === key
           ? { ...prev, ...update }
-          : { key, ready: false, playing: false, currentTime: 0, duration: 0, ...update },
+          : {
+              key,
+              ready: false,
+              playing: false,
+              currentTime: 0,
+              duration: 0,
+              rate: 1,
+              volume: 100,
+              muted: false,
+              ...update,
+            },
       );
     };
 
@@ -126,6 +161,9 @@ export function useAudioEngine(
         if (cancelled) return;
         player = new YT.Player(mount, {
           videoId: source.videoId,
+          // Llena su contenedor (el mini-reproductor visible).
+          width: "100%",
+          height: "100%",
           playerVars: { controls: 0, disablekb: 1, playsinline: 1 },
           events: {
             onReady: () => {
@@ -138,9 +176,23 @@ export function useAudioEngine(
                   if (p.getPlayerState() === YT.PlayerState.PLAYING) p.pauseVideo();
                   else p.playVideo();
                 },
+                play: () => p.playVideo(),
                 seekTo: (seconds) => {
                   p.seekTo(seconds, true);
                   patch({ currentTime: seconds });
+                },
+                setRate: (rate) => {
+                  p.setPlaybackRate(rate);
+                  patch({ rate });
+                },
+                setVolume: (volume) => {
+                  p.setVolume(volume);
+                  patch({ volume });
+                },
+                setMuted: (muted) => {
+                  if (muted) p.mute();
+                  else p.unMute();
+                  patch({ muted });
                 },
               });
             },
@@ -172,9 +224,22 @@ export function useAudioEngine(
           if (audio.paused) void audio.play();
           else audio.pause();
         },
+        play: () => void audio.play(),
         seekTo: (seconds) => {
           audio.currentTime = seconds;
           patch({ currentTime: seconds });
+        },
+        setRate: (rate) => {
+          audio.playbackRate = rate;
+          patch({ rate });
+        },
+        setVolume: (volume) => {
+          audio.volume = volume / 100;
+          patch({ volume });
+        },
+        setMuted: (muted) => {
+          audio.muted = muted;
+          patch({ muted });
         },
       });
     };
@@ -211,13 +276,31 @@ export function useAudioEngine(
     return () => clearInterval(interval);
   }, [playing, controls, sourceKey]);
 
+  const duration = active?.duration ?? 0;
+  const muted = active?.muted ?? false;
+
   return {
     ready: active?.ready ?? false,
     playing,
     currentTime: active?.currentTime ?? 0,
-    duration: active?.duration ?? 0,
+    duration,
+    rate: active?.rate ?? 1,
+    volume: active?.volume ?? 100,
+    muted,
     now: () => controls?.now() ?? 0,
     toggle: () => controls?.toggle(),
-    seekTo: (seconds) => controls?.seekTo(seconds),
+    play: () => controls?.play(),
+    seekTo: (seconds) => controls?.seekTo(clampTime(seconds, duration)),
+    skip: (seconds) => {
+      if (!controls) return;
+      controls.seekTo(clampTime(controls.now() + seconds, duration));
+    },
+    setRate: (rate) => controls?.setRate(rate),
+    setVolume: (volume) => {
+      controls?.setVolume(Math.round(Math.min(100, Math.max(0, volume))));
+      // Subir el volumen quita el silencio, como en cualquier reproductor.
+      if (muted && volume > 0) controls?.setMuted(false);
+    },
+    toggleMute: () => controls?.setMuted(!muted),
   };
 }

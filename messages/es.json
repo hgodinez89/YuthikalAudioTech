@@ -252,7 +252,33 @@
       "id": "Identificador inválido.",
       "path": "Ruta de archivo inválida."
     },
-    "pass": "Vuelta {n}/{total}"
+    "pass": "Vuelta {n}/{total}",
+    "toStart": "Ir al inicio",
+    "back10": "Retroceder 10 s",
+    "forward10": "Adelantar 10 s",
+    "speed": "Velocidad",
+    "volume": "Volumen",
+    "mute": "Silenciar",
+    "unmute": "Quitar silencio",
+    "review": "Repasar",
+    "reviewHint": "Volver 3 s antes de la última marca y escuchar",
+    "shortcuts": "Atajos de teclado",
+    "keys": {
+      "mark": "Marcar la línea",
+      "markKey": "Espacio",
+      "playPause": "Reproducir / pausa",
+      "skip5": "Retroceder / adelantar 5 s",
+      "skip10": "Retroceder / adelantar 10 s",
+      "toStart": "Ir al inicio",
+      "toStartKey": "Inicio",
+      "speed": "Menos / más velocidad",
+      "mute": "Silenciar",
+      "review": "Repasar"
+    },
+    "video": "Video",
+    "videoMove": "Arrastra para mover el video",
+    "videoLarger": "Agrandar video",
+    "videoSmaller": "Achicar video"
   },
   "songView": {
     "keyPrefix": "Tonalidad:",
@@ -271,7 +297,9 @@
     "edit": "Editar",
     "done": "Listo",
     "stepLyrics": "Letra",
-    "stepAudio": "Audio"
+    "stepAudio": "Audio",
+    "breadcrumb": "Ruta de navegación",
+    "backToLyrics": "Volver a la letra"
   },
   "karaoke": {
     "now": "Ahora",

@@ -44,6 +44,23 @@ import type { SheetSection } from "@/lib/chordpro";
 const BOOK_QUERY = "(min-width: 768px) and (min-height: 560px)";
 const MODE_KEY = "yk-sheet-mode";
 const zoomKey = (songId: string) => `yk-book-zoom:${songId}`;
+const pageKey = (songId: string) => `yk-book-page:${songId}`;
+
+/* Página actual: solo dura la sesión del navegador (sessionStorage). */
+function readSession(key: string): string | null {
+  try {
+    return typeof window === "undefined" ? null : window.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function writeSession(key: string, value: string) {
+  try {
+    window.sessionStorage.setItem(key, value);
+  } catch {
+    /* sin almacenamiento: se vuelve a la primera página */
+  }
+}
 /* Espacio al pie de cada página para su número. */
 const PAGE_FOOTER = 22;
 
@@ -145,7 +162,8 @@ function BookView({
   });
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [count, setCount] = useState(1);
-  const [start, setStart] = useState(0);
+  // Página donde quedaste (en esta sesión): al volver de Editar/Audio caes ahí.
+  const [start, setStart] = useState(() => Number(readSession(pageKey(songId))) || 0);
   const [fullscreen, setFullscreen] = useState(false);
 
   const areaRef = useRef<HTMLDivElement>(null);
@@ -194,6 +212,12 @@ function BookView({
 
   const captureAnchor = () => {
     const { size: s, zoom: z, start: st } = live.current;
+    // Sin ancho aún (primera medición) no hay página real que anclar: se
+    // conserva `start` tal cual (p. ej. la página restaurada de la sesión).
+    if (s.width <= 0) {
+      anchor.current = null;
+      return;
+    }
     const { stride: sw } = bookLayout(s.width, z);
     const index = lineElements().findIndex((el) => pageOf(el, sw) >= st);
     anchor.current = index >= 0 ? index : null;
@@ -244,7 +268,8 @@ function BookView({
       behavior: smooth.current ? "smooth" : "auto",
     });
     smooth.current = true;
-  }, [start, stride]);
+    writeSession(pageKey(songId), String(start));
+  }, [start, stride, songId]);
 
   const applyZoom = (next: number) => {
     const z = clampZoom(next);

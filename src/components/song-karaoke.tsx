@@ -310,9 +310,11 @@ export function SongKaraoke({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-page text-ink dark:bg-[radial-gradient(120%_90%_at_50%_-10%,#0a1220_0%,#05070a_55%)]">
+      {/* Reproductor fuera de pantalla con tamaño real: el player llena su
+          contenedor y YouTube no reproduce en tamaños diminutos. */}
       <div
         ref={youtubeContainerRef}
-        className="pointer-events-none fixed -left-[9999px] top-0 size-px overflow-hidden"
+        className="pointer-events-none fixed -left-[9999px] top-0 h-[200px] w-[356px] overflow-hidden"
         aria-hidden
       />
 

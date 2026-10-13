@@ -5,7 +5,6 @@ import {
   FileMusic,
   Link2,
   Music,
-  Pause,
   Play,
   RotateCcw,
   TriangleAlert,
@@ -15,11 +14,14 @@ import {
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CalibrationTransport, RATES, SKIP_SECONDS } from "./calibration-transport";
 import { ConfirmDialog } from "./confirm-dialog";
+import { FloatingVideo } from "./floating-video";
 import {
   formatStamp,
   formatTime,
   MAX_MP3_BYTES,
+  reviewStart,
   type SongAudioRow,
   type SongSyncRow,
   type SyncStamp,
@@ -193,31 +195,67 @@ export function SongCalibration({
     setCursor((c) => Math.min(c + 1, totalTargets));
   };
 
-  /* Barra espaciadora = marcar (fuera de inputs). El listener se suscribe
-     una sola vez y lee la versión vigente de mark vía ref. */
-  const markRef = useRef(mark);
+  /* Repasar: volver unos segundos antes de la última marca y escuchar. */
+  const review = (from = stamps, at = cursor) => {
+    engine.seekTo(reviewStart(from, at));
+    engine.play();
+  };
+
+  const stepRate = (direction: 1 | -1) => {
+    const index = RATES.indexOf(engine.rate as (typeof RATES)[number]);
+    const next =
+      RATES[Math.min(RATES.length - 1, Math.max(0, (index < 0 ? 2 : index) + direction))];
+    engine.setRate(next);
+  };
+
+  /* Atajos (fuera de campos de texto). El listener se suscribe una sola vez
+     y lee la versión vigente de las acciones vía ref. */
+  const actionsRef = useRef({ mark, review, stepRate, engine });
   useEffect(() => {
-    markRef.current = mark;
+    actionsRef.current = { mark, review, stepRate, engine };
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName;
-      if (e.code !== "Space" || tag === "INPUT" || tag === "TEXTAREA") return;
+      const target = e.target;
+      if (
+        target instanceof Element &&
+        target.closest("input, textarea, select, [contenteditable='true']")
+      ) {
+        return;
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const a = actionsRef.current;
+      const actions: Record<string, () => void> = {
+        " ": a.mark,
+        k: a.engine.toggle,
+        ArrowLeft: () => a.engine.skip(-5),
+        ArrowRight: () => a.engine.skip(5),
+        j: () => a.engine.skip(-SKIP_SECONDS),
+        l: () => a.engine.skip(SKIP_SECONDS),
+        Home: () => a.engine.seekTo(0),
+        "[": () => a.stepRate(-1),
+        "]": () => a.stepRate(1),
+        m: a.engine.toggleMute,
+        r: () => a.review(),
+      };
+      const action = actions[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+      if (!action) return;
       e.preventDefault();
-      markRef.current();
+      action();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  /* Re-marcar: borra las marcas de la fila y la vuelve a escuchar desde un
+     poco antes de la marca anterior, para no tener que buscarla a mano. */
   const remarkLine = (row: Extract<Row, { kind: "line" }>) => {
     dirtyRef.current = true;
-    setStamps((prev) => {
-      const next = new Map(prev);
-      for (let i = 0; i < row.targetCount; i++) next.delete(row.firstTarget + i);
-      return next;
-    });
+    const next = new Map(stamps);
+    for (let i = 0; i < row.targetCount; i++) next.delete(row.firstTarget + i);
+    setStamps(next);
     setCursor(row.firstTarget);
+    if (engine.ready) review(next, row.firstTarget);
   };
 
   const applyReset = () => {
@@ -302,16 +340,13 @@ export function SongCalibration({
   };
 
   const markNumber = Math.min(cursor + 1, totalTargets);
-  const progressFrac = engine.duration ? engine.currentTime / engine.duration : 0;
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[340px_1fr]">
-      {/* contenedor oculto del player de YouTube */}
-      <div
-        ref={youtubeContainerRef}
-        className="pointer-events-none fixed -left-[9999px] top-0 size-px overflow-hidden"
-        aria-hidden
-      />
+      {/* Video de YouTube en un mini-reproductor flotante (con MP3 no hay video) */}
+      {engineSource?.type === "youtube" && (
+        <FloatingVideo containerRef={youtubeContainerRef} />
+      )}
 
       {/* ASIDE IZQUIERDO */}
       <aside className="flex flex-col gap-[18px] lg:sticky lg:top-[90px]">
@@ -658,63 +693,12 @@ export function SongCalibration({
       </main>
 
       {/* TRANSPORTE */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-edge bg-page/95 backdrop-blur-[14px]">
-        <div className="mx-auto flex max-w-[1180px] items-center gap-[18px] px-7 py-3.5">
-          <button
-            type="button"
-            onClick={engine.toggle}
-            disabled={!engine.ready}
-            aria-label={engine.playing ? t("pause") : t("play")}
-            className="yk-gradient grid size-[46px] shrink-0 cursor-pointer place-items-center rounded-full shadow-[0_4px_18px_rgba(46,107,240,0.35)] disabled:opacity-50"
-          >
-            {engine.playing ? (
-              <Pause size={18} fill="currentColor" strokeWidth={0} />
-            ) : (
-              <Play size={18} fill="currentColor" strokeWidth={0} className="ml-0.5" />
-            )}
-          </button>
-          <span className="shrink-0 text-[12.5px] tabular-nums text-sub">
-            {formatTime(engine.currentTime)}
-          </span>
-          <div
-            onClick={(e) => {
-              if (!engine.duration) return;
-              const rect = e.currentTarget.getBoundingClientRect();
-              engine.seekTo(((e.clientX - rect.left) / rect.width) * engine.duration);
-            }}
-            className="flex h-[34px] flex-1 cursor-pointer items-center gap-[2.5px]"
-          >
-            {Array.from({ length: 64 }, (_, i) => {
-              const h = 6 + Math.abs(Math.sin(i * 0.5)) * 20 + (i % 3) * 2;
-              const on = i / 64 <= progressFrac;
-              return (
-                <span
-                  key={i}
-                  className="min-w-[2px] flex-1 rounded-[2px]"
-                  style={{
-                    height: Math.round(h),
-                    background: on
-                      ? "linear-gradient(180deg, var(--grad-to), var(--grad-from))"
-                      : "var(--edge)",
-                  }}
-                />
-              );
-            })}
-          </div>
-          <span className="shrink-0 text-[12.5px] tabular-nums text-tert">
-            {formatTime(engine.duration)}
-          </span>
-          <button
-            type="button"
-            onClick={() => setConfirm("reset")}
-            disabled={stamps.size === 0}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-[11px] border border-edge-2 bg-surface-2 px-4 py-2.5 text-[13px] font-semibold disabled:opacity-50"
-          >
-            <RotateCcw size={15} strokeWidth={2} />
-            {t("reset")}
-          </button>
-        </div>
-      </div>
+      <CalibrationTransport
+        engine={engine}
+        onReview={() => review()}
+        onReset={() => setConfirm("reset")}
+        resetDisabled={stamps.size === 0}
+      />
 
       {/* CONFIRMACIONES */}
       <ConfirmDialog

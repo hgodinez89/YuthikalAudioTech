@@ -252,7 +252,33 @@
       "id": "Invalid identifier.",
       "path": "Invalid file path."
     },
-    "pass": "Round {n}/{total}"
+    "pass": "Round {n}/{total}",
+    "toStart": "Go to start",
+    "back10": "Back 10 s",
+    "forward10": "Forward 10 s",
+    "speed": "Speed",
+    "volume": "Volume",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "review": "Review",
+    "reviewHint": "Go back 3 s before the last mark and listen",
+    "shortcuts": "Keyboard shortcuts",
+    "keys": {
+      "mark": "Mark the line",
+      "markKey": "Space",
+      "playPause": "Play / pause",
+      "skip5": "Back / forward 5 s",
+      "skip10": "Back / forward 10 s",
+      "toStart": "Go to start",
+      "toStartKey": "Home",
+      "speed": "Slower / faster",
+      "mute": "Mute",
+      "review": "Review"
+    },
+    "video": "Video",
+    "videoMove": "Drag to move the video",
+    "videoLarger": "Larger video",
+    "videoSmaller": "Smaller video"
   },
   "songView": {
     "keyPrefix": "Key:",
@@ -271,7 +297,9 @@
     "edit": "Edit",
     "done": "Done",
     "stepLyrics": "Lyrics",
-    "stepAudio": "Audio"
+    "stepAudio": "Audio",
+    "breadcrumb": "Breadcrumb",
+    "backToLyrics": "Back to the lyrics"
   },
   "karaoke": {
     "now": "Now",

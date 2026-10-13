@@ -48,3 +48,24 @@ export function formatTime(seconds: number): string {
     .padStart(2, "0");
   return `${mm}:${ss}`;
 }
+
+/** Tiempo dentro de [0, duración] (sin duración conocida, solo ≥ 0). */
+export function clampTime(seconds: number, duration: number): number {
+  const max = duration > 0 ? duration : Infinity;
+  return Math.min(max, Math.max(0, seconds));
+}
+
+/** Segundos de "pre-roll" al repasar o re-marcar: se escucha la entrada. */
+export const REVIEW_PREROLL = 3;
+
+/**
+ * Punto desde donde repasar: unos segundos antes de la última marca anterior
+ * al objetivo actual. Sin marcas previas, desde el inicio.
+ */
+export function reviewStart(stamps: Map<number, number>, cursor: number): number {
+  let last: number | null = null;
+  for (const [i, t] of stamps) {
+    if (i < cursor && (last === null || t > last)) last = t;
+  }
+  return last === null ? 0 : Math.max(0, last - REVIEW_PREROLL);
+}

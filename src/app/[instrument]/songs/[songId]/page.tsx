@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, Music, Pencil, Play } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Music, Pencil, Play } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -188,13 +188,32 @@ export default async function SongPage({
               : "max-w-[1240px]"
       }`}
     >
-      <Link
-        href={`/${instrument}/songs`}
-        className="mb-6 inline-flex items-center gap-2 self-start text-[13px] text-tert hover:text-ink"
+      {/* Ruta: en Editar/Audio el nombre de la canción vuelve a la letra
+          (que se abre en el modo, zoom y página donde la dejaste). */}
+      <nav
+        aria-label={t("breadcrumb")}
+        className="mb-6 flex min-w-0 items-center gap-2 self-start text-[13px] text-tert"
       >
-        <ChevronLeft size={15} strokeWidth={2} />
-        {t("backToSongs")}
-      </Link>
+        <Link
+          href={`/${instrument}/songs`}
+          className="inline-flex shrink-0 items-center gap-2 hover:text-ink"
+        >
+          <ChevronLeft size={15} strokeWidth={2} />
+          {t("backToSongs")}
+        </Link>
+        {mode === "edit" && (
+          <>
+            <ChevronRight size={13} strokeWidth={2} className="shrink-0 text-mute" />
+            <Link
+              href={songUrl}
+              title={t("backToLyrics")}
+              className="truncate font-semibold text-sub hover:text-ink"
+            >
+              {song.name}
+            </Link>
+          </>
+        )}
+      </nav>
 
       {/* CABECERA DE LA CANCIÓN */}
       <div className="mb-[26px] flex flex-wrap items-end justify-between gap-5">
