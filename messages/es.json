@@ -203,6 +203,38 @@
     "legendSection": "sección",
     "legendNote": "nota"
   },
+  "player": {
+    "toStart": "Ir al inicio",
+    "back10": "Retroceder 10 s",
+    "forward10": "Adelantar 10 s",
+    "speed": "Velocidad",
+    "volume": "Volumen",
+    "mute": "Silenciar",
+    "unmute": "Quitar silencio",
+    "shortcuts": "Atajos de teclado",
+    "video": "Video",
+    "videoMove": "Arrastra para mover el video",
+    "videoLarger": "Agrandar video",
+    "videoSmaller": "Achicar video",
+    "videoClose": "Cerrar video",
+    "videoOpen": "Mostrar video",
+    "videoResize": "Redimensionar video",
+    "videoResizeHint": "Arrastra para cambiar el tamaño · doble clic: tamaño mínimo · flechas: ajustar",
+    "keys": {
+      "space": "Espacio",
+      "home": "Inicio",
+      "pages": "Re Pág / Av Pág",
+      "playPause": "Reproducir / pausa",
+      "skip5": "Retroceder / adelantar 5 s",
+      "skip10": "Retroceder / adelantar 10 s",
+      "toStart": "Ir al inicio",
+      "speed": "Menos / más velocidad",
+      "mute": "Silenciar",
+      "video": "Mostrar / ocultar video",
+      "section": "Sección anterior / siguiente",
+      "repeatLine": "Repetir la línea"
+    }
+  },
   "calibration": {
     "sourceTitle": "Fuente de audio",
     "fileTab": "Archivo",
@@ -253,37 +285,12 @@
       "path": "Ruta de archivo inválida."
     },
     "pass": "Vuelta {n}/{total}",
-    "toStart": "Ir al inicio",
-    "back10": "Retroceder 10 s",
-    "forward10": "Adelantar 10 s",
-    "speed": "Velocidad",
-    "volume": "Volumen",
-    "mute": "Silenciar",
-    "unmute": "Quitar silencio",
     "review": "Repasar",
     "reviewHint": "Volver 3 s antes de la última marca y escuchar",
-    "shortcuts": "Atajos de teclado",
     "keys": {
       "mark": "Marcar la línea",
-      "markKey": "Espacio",
-      "playPause": "Reproducir / pausa",
-      "skip5": "Retroceder / adelantar 5 s",
-      "skip10": "Retroceder / adelantar 10 s",
-      "toStart": "Ir al inicio",
-      "toStartKey": "Inicio",
-      "speed": "Menos / más velocidad",
-      "mute": "Silenciar",
-      "review": "Repasar",
-      "video": "Mostrar / ocultar video"
-    },
-    "video": "Video",
-    "videoMove": "Arrastra para mover el video",
-    "videoLarger": "Agrandar video",
-    "videoSmaller": "Achicar video",
-    "videoClose": "Cerrar video",
-    "videoOpen": "Mostrar video",
-    "videoResize": "Redimensionar video",
-    "videoResizeHint": "Arrastra para cambiar el tamaño · doble clic: tamaño mínimo · flechas: ajustar"
+      "review": "Repasar"
+    }
   },
   "songView": {
     "keyPrefix": "Tonalidad:",
@@ -316,15 +323,13 @@
     "exit": "Salir",
     "play": "Reproducir",
     "pause": "Pausar",
-    "restart": "Reiniciar",
     "prevSection": "Sección anterior",
     "nextSection": "Sección siguiente",
-    "speed": "Velocidad",
-    "slower": "Más lento",
-    "faster": "Más rápido",
     "noSyncNote": "Sin sincronización — scroll automático",
     "syncNow": "Sincronizar audio",
-    "pass": "Vuelta {n} de {total}"
+    "pass": "Vuelta {n} de {total}",
+    "review": "Repasar",
+    "reviewHint": "Repetir la línea actual desde el principio"
   },
   "strings": {
     "title": "{instrument, select, ukulele {Las cuerdas del ukelele} other {Las cuerdas de la guitarra}}",

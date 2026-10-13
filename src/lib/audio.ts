@@ -69,3 +69,14 @@ export function reviewStart(stamps: Map<number, number>, cursor: number): number
   }
   return last === null ? 0 : Math.max(0, last - REVIEW_PREROLL);
 }
+
+/** Velocidad siguiente/anterior dentro de una lista (sin salirse de ella). */
+export function stepRate(
+  rates: readonly number[],
+  current: number,
+  direction: 1 | -1,
+): number {
+  const index = rates.indexOf(current);
+  const from = index < 0 ? rates.indexOf(1) : index;
+  return rates[Math.min(rates.length - 1, Math.max(0, from + direction))];
+}

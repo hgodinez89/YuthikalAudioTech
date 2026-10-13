@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampTime, reviewStart } from "./audio";
+import { clampTime, reviewStart, stepRate } from "./audio";
 
 describe("clampTime", () => {
   it("limita entre 0 y la duración", () => {
@@ -28,5 +28,19 @@ describe("reviewStart", () => {
   it("sin marcas previas o cerca del inicio, desde 0", () => {
     expect(reviewStart(new Map(), 0)).toBe(0);
     expect(reviewStart(new Map([[0, 1.2]]), 1)).toBe(0);
+  });
+});
+
+describe("stepRate", () => {
+  const RATES = [0.5, 0.75, 1, 1.25];
+  it("avanza y retrocede sin salirse de la lista", () => {
+    expect(stepRate(RATES, 1, 1)).toBe(1.25);
+    expect(stepRate(RATES, 1.25, 1)).toBe(1.25);
+    expect(stepRate(RATES, 0.75, -1)).toBe(0.5);
+    expect(stepRate(RATES, 0.5, -1)).toBe(0.5);
+  });
+
+  it("si la velocidad actual no está en la lista, parte de 1×", () => {
+    expect(stepRate(RATES, 1.1, 1)).toBe(1.25);
   });
 });

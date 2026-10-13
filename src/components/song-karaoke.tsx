@@ -1,12 +1,22 @@
 "use client";
 
-import { Info, LogOut, Pause, Play, RotateCcw, X } from "lucide-react";
+import { History, Info, LogOut, Pause, Play, SkipBack, X } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChordDiagram } from "./chord-diagram";
 import type { ChordDataMap } from "./chord-sheet";
-import { formatTime, type SongAudioRow, type SongSyncRow } from "@/lib/audio";
+import { FloatingVideo, useVideoOpen, type VideoInsets } from "./floating-video";
+import {
+  ProgressWave,
+  ShortcutsButton,
+  SKIP_SECONDS,
+  SMALL_BUTTON,
+  SpeedControl,
+  VideoToggle,
+  VolumeControl,
+} from "./player-controls";
+import { clampTime, stepRate, type SongAudioRow, type SongSyncRow } from "@/lib/audio";
 import {
   isInstrumental,
   parseChordPro,
@@ -18,6 +28,15 @@ import {
 import type { SongRow } from "@/lib/songs";
 import { supabaseBrowser } from "@/lib/supabase";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
+import { usePlayerShortcuts } from "@/lib/use-player-shortcuts";
+
+/* Velocidades: con audio, la de reproducción; sin audio, la del autoscroll. */
+const AUDIO_RATES = [0.5, 0.75, 1, 1.25] as const;
+const AUTO_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+/* Repasar: se vuelve un poco antes del inicio de la línea. */
+const REPEAT_PREROLL = 1;
+/* Video flotante entre la cabecera (Ahora/Sigue) y la barra de transporte. */
+const KARAOKE_VIDEO_INSETS: VideoInsets = { top: 132, bottom: 236, bottomMobile: 268 };
 
 /* Línea de karaoke: segmentos + encabezado de sección si es la primera. */
 type KaraokeLine = {
@@ -187,6 +206,13 @@ export function SongKaraoke({
   const dwell = 3.6 / speed;
   const autoTotal = lines.length * dwell;
 
+  /* Cambiar la velocidad del autoscroll sin saltar de línea: el reloj se
+     reescala (la línea actual es reloj / permanencia). */
+  const changeAutoSpeed = (next: number) => {
+    setAutoT((t) => (t * speed) / next);
+    setSpeed(next);
+  };
+
   useEffect(() => {
     if (variant !== "auto" || !autoPlaying) return;
     const interval = setInterval(() => {
@@ -305,18 +331,90 @@ export function SongKaraoke({
     if (next !== undefined) seekToLine(next);
   };
 
+  /* ±10 s y saltos en la onda: sobre el audio o sobre el reloj del autoscroll. */
+  const seekTo = (seconds: number) => {
+    if (variant === "sync") engine.seekTo(seconds);
+    else setAutoT(clampTime(seconds, autoTotal));
+  };
+  const skip = (seconds: number) => {
+    if (variant === "sync") engine.skip(seconds);
+    else setAutoT((t) => clampTime(t + seconds, autoTotal));
+  };
+
+  /* Repasar: repetir la línea actual desde un poco antes de su inicio. */
+  const repeatLine = () => {
+    if (variant === "sync") {
+      const start = lineStarts?.[currentIndex];
+      if (start === null || start === undefined) return;
+      engine.seekTo(Math.max(0, start - REPEAT_PREROLL));
+      engine.play();
+    } else {
+      setAutoT(currentIndex * dwell);
+      setAutoPlaying(true);
+    }
+  };
+
+  const rate = variant === "sync" ? engine.rate : speed;
+  const rates = variant === "sync" ? AUDIO_RATES : AUTO_RATES;
+  const setRate = (next: number) =>
+    variant === "sync" ? engine.setRate(next) : changeAutoSpeed(next);
+
+  /* Video: solo con YouTube y solo cuando lo pides (no se abre al dar play);
+     se recuerda si lo dejaste abierto. */
+  const hasVideo = engineSource?.type === "youtube";
+  const [videoOpen, setVideoOpen] = useVideoOpen("yk-video-open:karaoke", false);
+  const toggleVideo = () => setVideoOpen(!videoOpen);
+
+  const transportDisabled = variant === "sync" && !engine.ready;
+
+  usePlayerShortcuts({
+    " ": togglePlay,
+    k: togglePlay,
+    ArrowLeft: () => skip(-5),
+    ArrowRight: () => skip(5),
+    j: () => skip(-SKIP_SECONDS),
+    l: () => skip(SKIP_SECONDS),
+    Home: restart,
+    ArrowUp: prevSection,
+    ArrowDown: nextSection,
+    PageUp: prevSection,
+    PageDown: nextSection,
+    "[": () => setRate(stepRate(rates, rate, -1)),
+    "]": () => setRate(stepRate(rates, rate, 1)),
+    m: variant === "sync" ? engine.toggleMute : undefined,
+    r: repeatLine,
+    v: hasVideo ? toggleVideo : undefined,
+  });
+
+  const tp = useTranslations("player");
+  const shortcuts = [
+    { keys: `${tp("keys.space")} / K`, label: tp("keys.playPause") },
+    { keys: "← / →", label: tp("keys.skip5") },
+    { keys: "J / L", label: tp("keys.skip10") },
+    { keys: tp("keys.home"), label: tp("keys.toStart") },
+    { keys: `↑ / ↓ · ${tp("keys.pages")}`, label: tp("keys.section") },
+    { keys: "[ / ]", label: tp("keys.speed") },
+    ...(variant === "sync" ? [{ keys: "M", label: tp("keys.mute") }] : []),
+    { keys: "R", label: tp("keys.repeatLine") },
+    ...(hasVideo ? [{ keys: "V", label: tp("keys.video") }] : []),
+  ];
+
   const nowData = nowChord ? chords[nowChord] : undefined;
   const nextData = nextChord ? chords[nextChord] : undefined;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-page text-ink dark:bg-[radial-gradient(120%_90%_at_50%_-10%,#0a1220_0%,#05070a_55%)]">
-      {/* Reproductor fuera de pantalla con tamaño real: el player llena su
-          contenedor y YouTube no reproduce en tamaños diminutos. */}
-      <div
-        ref={youtubeContainerRef}
-        className="pointer-events-none fixed -left-[9999px] top-0 h-[200px] w-[356px] overflow-hidden"
-        aria-hidden
-      />
+      {/* Video de YouTube flotante (con MP3 o sin audio no hay video). Cerrado,
+          sigue montado fuera de pantalla: el audio no se corta. */}
+      {hasVideo && (
+        <FloatingVideo
+          containerRef={youtubeContainerRef}
+          open={videoOpen}
+          onClose={() => setVideoOpen(false)}
+          insets={KARAOKE_VIDEO_INSETS}
+          overlay
+        />
+      )}
 
       {/* BARRA SUPERIOR: Ahora / Sigue + variante + salir */}
       <div className="flex shrink-0 items-start justify-between gap-4 px-6 pb-1 pt-3.5">
@@ -520,98 +618,58 @@ export function SongKaraoke({
       </div>
 
       {/* TRANSPORTE */}
-      <div className="shrink-0 border-t border-edge bg-[linear-gradient(180deg,transparent_0%,var(--surface-3)_30%)] px-6 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3.5">
-        {variant === "sync" ? (
-          <div className="mx-auto mb-3.5 flex max-w-[640px] items-center gap-3">
-            <span className="min-w-10 text-xs tabular-nums text-sub">
-              {formatTime(clock)}
-            </span>
-            <div
-              className="flex h-[30px] flex-1 cursor-pointer items-center gap-[3px]"
-              onClick={(e) => {
-                if (!total) return;
-                const rect = e.currentTarget.getBoundingClientRect();
-                engine.seekTo(((e.clientX - rect.left) / rect.width) * total);
-              }}
-            >
-              {Array.from({ length: 72 }, (_, i) => {
-                const h = 6 + Math.abs(Math.sin(i * 0.55)) * 20 + (i % 3) * 2;
-                const on = total > 0 && i / 72 <= clock / total;
-                return (
-                  <span
-                    key={i}
-                    className="flex-1 rounded-[2px]"
-                    style={{
-                      height: Math.round(h),
-                      background: on
-                        ? "linear-gradient(180deg, var(--grad-to), var(--grad-from))"
-                        : "var(--edge)",
-                    }}
-                  />
-                );
-              })}
-            </div>
-            <span className="min-w-10 text-right text-xs tabular-nums text-tert">
-              {formatTime(total)}
-            </span>
-          </div>
-        ) : (
-          <div className="mb-3 flex flex-col items-center gap-2">
-            <div className="flex items-center gap-3.5">
-              <button
-                type="button"
-                onClick={() => setSpeed((s) => Math.max(0.5, +(s - 0.1).toFixed(1)))}
-                aria-label={t("slower")}
-                className="grid size-[42px] cursor-pointer place-items-center rounded-xl border border-edge-2 bg-surface-2 text-[22px]"
-              >
-                –
-              </button>
-              <div className="min-w-[88px] text-center">
-                <div className="text-[22px] font-extrabold tabular-nums">
-                  {speed.toFixed(1)}×
-                </div>
-                <div className="text-[10.5px] uppercase tracking-[0.12em] text-mute">
-                  {t("speed")}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSpeed((s) => Math.min(2, +(s + 0.1).toFixed(1)))}
-                aria-label={t("faster")}
-                className="grid size-[42px] cursor-pointer place-items-center rounded-xl border border-edge-2 bg-surface-2 text-[22px]"
-              >
-                +
-              </button>
-            </div>
-            <div className="flex items-center gap-[7px] text-xs text-tert">
-              <Info size={14} strokeWidth={2} />
-              {t("noSyncNote")}
-              <span aria-hidden>·</span>
-              <Link href={syncHref} className="font-semibold text-accent hover:underline">
-                {t("syncNow")}
-              </Link>
-            </div>
+      <div className="shrink-0 border-t border-edge bg-[linear-gradient(180deg,transparent_0%,var(--surface-3)_30%)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3 sm:px-6">
+        {/* Progreso: tiempo real del audio, o el reloj del autoscroll */}
+        <ProgressWave
+          current={clock}
+          duration={total}
+          onSeek={seekTo}
+          bars={72}
+          className="mx-auto mb-1.5 max-w-[640px]"
+        />
+        {variant === "auto" && (
+          <div className="mb-2 flex items-center justify-center gap-[7px] text-xs text-tert">
+            <Info size={14} strokeWidth={2} />
+            {t("noSyncNote")}
+            <span aria-hidden>·</span>
+            <Link href={syncHref} className="font-semibold text-accent hover:underline">
+              {t("syncNow")}
+            </Link>
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-5">
+        {/* Fila principal */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={restart}
-            aria-label={t("restart")}
-            className="grid size-[52px] cursor-pointer place-items-center text-sub hover:text-ink"
+            disabled={transportDisabled}
+            aria-label={tp("toStart")}
+            title={tp("toStart")}
+            className={SMALL_BUTTON}
           >
-            <RotateCcw size={24} strokeWidth={2} />
+            <SkipBack size={16} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => skip(-SKIP_SECONDS)}
+            disabled={transportDisabled}
+            aria-label={tp("back10")}
+            title={tp("back10")}
+            className={SMALL_BUTTON}
+          >
+            −{SKIP_SECONDS}
           </button>
           <button
             type="button"
             onClick={prevSection}
             aria-label={t("prevSection")}
-            className="grid size-[52px] cursor-pointer place-items-center text-sub hover:text-ink"
+            title={t("prevSection")}
+            className="grid size-[46px] cursor-pointer place-items-center text-sub hover:text-ink"
           >
             <svg
-              width="26"
-              height="26"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
               fill="currentColor"
               aria-hidden
@@ -622,9 +680,9 @@ export function SongKaraoke({
           <button
             type="button"
             onClick={togglePlay}
-            disabled={variant === "sync" && !engine.ready}
+            disabled={transportDisabled}
             aria-label={playing ? t("pause") : t("play")}
-            className="yk-gradient grid size-[74px] cursor-pointer place-items-center rounded-full shadow-[0_0_30px_rgba(53,214,232,0.45)] disabled:opacity-50"
+            className="yk-gradient grid size-[68px] shrink-0 cursor-pointer place-items-center rounded-full shadow-[0_0_30px_rgba(53,214,232,0.45)] disabled:opacity-50 sm:size-[74px]"
           >
             {playing ? (
               <Pause size={30} fill="currentColor" strokeWidth={0} />
@@ -636,11 +694,12 @@ export function SongKaraoke({
             type="button"
             onClick={nextSection}
             aria-label={t("nextSection")}
-            className="grid size-[52px] cursor-pointer place-items-center text-sub hover:text-ink"
+            title={t("nextSection")}
+            className="grid size-[46px] cursor-pointer place-items-center text-sub hover:text-ink"
           >
             <svg
-              width="26"
-              height="26"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
               fill="currentColor"
               aria-hidden
@@ -648,13 +707,55 @@ export function SongKaraoke({
               <path d="M16 6h2v12h-2zM4 6l9 6-9 6z" />
             </svg>
           </button>
+          <button
+            type="button"
+            onClick={() => skip(SKIP_SECONDS)}
+            disabled={transportDisabled}
+            aria-label={tp("forward10")}
+            title={tp("forward10")}
+            className={SMALL_BUTTON}
+          >
+            +{SKIP_SECONDS}
+          </button>
           <Link
             href={exitHref}
             aria-label={t("exit")}
-            className="grid size-[52px] place-items-center text-sub hover:text-ink"
+            title={t("exit")}
+            className="grid size-[46px] place-items-center text-sub hover:text-ink"
           >
-            <LogOut size={23} strokeWidth={2} />
+            <LogOut size={22} strokeWidth={2} />
           </Link>
+        </div>
+
+        {/* Fila secundaria */}
+        <div className="mt-2.5 flex flex-wrap items-center justify-center gap-1.5">
+          <SpeedControl
+            rate={rate}
+            rates={rates}
+            onChange={setRate}
+            disabled={transportDisabled}
+          />
+          {variant === "sync" && (
+            <VolumeControl
+              volume={engine.volume}
+              muted={engine.muted}
+              onToggleMute={engine.toggleMute}
+              onVolume={engine.setVolume}
+              disabled={transportDisabled}
+            />
+          )}
+          {hasVideo && <VideoToggle open={videoOpen} onToggle={toggleVideo} />}
+          <button
+            type="button"
+            onClick={repeatLine}
+            disabled={transportDisabled}
+            title={t("reviewHint")}
+            className={SMALL_BUTTON}
+          >
+            <History size={15} strokeWidth={2} />
+            <span className="hidden sm:inline">{t("review")}</span>
+          </button>
+          <ShortcutsButton items={shortcuts} />
         </div>
       </div>
     </div>

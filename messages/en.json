@@ -203,6 +203,38 @@
     "legendSection": "section",
     "legendNote": "note"
   },
+  "player": {
+    "toStart": "Go to start",
+    "back10": "Back 10 s",
+    "forward10": "Forward 10 s",
+    "speed": "Speed",
+    "volume": "Volume",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "shortcuts": "Keyboard shortcuts",
+    "video": "Video",
+    "videoMove": "Drag to move the video",
+    "videoLarger": "Larger video",
+    "videoSmaller": "Smaller video",
+    "videoClose": "Hide video",
+    "videoOpen": "Show video",
+    "videoResize": "Resize video",
+    "videoResizeHint": "Drag to resize · double-click: smallest size · arrow keys: adjust",
+    "keys": {
+      "space": "Space",
+      "home": "Home",
+      "pages": "PgUp / PgDn",
+      "playPause": "Play / pause",
+      "skip5": "Back / forward 5 s",
+      "skip10": "Back / forward 10 s",
+      "toStart": "Go to start",
+      "speed": "Slower / faster",
+      "mute": "Mute",
+      "video": "Show / hide video",
+      "section": "Previous / next section",
+      "repeatLine": "Repeat the line"
+    }
+  },
   "calibration": {
     "sourceTitle": "Audio source",
     "fileTab": "File",
@@ -253,37 +285,12 @@
       "path": "Invalid file path."
     },
     "pass": "Round {n}/{total}",
-    "toStart": "Go to start",
-    "back10": "Back 10 s",
-    "forward10": "Forward 10 s",
-    "speed": "Speed",
-    "volume": "Volume",
-    "mute": "Mute",
-    "unmute": "Unmute",
     "review": "Review",
     "reviewHint": "Go back 3 s before the last mark and listen",
-    "shortcuts": "Keyboard shortcuts",
     "keys": {
       "mark": "Mark the line",
-      "markKey": "Space",
-      "playPause": "Play / pause",
-      "skip5": "Back / forward 5 s",
-      "skip10": "Back / forward 10 s",
-      "toStart": "Go to start",
-      "toStartKey": "Home",
-      "speed": "Slower / faster",
-      "mute": "Mute",
-      "review": "Review",
-      "video": "Show / hide video"
-    },
-    "video": "Video",
-    "videoMove": "Drag to move the video",
-    "videoLarger": "Larger video",
-    "videoSmaller": "Smaller video",
-    "videoClose": "Hide video",
-    "videoOpen": "Show video",
-    "videoResize": "Resize video",
-    "videoResizeHint": "Drag to resize · double-click: smallest size · arrow keys: adjust"
+      "review": "Review"
+    }
   },
   "songView": {
     "keyPrefix": "Key:",
@@ -316,15 +323,13 @@
     "exit": "Exit",
     "play": "Play",
     "pause": "Pause",
-    "restart": "Restart",
     "prevSection": "Previous section",
     "nextSection": "Next section",
-    "speed": "Speed",
-    "slower": "Slower",
-    "faster": "Faster",
     "noSyncNote": "No sync — automatic scroll",
     "syncNow": "Sync audio",
-    "pass": "Round {n} of {total}"
+    "pass": "Round {n} of {total}",
+    "review": "Review",
+    "reviewHint": "Repeat the current line from the start"
   },
   "strings": {
     "title": "{instrument, select, ukulele {The ukulele strings} other {The guitar strings}}",

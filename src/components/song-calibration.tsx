@@ -16,12 +16,13 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalibrationTransport, RATES, SKIP_SECONDS } from "./calibration-transport";
 import { ConfirmDialog } from "./confirm-dialog";
-import { FloatingVideo } from "./floating-video";
+import { FloatingVideo, useVideoOpen } from "./floating-video";
 import {
   formatStamp,
   formatTime,
   MAX_MP3_BYTES,
   reviewStart,
+  stepRate,
   type SongAudioRow,
   type SongSyncRow,
   type SyncStamp,
@@ -31,6 +32,7 @@ import { buildVisualModel, syncPlan, type SectionType } from "@/lib/chordpro";
 import type { SongRow } from "@/lib/songs";
 import { supabaseBrowser } from "@/lib/supabase";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
+import { usePlayerShortcuts } from "@/lib/use-player-shortcuts";
 import { youtubeThumbnail } from "@/lib/youtube";
 
 /* Alto del header del sitio (sticky): límite superior de la zona visible. */
@@ -174,15 +176,15 @@ export function SongCalibration({
   const engine = useAudioEngine(engineSource, youtubeContainerRef);
   const hasVideo = engineSource?.type === "youtube";
 
-  /* Video flotante: se puede cerrar y se reabre solo al pasar a reproducir
-     (detectado durante el render comparando con el estado anterior). */
-  const [videoOpen, setVideoOpen] = useState(true);
+  /* Video flotante: se recuerda si quedó abierto; aquí se reabre solo al pasar
+     a reproducir (detectado durante el render comparando con el estado anterior). */
+  const [videoOpen, setVideoOpen] = useVideoOpen("yk-video-open:calibration", true);
   const [wasPlaying, setWasPlaying] = useState(engine.playing);
   if (engine.playing !== wasPlaying) {
     setWasPlaying(engine.playing);
     if (engine.playing && !videoOpen) setVideoOpen(true);
   }
-  const toggleVideo = () => setVideoOpen((open) => !open);
+  const toggleVideo = () => setVideoOpen(!videoOpen);
 
   /* Scroll automático: la línea actual se mantiene en una zona cómoda entre
      el header y la barra de transporte, mostrando las líneas siguientes. */
@@ -240,52 +242,24 @@ export function SongCalibration({
     engine.play();
   };
 
-  const stepRate = (direction: 1 | -1) => {
-    const index = RATES.indexOf(engine.rate as (typeof RATES)[number]);
-    const next =
-      RATES[Math.min(RATES.length - 1, Math.max(0, (index < 0 ? 2 : index) + direction))];
-    engine.setRate(next);
-  };
+  const changeRate = (direction: 1 | -1) =>
+    engine.setRate(stepRate(RATES, engine.rate, direction));
 
-  /* Atajos (fuera de campos de texto). El listener se suscribe una sola vez
-     y lee la versión vigente de las acciones vía ref. */
-  const actionsRef = useRef({ mark, review, stepRate, engine, hasVideo, toggleVideo });
-  useEffect(() => {
-    actionsRef.current = { mark, review, stepRate, engine, hasVideo, toggleVideo };
+  /* Atajos de teclado (Espacio marca; el resto, reproducción). */
+  usePlayerShortcuts({
+    " ": mark,
+    k: engine.toggle,
+    ArrowLeft: () => engine.skip(-5),
+    ArrowRight: () => engine.skip(5),
+    j: () => engine.skip(-SKIP_SECONDS),
+    l: () => engine.skip(SKIP_SECONDS),
+    Home: () => engine.seekTo(0),
+    "[": () => changeRate(-1),
+    "]": () => changeRate(1),
+    m: engine.toggleMute,
+    r: () => review(),
+    v: hasVideo ? toggleVideo : undefined,
   });
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target;
-      if (
-        target instanceof Element &&
-        target.closest("input, textarea, select, [contenteditable='true']")
-      ) {
-        return;
-      }
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const a = actionsRef.current;
-      const actions: Record<string, () => void> = {
-        " ": a.mark,
-        k: a.engine.toggle,
-        ArrowLeft: () => a.engine.skip(-5),
-        ArrowRight: () => a.engine.skip(5),
-        j: () => a.engine.skip(-SKIP_SECONDS),
-        l: () => a.engine.skip(SKIP_SECONDS),
-        Home: () => a.engine.seekTo(0),
-        "[": () => a.stepRate(-1),
-        "]": () => a.stepRate(1),
-        m: a.engine.toggleMute,
-        r: () => a.review(),
-        v: () => a.hasVideo && a.toggleVideo(),
-      };
-      const action = actions[e.key.length === 1 ? e.key.toLowerCase() : e.key];
-      if (!action) return;
-      e.preventDefault();
-      action();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   /* Re-marcar: borra las marcas de la fila y la vuelve a escuchar desde un
      poco antes de la marca anterior, para no tener que buscarla a mano. */

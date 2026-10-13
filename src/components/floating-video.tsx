@@ -3,6 +3,7 @@
 import { GripHorizontal, Maximize2, Minimize2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
+  useEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -24,13 +25,41 @@ import {
 const CORNER_KEY = "yk-video-corner";
 const SIZE_KEY = "yk-video-size";
 
-/* Ubicación por esquina: arriba bajo el header, abajo sobre el transporte. */
+/* Ubicación por esquina, con márgenes por variables CSS (ver `insets`). */
 const CORNER_CLASS: Record<VideoCorner, string> = {
-  tl: "left-4 top-[88px]",
-  tr: "right-4 top-[88px]",
-  bl: "left-4 bottom-[156px] sm:bottom-[120px]",
-  br: "right-4 bottom-[156px] sm:bottom-[120px]",
+  tl: "left-4 top-[var(--video-top)]",
+  tr: "right-4 top-[var(--video-top)]",
+  bl: "left-4 bottom-[var(--video-bottom-mobile)] sm:bottom-[var(--video-bottom)]",
+  br: "right-4 bottom-[var(--video-bottom-mobile)] sm:bottom-[var(--video-bottom)]",
 };
+
+/** Márgenes de la pantalla donde flota el video (px). */
+export type VideoInsets = { top: number; bottom: number; bottomMobile: number };
+
+/* Calibración: bajo el header del sitio y sobre la barra de transporte. */
+const DEFAULT_INSETS: VideoInsets = { top: 88, bottom: 120, bottomMobile: 156 };
+
+/**
+ * Abierto/cerrado del video, recordado por pantalla en el dispositivo. Antes
+ * de hidratar devuelve `initial` (el servidor no conoce la preferencia).
+ */
+export function useVideoOpen(storageKey: string, initial: boolean) {
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+  const [open, setOpen] = useState(() => {
+    const saved = typeof window === "undefined" ? null : readPref(storageKey);
+    return saved === null ? initial : saved === "1";
+  });
+  // Se guarda en un efecto: el estado puede cambiar durante el render
+  // (apertura automática al reproducir) y ahí no se tocan efectos externos.
+  useEffect(() => {
+    if (mounted) writePref(storageKey, open ? "1" : "0");
+  }, [mounted, open, storageKey]);
+  return [mounted ? open : initial, setOpen] as const;
+}
 
 /* El asa va en la esquina libre (opuesta al anclaje), con su cursor. */
 const HANDLE_CLASS: Record<VideoCorner, string> = {
@@ -73,12 +102,17 @@ export function FloatingVideo({
   containerRef,
   open,
   onClose,
+  insets = DEFAULT_INSETS,
+  overlay = false,
 }: {
   containerRef: RefObject<HTMLDivElement | null>;
   open: boolean;
   onClose: () => void;
+  insets?: VideoInsets;
+  /** Sobre un overlay a pantalla completa (Karaoke, z-50): capa más alta. */
+  overlay?: boolean;
 }) {
-  const t = useTranslations("calibration");
+  const t = useTranslations("player");
   // Preferencias del navegador solo tras hidratar (el servidor no las conoce).
   const mounted = useSyncExternalStore(
     noopSubscribe,
@@ -180,7 +214,7 @@ export function FloatingVideo({
     <div
       ref={cardRef}
       aria-hidden={!open}
-      className={`fixed z-40 w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge-2 bg-surface shadow-[0_18px_44px_rgba(0,0,0,0.55)] sm:w-[min(var(--video-w),calc(100vw-32px),calc((100dvh-240px)*16/9))] ${
+      className={`fixed ${overlay ? "z-[60]" : "z-40"} w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge-2 bg-surface shadow-[0_18px_44px_rgba(0,0,0,0.55)] sm:w-[min(var(--video-w),calc(100vw-32px),calc((100dvh-var(--video-top)-var(--video-bottom)-32px)*16/9))] ${
         open
           ? CORNER_CLASS[placement]
           : "pointer-events-none -left-[9999px] top-0 opacity-0"
@@ -188,6 +222,9 @@ export function FloatingVideo({
       style={
         {
           "--video-w": `${width}px`,
+          "--video-top": `${insets.top}px`,
+          "--video-bottom": `${insets.bottom}px`,
+          "--video-bottom-mobile": `${insets.bottomMobile}px`,
           ...(drag ? { transform: `translate(${drag.dx}px, ${drag.dy}px)` } : {}),
         } as CSSProperties
       }
