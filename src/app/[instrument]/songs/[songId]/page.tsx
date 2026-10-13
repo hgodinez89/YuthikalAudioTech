@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { cache } from "react";
 import { SongBook } from "@/components/song-book";
 import { SongCalibration } from "@/components/song-calibration";
+import { SongInstruments } from "@/components/instrument-toggles";
 import { SongEditor } from "@/components/song-editor";
 import { SongKaraoke } from "@/components/song-karaoke";
 import type { SongAudioRow, SongSyncRow } from "@/lib/audio";
@@ -23,7 +24,7 @@ const getSong = cache(async (songId: string) => {
   const supabase = await supabaseWithSession();
   const { data } = await supabase
     .from("songs")
-    .select("id,playlist_id,name,description,key_note,content,created_at")
+    .select("id,playlist_id,name,description,key_note,instruments,content,created_at")
     .eq("id", songId)
     .maybeSingle<SongRow>();
   return data;
@@ -185,6 +186,7 @@ export default async function SongPage({
                 <span className="text-ink">{keyLabel(song.key_note)}</span>
               </span>
             )}
+            <SongInstruments instruments={song.instruments} />
           </div>
         </div>
 

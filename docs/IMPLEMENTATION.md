@@ -37,7 +37,7 @@ Copiar `.env.example` a `.env.local` (local) y configurar las mismas en Vercel (
 | `keepalive` | 1 fila; objetivo del ping del cron | Lectura pública |
 | `chords` / `chord_positions` | Catálogo por instrumento (`chords.instrument`): guitarra 481 acordes / 1,924 posiciones, ukelele 552 / 2,114 (generado de `@tombatossals/chords-db`) | Lectura pública |
 | `playlists` | Playlists del usuario (género, doble rating 1–5) | RLS solo dueño |
-| `songs` | Canciones: metadatos + contenido ChordPro (con directiva propia `{strum:}`); `playlist_id` opcional (lista plana) | RLS solo dueño |
+| `songs` | Canciones: metadatos + contenido ChordPro (con directiva propia `{strum:}`); `playlist_id` opcional (lista plana); `instruments` (guitar/ukulele/piano, informativo) | RLS solo dueño |
 | `song_audio` | Fuente de audio por canción: YouTube (video id + título) o archivo (ruta en Storage) | RLS solo dueño |
 | `song_sync` | Sincronización: granularidad (línea/palabra) + timestamps JSONB `[{i, t}]` | RLS solo dueño |
 
@@ -51,6 +51,7 @@ Storage: bucket privado **`audio`** (15 MB máx., solo `audio/mpeg`), políticas
 4. `supabase/migrations/00000000000003_songs.sql`
 5. `supabase/migrations/00000000000004_audio_sync.sql` (incluye el bucket de Storage)
 6. `supabase/migrations/00000000000005_instruments_flat_songs.sql` (columna `chords.instrument`, `songs.playlist_id` opcional con `on delete set null`, RLS de inserción/actualización que valida la playlist destino)
+7. `supabase/migrations/00000000000006_song_instruments.sql` (columna `songs.instruments`; ejecutar **antes** de desplegar el código que la usa)
 
 ### 3.3 Seed del catálogo de acordes
 
@@ -121,6 +122,7 @@ src/components/           UI (fieles al handoff):
   song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte
   song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll
   confirm-dialog          Confirmación destructiva estándar (no hay diálogos nativos)
+  instrument-toggles      Instrumentos de una canción: selector múltiple e iconos
 src/lib/                  Lógica y acceso a datos:
   chordpro.ts             Parser/edición ChordPro (+tests)
   chord-search.ts         Parser de búsqueda ES/EN, slugs y selector rápido (+tests)
@@ -129,6 +131,7 @@ src/lib/                  Lógica y acceso a datos:
   instruments.ts          Instrumentos activos/próximos, afinaciones, ids y rutas (+tests)
   piano.ts                Acordes de piano calculados: voicings, inversiones, dedos (+tests)
   scales.ts               Escalas calculadas: ortografía, mástil, posiciones, acordes (+tests)
+  key-detect.ts           Tonalidad probable a partir de los acordes del cifrado (+tests)
   chord-data.ts           Diagramas de acordes por nombre (canción, escala) según instrumento
   use-piano-synth.ts      Sintetizador Web Audio (piano, escalas)
   youtube.ts / audio.ts   Validaciones de audio (+tests)
@@ -168,6 +171,7 @@ Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del
 - *Navegación "instrumento primero"* (desviación consciente del handoff, solo en estructura; colores, tokens y componentes visuales se mantienen): `/` elige instrumento; cada instrumento tiene 4 secciones (Básicos · Acordes · Escalas · Canciones) en el header y en una barra inferior en móvil y tablet; una pastilla cambia de instrumento conservando la sección (dentro de una canción o una escala conserva la ruta y cambian los diagramas). Bajo se muestra atenuado como "Próximamente". Las URLs anteriores (`/guitar/strings`, `/guitar/notes`, `/playlists/...`) redirigen a las nuevas.
 - *Piano y escalas sin BD*: los acordes de piano (voicing, inversiones, digitación) y todas las escalas (notas bien escritas, mástil, posiciones de 4 trastes, acordes de la escala) se calculan en `piano.ts` / `scales.ts`. El piano toma la identidad de los acordes (nombres, categoría, búsqueda) del catálogo de guitarra.
 - *Canciones independientes del instrumento*: el ChordPro solo nombra acordes, así que la misma canción sirve en guitarra, ukelele y piano; el instrumento activo decide qué diagramas se muestran.
+- *Instrumentos de la canción*: dato informativo ("Preparada para"), no filtra la lista; se copia al duplicar y una canción nueva nace marcada con el instrumento desde el que se creó. *Autodetectar tonalidad* puntúa las 24 tonalidades por encaje diatónico (menor con V mayor armónica) y desempata por la tónica (frecuencia, primer y último acorde); usa los acordes escritos, sin transponer por cejilla, y solo rellena el campo (guardar sigue siendo manual).
 - *Lista plana de canciones*: las playlists son filtros opcionales; borrar una playlist conserva sus canciones. Las playlists mantienen género y doble calificación.
 - *Canción*: Ver (con **Tocar** como acción principal) y Editar en dos pasos, **Letra → Audio** (la antigua "Calibración", ahora "Sincronizar audio"; `?mode=calibrate` sigue funcionando).
 - *Sin pantalla de carga global* (rendimiento/Lighthouse): el título y el contenido se pintan en el primer render, sin el cambio desde "Afinando tu sesión…". Solo `[instrument]/songs` tiene `loading.tsx` (sesión + BD). Por eso las URLs inexistentes responden 404 real; bajo `/songs`, por el streaming, siguen respondiendo HTTP 200 con la UI correcta (404 visual / redirect a login). Los datos jamás se filtran (los guards corren antes de cualquier query).

@@ -53,7 +53,7 @@ export default async function SongsPage({
   let query = supabase
     .from("songs")
     .select(
-      "id,playlist_id,name,description,key_note,created_at,audio:song_audio(source,youtube_title),sync:song_sync(granularity,stamps)",
+      "id,playlist_id,name,description,key_note,instruments,created_at,audio:song_audio(source,youtube_title),sync:song_sync(granularity,stamps)",
     )
     .order("created_at", { ascending: false });
   if (activeList) query = query.eq("playlist_id", activeList.id);

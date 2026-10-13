@@ -1,4 +1,5 @@
 import { DB_KEYS, ROOT_SHORT_ES } from "./chords";
+import { INSTRUMENTS, isInstrument, type Instrument } from "./instruments";
 
 export type SongRow = {
   id: string;
@@ -6,6 +7,8 @@ export type SongRow = {
   name: string;
   description: string;
   key_note: string;
+  /** Instrumentos para los que está preparada (informativo; vacío = sin definir). */
+  instruments: Instrument[];
   content: string;
   created_at: string;
 };
@@ -16,6 +19,7 @@ export type SongInput = {
   name: string;
   description: string;
   keyNote: string;
+  instruments: Instrument[];
 };
 
 /** Tonalidades disponibles: 12 raíces × mayor/menor ("C", "Cm", …). */
@@ -30,7 +34,13 @@ export function keyLabel(keyNote: string): string {
   return `${rootEs}${minor ? " menor" : ""} — ${keyNote}`;
 }
 
-export type SongValidationError = "name" | "description" | "keyNote" | "playlist";
+/** Instrumentos en el orden de la app, sin repetidos. */
+export function sortInstruments(list: readonly Instrument[]): Instrument[] {
+  return INSTRUMENTS.filter((i) => list.includes(i));
+}
+
+export type SongValidationError =
+  "name" | "description" | "keyNote" | "instruments" | "playlist";
 
 export function validateSong(input: SongInput): SongValidationError | null {
   if (input.playlistId !== null && !/^[0-9a-f-]{36}$/i.test(input.playlistId)) {
@@ -40,6 +50,15 @@ export function validateSong(input: SongInput): SongValidationError | null {
   if (name.length < 1 || name.length > 150) return "name";
   if (input.description.trim().length > 300) return "description";
   if (input.keyNote && !KEY_OPTIONS.includes(input.keyNote)) return "keyNote";
+  // Llega de una server action: no confiar en el tipo.
+  const instruments: unknown = input.instruments;
+  if (
+    !Array.isArray(instruments) ||
+    !instruments.every(isInstrument) ||
+    new Set(instruments).size !== instruments.length
+  ) {
+    return "instruments";
+  }
   return null;
 }
 

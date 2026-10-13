@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DuplicateSongModal } from "./duplicate-song-modal";
+import { SongInstruments } from "./instrument-toggles";
 import { FIELD_CLASS, PlaylistFormModal } from "./playlist-form-modal";
 import { StarsRow } from "./stars";
 import type { Instrument } from "@/lib/instruments";
@@ -107,7 +108,14 @@ function NewSongModal({
   const [pending, startTransition] = useTransition();
 
   const submit = () => {
-    const input = { name, description: "", keyNote: "", playlistId: playlistId || null };
+    // Se crea desde un instrumento: queda marcado como preparada para él.
+    const input = {
+      name,
+      description: "",
+      keyNote: "",
+      instruments: [instrument],
+      playlistId: playlistId || null,
+    };
     const invalid = validateSong(input);
     if (invalid) {
       setError(t(`errors.${invalid}`));
@@ -703,6 +711,7 @@ export function SongsView({
                         {keyLabel(song.key_note)}
                       </span>
                     )}
+                    <SongInstruments instruments={song.instruments} size={15} />
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs text-tert">
                     {listName && <span>{listName}</span>}

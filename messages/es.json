@@ -130,12 +130,19 @@
       "key": "Tonalidad",
       "playlist": "Playlist",
       "noPlaylist": "Sin playlist",
-      "noKey": "Sin definir"
+      "noKey": "Sin definir",
+      "instruments": "Preparada para",
+      "autoDetect": "Autodetectar",
+      "autoDetectHint": "Proponer la tonalidad a partir de los acordes del cifrado",
+      "detected": "Detectada: {key}",
+      "detectedAlt": "también podría ser",
+      "noChords": "El cifrado no tiene acordes reconocibles"
     },
     "errors": {
       "name": "El nombre es obligatorio (máximo 150 caracteres).",
       "description": "La descripción no puede superar los 300 caracteres.",
       "keyNote": "Elige una tonalidad válida.",
+      "instruments": "Elige instrumentos válidos.",
       "playlist": "Playlist inválido.",
       "auth": "Tu sesión expiró. Vuelve a iniciar sesión.",
       "db": "No se pudo guardar. Intenta de nuevo.",

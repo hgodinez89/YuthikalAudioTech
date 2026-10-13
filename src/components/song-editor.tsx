@@ -11,6 +11,7 @@ import {
   Settings,
   Trash2,
   TriangleAlert,
+  WandSparkles,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,7 @@ import {
 import { ChordPicker } from "./chord-picker";
 import { ChordSheet, RepeatBadge, SheetNote } from "./chord-sheet";
 import { ConfirmDialog } from "./confirm-dialog";
+import { InstrumentToggles } from "./instrument-toggles";
 import { FIELD_CLASS } from "./playlist-form-modal";
 import { chordsOverLyricsToChordPro } from "@/lib/chord-import";
 import {
@@ -45,6 +47,7 @@ import {
 } from "@/lib/chordpro";
 import type { Instrument } from "@/lib/instruments";
 import { deleteSong, updateSongContent, updateSongMeta } from "@/lib/song-actions";
+import { detectKey, type DetectedKey } from "@/lib/key-detect";
 import { KEY_OPTIONS, keyLabel, validateSong, type SongRow } from "@/lib/songs";
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
@@ -676,6 +679,7 @@ export function SongEditor({
       {metaOpen && (
         <MetaDrawer
           song={song}
+          content={content}
           playlists={playlists}
           onClose={() => setMetaOpen(false)}
           onDelete={() => {
@@ -746,11 +750,14 @@ export function SongEditor({
 
 function MetaDrawer({
   song,
+  content,
   playlists,
   onClose,
   onDelete,
 }: {
   song: SongRow;
+  /** Cifrado actual del editor (aunque no se haya guardado): base de Autodetectar. */
+  content: string;
   playlists: PlaylistOption[];
   onClose: () => void;
   onDelete: () => void;
@@ -762,9 +769,19 @@ function MetaDrawer({
     name: song.name,
     description: song.description,
     keyNote: song.key_note,
+    instruments: song.instruments,
     playlistId: song.playlist_id ?? "",
   });
   const [error, setError] = useState<string | null>(null);
+  /* Autodetectar: se calcula del cifrado (null = sin acordes reconocibles) y
+     solo se muestra y aplica al pulsar el botón; guardar sigue siendo manual. */
+  const detection = useMemo(() => detectKey(content), [content]);
+  const [detected, setDetected] = useState<DetectedKey | null>(null);
+  const autoDetect = () => {
+    if (!detection) return;
+    setDetected(detection);
+    setForm((f) => ({ ...f, keyNote: detection.key }));
+  };
   const [pending, startTransition] = useTransition();
 
   const submit = () => {
@@ -831,10 +848,28 @@ function MetaDrawer({
             />
           </div>
           <div>
-            <label className="mb-[7px] block text-[12.5px] font-semibold text-sub">
-              {tSongs("form.key")}
-            </label>
+            <div className="mb-[7px] flex items-center justify-between gap-3">
+              <label
+                htmlFor="song-key"
+                className="block text-[12.5px] font-semibold text-sub"
+              >
+                {tSongs("form.key")}
+              </label>
+              <button
+                type="button"
+                onClick={autoDetect}
+                disabled={!detection}
+                title={
+                  detection ? tSongs("form.autoDetectHint") : tSongs("form.noChords")
+                }
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-[12.5px] font-semibold text-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:text-disabled disabled:hover:bg-transparent"
+              >
+                <WandSparkles size={14} strokeWidth={2} />
+                {tSongs("form.autoDetect")}
+              </button>
+            </div>
             <select
+              id="song-key"
               value={form.keyNote}
               onChange={(e) => setForm({ ...form, keyNote: e.target.value })}
               className={`${FIELD_CLASS} h-11 cursor-pointer`}
@@ -846,6 +881,36 @@ function MetaDrawer({
                 </option>
               ))}
             </select>
+            {detected && (
+              <p className="mt-2 text-[12.5px] text-sub" aria-live="polite">
+                {tSongs("form.detected", { key: keyLabel(detected.key) })}
+                {detected.alternative && (
+                  <>
+                    {" · "}
+                    {tSongs("form.detectedAlt")}{" "}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => ({ ...f, keyNote: detected.alternative! }))
+                      }
+                      className="cursor-pointer font-semibold text-accent hover:underline"
+                    >
+                      {keyLabel(detected.alternative)}
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+          <div>
+            <span className="mb-[7px] block text-[12.5px] font-semibold text-sub">
+              {tSongs("form.instruments")}
+            </span>
+            <InstrumentToggles
+              value={form.instruments}
+              onChange={(instruments) => setForm({ ...form, instruments })}
+              label={tSongs("form.instruments")}
+            />
           </div>
           <div>
             <label className="mb-[7px] block text-[12.5px] font-semibold text-sub">

@@ -6,6 +6,7 @@ import { validateStamps, type SongAudioRow, type SongSyncRow } from "./audio";
 import {
   MAX_CONTENT_LENGTH,
   normalizeInclude,
+  sortInstruments,
   validateSong,
   type DuplicateInclude,
   type SongInput,
@@ -36,6 +37,7 @@ export async function createSong(input: SongInput): Promise<ActionResult> {
       name: input.name.trim(),
       description: input.description.trim(),
       key_note: input.keyNote,
+      instruments: sortInstruments(input.instruments),
     })
     .select("id")
     .single();
@@ -60,6 +62,7 @@ export async function updateSongMeta(
       name: input.name.trim(),
       description: input.description.trim(),
       key_note: input.keyNote,
+      instruments: sortInstruments(input.instruments),
       // RLS exige que la playlist destino (si la hay) sea del mismo usuario.
       playlist_id: input.playlistId,
       updated_at: new Date().toISOString(),
@@ -163,6 +166,7 @@ export async function duplicateSong(
       name: input.name.trim(),
       description: input.description.trim(),
       key_note: input.keyNote,
+      instruments: sortInstruments(input.instruments),
       content: source.content,
     })
     .select("id")

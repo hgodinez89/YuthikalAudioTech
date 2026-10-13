@@ -3,6 +3,7 @@
 import { Check, FileMusic, Info, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
+import { InstrumentToggles } from "./instrument-toggles";
 import { FIELD_CLASS } from "./playlist-form-modal";
 import type { SongListRow } from "./songs-view";
 import type { PlaylistRow } from "@/lib/playlists";
@@ -67,6 +68,7 @@ export function DuplicateSongModal({
     name: copyName(song.name, t("copySuffix")),
     description: song.description,
     keyNote: song.key_note,
+    instruments: song.instruments,
     playlistId: song.playlist_id ?? "",
   });
   const [audio, setAudio] = useState(song.source !== null);
@@ -210,6 +212,16 @@ export function DuplicateSongModal({
                 ))}
               </select>
             </div>
+          </div>
+          <div>
+            <span className="mb-[7px] block text-[12.5px] font-semibold text-sub">
+              {t("form.instruments")}
+            </span>
+            <InstrumentToggles
+              value={form.instruments}
+              onChange={(instruments) => setForm({ ...form, instruments })}
+              label={t("form.instruments")}
+            />
           </div>
 
           {/* Qué más copiar */}
