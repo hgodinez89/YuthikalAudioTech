@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { InstrumentStrings } from "@/components/instrument-strings";
 import { MusicalNotes } from "@/components/musical-notes";
-import type { Instrument } from "@/lib/instruments";
+import { PianoBasics } from "@/components/piano-basics";
+import { isFretted, type Instrument } from "@/lib/instruments";
 
 export async function generateMetadata({
   params,
@@ -35,12 +36,29 @@ export default async function BasicsPage({
         </div>
         <h1 className="mb-5 text-4xl font-extrabold tracking-[-0.025em]">{t("title")}</h1>
         <div className="flex w-fit rounded-xl border border-edge bg-surface-2 p-1 text-[13px] font-semibold">
-          <a
-            href="#strings"
-            className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
-          >
-            {t("strings")}
-          </a>
+          {isFretted(instrument) ? (
+            <a
+              href="#strings"
+              className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
+            >
+              {t("strings")}
+            </a>
+          ) : (
+            <>
+              <a
+                href="#keyboard"
+                className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
+              >
+                {t("keyboard")}
+              </a>
+              <a
+                href="#fingers"
+                className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
+              >
+                {t("fingers")}
+              </a>
+            </>
+          )}
           <a
             href="#notes"
             className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
@@ -51,8 +69,12 @@ export default async function BasicsPage({
       </div>
 
       <div className="flex flex-col gap-16">
-        <InstrumentStrings instrument={instrument} />
-        <MusicalNotes />
+        {isFretted(instrument) ? (
+          <InstrumentStrings instrument={instrument} />
+        ) : (
+          <PianoBasics />
+        )}
+        <MusicalNotes instrument={instrument} />
       </div>
     </div>
   );

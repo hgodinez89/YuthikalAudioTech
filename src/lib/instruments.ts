@@ -1,9 +1,9 @@
 /** Instrumentos de la app: activos (con rutas) y próximos (solo vitrina). */
 
-export const INSTRUMENTS = ["guitar", "ukulele"] as const;
+export const INSTRUMENTS = ["guitar", "ukulele", "piano"] as const;
 export type Instrument = (typeof INSTRUMENTS)[number];
 
-export const COMING_SOON = ["piano", "bass"] as const;
+export const COMING_SOON = ["bass"] as const;
 
 export const DEFAULT_INSTRUMENT: Instrument = "guitar";
 export const INSTRUMENT_COOKIE = "yk-instrument";
@@ -12,9 +12,24 @@ export function isInstrument(value: unknown): value is Instrument {
   return typeof value === "string" && INSTRUMENTS.includes(value as Instrument);
 }
 
+/** Instrumentos de cuerdas con trastes (acordes = diagramas de posiciones). */
+export function isFretted(instrument: Instrument): instrument is "guitar" | "ukulele" {
+  return instrument !== "piano";
+}
+
+/**
+ * Catálogo de acordes que usa cada instrumento. El piano no guarda
+ * posiciones (se calculan en `piano.ts`): toma la identidad de los acordes
+ * (nombres, categoría, búsqueda) del catálogo de guitarra.
+ */
+export function catalogInstrument(instrument: Instrument): "guitar" | "ukulele" {
+  return isFretted(instrument) ? instrument : "guitar";
+}
+
 /** Id del catálogo para un slug de acorde: guitarra sin prefijo (ids históricos). */
 export function chordDbId(instrument: Instrument, slug: string): string {
-  return instrument === "guitar" ? slug : `${instrument}-${slug}`;
+  const catalog = catalogInstrument(instrument);
+  return catalog === "guitar" ? slug : `${catalog}-${slug}`;
 }
 
 /** Secciones de cada instrumento, en el orden de la navegación. */
@@ -44,7 +59,7 @@ export type TuningString = {
 };
 
 /** Afinación estándar, de la 1ª cuerda (la de abajo) a la última. */
-export const TUNINGS: Record<Instrument, TuningString[]> = {
+export const TUNINGS: Record<"guitar" | "ukulele", TuningString[]> = {
   guitar: [
     { num: "1ª", noteEs: "Mi", noteEn: "E", trad: "Prima", th: 1 },
     { num: "2ª", noteEs: "Si", noteEn: "B", trad: "Segunda", th: 2 },

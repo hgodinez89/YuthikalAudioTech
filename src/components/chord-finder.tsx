@@ -19,7 +19,8 @@ import {
   parseChordQuery,
 } from "@/lib/chord-search";
 import { DB_KEYS, NOTE_LABELS, ROOT_SHORT_ES, type ChordCategory } from "@/lib/chords";
-import type { Instrument } from "@/lib/instruments";
+import { catalogInstrument, isFretted, type Instrument } from "@/lib/instruments";
+import { PIANO_SUFFIXES, pianoRootKeys } from "@/lib/piano";
 import { supabaseBrowser } from "@/lib/supabase";
 
 const PAGE_SIZE = 36;
@@ -96,8 +97,10 @@ async function fetchChords(
       "id,key,suffix,name_en,name_es,category,positions:chord_positions!inner(base_fret,frets,barres,position)",
       { count: "exact" },
     )
-    .eq("instrument", instrument)
+    .eq("instrument", catalogInstrument(instrument))
     .eq("positions.position", 1);
+  // Piano: identidad del catálogo de guitarra, solo tipos que se tocan en teclado.
+  if (!isFretted(instrument)) qb = qb.in("suffix", PIANO_SUFFIXES);
 
   if (parsed.kind === "chord") {
     qb = qb.in("key", parsed.keys);
@@ -122,6 +125,9 @@ async function fetchChords(
     name_es: r.name_es as string,
     category: r.category as ChordCategory,
     position: (r.positions as Row["position"][])[0],
+    keys: isFretted(instrument)
+      ? undefined
+      : pianoRootKeys(r.key as string, r.suffix as string),
   }));
   return { rows, total: count ?? 0 };
 }

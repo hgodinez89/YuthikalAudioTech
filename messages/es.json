@@ -369,11 +369,13 @@
     "eyebrow": "Referencia · {instrument}",
     "title": "Básicos",
     "strings": "Cuerdas",
-    "notes": "Notas"
+    "notes": "Notas",
+    "keyboard": "Teclado",
+    "fingers": "Dedos"
   },
   "notes": {
     "title": "Las notas musicales",
-    "intro": "Las 12 notas de la escala cromática. Las 7 <em>naturales</em> y las 5 <em>alteradas</em> (sostenidos y bemoles), que en el mástil viven entre traste y traste.",
+    "intro": "Las 12 notas de la escala cromática. Las 7 <em>naturales</em> y las 5 <em>alteradas</em> (sostenidos y bemoles), {instrument, select, piano {que en el teclado son las teclas negras} other {que en el mástil viven entre traste y traste}}.",
     "legend": "Cómo leer las tarjetas:",
     "natural": "Natural",
     "altered": "Alterada",
@@ -444,7 +446,7 @@
     },
     "piano": {
       "name": "Piano",
-      "desc": "Teclas, escalas y acordes."
+      "desc": "Acordes con inversiones, el teclado y tus canciones."
     },
     "ukulele": {
       "name": "Ukelele",
@@ -472,5 +474,58 @@
     "fitHint": "Agrandar la letra al máximo que entra en pantalla",
     "fullscreen": "Pantalla completa",
     "exitFullscreen": "Salir de pantalla completa"
+  },
+  "piano": {
+    "listen": "Escuchar",
+    "inversionsTitle": "Inversiones",
+    "inversionsCount": "{n, plural, one {1 forma} other {# formas}}",
+    "hand": "Mano",
+    "rightHand": "Mano derecha",
+    "leftHand": "Mano izquierda",
+    "inversion": {
+      "0": "Posición fundamental",
+      "1": "1.ª inversión",
+      "2": "2.ª inversión",
+      "3": "3.ª inversión"
+    },
+    "bass": "Bajo: {es} ({en})",
+    "fingeringNote": "Digitación sugerida (1 = pulgar … 5 = meñique). Toca una tecla para escuchar su nota.",
+    "practicalVoicing": "Voicing práctico para una mano: {count, plural, one {se omite} other {se omiten}} {degrees}.",
+    "degree": {
+      "3": "la 3.ª",
+      "5": "la 5.ª",
+      "7": "la 7.ª",
+      "9": "la 9.ª",
+      "11": "la 11.ª"
+    }
+  },
+  "pianoBasics": {
+    "tapToHear": "Toca cualquier tecla para escucharla.",
+    "keyboardTitle": "El teclado",
+    "keyboardIntro": "Las teclas se repiten cada 12: 7 blancas (las notas naturales) y 5 negras (las alteradas, con sostenido ♯ o bemol ♭). Cada tecla negra tiene dos nombres: Do♯ es lo mismo que Re♭.",
+    "findCTitle": "Encuentra el Do",
+    "findC": "El Do siempre está justo a la izquierda del grupo de 2 teclas negras.",
+    "blackKeysTitle": "Grupos de 2 y 3",
+    "blackKeys": "Las teclas negras se agrupan de 2 en 2 y de 3 en 3; ese patrón te orienta en todo el teclado.",
+    "octavesTitle": "Octavas y Do central",
+    "octavesIntro": "Un piano de 88 teclas va de La0 a Do8. Cada octava empieza en Do y se numera: Do1, Do2… El Do central (C4, resaltado) está en el medio del piano y es la referencia para ubicar las manos. Aquí se muestran de Do1 a Si7; las teclas de los extremos completan las 88.",
+    "middleCHint": "Do central = C4. Toca las teclas para oír cómo suben las octavas.",
+    "fingersTitle": "Los dedos",
+    "fingersIntro": "Cada dedo tiene un número en ambas manos, del pulgar (1) al meñique (5). En la posición inicial, la mano izquierda va sobre Do3–Sol3 (5-4-3-2-1) y la derecha sobre Do4–Sol4 (1-2-3-4-5).",
+    "leftHand": "Mano izquierda",
+    "rightHand": "Mano derecha",
+    "finger1": "Pulgar",
+    "finger2": "Índice",
+    "finger3": "Medio",
+    "finger4": "Anular",
+    "finger5": "Meñique",
+    "tonesTitle": "Tono y semitono",
+    "tonesIntro": "Un semitono es la distancia de una tecla a la siguiente, sea blanca o negra. Un tono son dos semitonos. Toca cada tarjeta para escucharlo.",
+    "semitoneTitle": "Semitono sin tecla negra",
+    "semitone": "Mi–Fa (y Si–Do) son semitonos: entre ellas no hay tecla negra.",
+    "semitoneBlackTitle": "Semitono",
+    "semitoneBlack": "Do–Do♯: de una tecla a la inmediata siguiente.",
+    "toneTitle": "Tono",
+    "tone": "Do–Re: dos semitonos (se salta la tecla negra del medio)."
   }
 }

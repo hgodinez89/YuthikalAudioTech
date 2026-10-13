@@ -12,7 +12,13 @@ import { SongKaraoke } from "@/components/song-karaoke";
 import type { SongAudioRow, SongSyncRow } from "@/lib/audio";
 import { chordIdFromName } from "@/lib/chord-search";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
-import { chordDbId, type Instrument } from "@/lib/instruments";
+import {
+  catalogInstrument,
+  chordDbId,
+  isFretted,
+  type Instrument,
+} from "@/lib/instruments";
+import { pianoChordFromName, pianoInversions } from "@/lib/piano";
 import { keyLabel, type SongRow } from "@/lib/songs";
 import { supabaseWithSession } from "@/lib/supabase-server";
 
@@ -56,7 +62,7 @@ async function loadChordData(
   const { data } = await supabase
     .from("chords")
     .select("id,name_es,positions:chord_positions!inner(base_fret,frets,barres,position)")
-    .eq("instrument", instrument)
+    .eq("instrument", catalogInstrument(instrument))
     .in("id", [...idByName.values()])
     .eq("positions.position", 1);
 
@@ -75,7 +81,8 @@ async function loadChordData(
   const map: ChordDataMap = {};
   for (const [name, id] of idByName) {
     const found = byId.get(id);
-    if (found) {
+    if (!found) continue;
+    if (isFretted(instrument)) {
       map[name] = {
         name,
         nameEs: found.nameEs,
@@ -83,6 +90,19 @@ async function loadChordData(
         barres: found.position.barres,
         baseFret: found.position.base_fret,
       };
+    } else {
+      // Piano: teclas calculadas (posición fundamental) en lugar de trastes.
+      const keys = pianoChordFromName(name);
+      if (keys) {
+        map[name] = {
+          name,
+          nameEs: found.nameEs,
+          keys: pianoInversions(keys)[0].notes,
+          frets: [],
+          barres: [],
+          baseFret: 1,
+        };
+      }
     }
   }
   return map;

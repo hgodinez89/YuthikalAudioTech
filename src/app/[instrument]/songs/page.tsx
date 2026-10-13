@@ -61,7 +61,10 @@ export default async function SongsPage({
   // song_audio y song_sync son relaciones uno-a-uno (song_id es su PK),
   // así que PostgREST las devuelve como objeto o null, no como array.
   const { data: songs, error: songsError } = await query.returns<
-    (Omit<SongListRow, "source" | "youtubeTitle" | "synced" | "stampCount" | "granularity"> & {
+    (Omit<
+      SongListRow,
+      "source" | "youtubeTitle" | "synced" | "stampCount" | "granularity"
+    > & {
       audio: { source: "youtube" | "file"; youtube_title: string | null } | null;
       sync: { granularity: "line" | "word"; stamps: unknown[] } | null;
     })[]

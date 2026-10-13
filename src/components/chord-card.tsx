@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ChordDiagram } from "./chord-diagram";
+import { ChordVisual } from "./chord-visual";
 import type { ChordPositionRow } from "@/lib/chords";
 
 export type ChordCardData = {
@@ -8,11 +8,13 @@ export type ChordCardData = {
   name_en: string;
   name_es: string;
   position: Pick<ChordPositionRow, "base_fret" | "frets" | "barres">;
+  /** Piano: teclas del acorde (en lugar de la posición en el mástil). */
+  keys?: number[];
 };
 
 export function ChordCard({ chord, href }: { chord: ChordCardData; href: string }) {
   const t = useTranslations("finder");
-  const hasBarre = chord.position.barres.length > 0;
+  const hasBarre = !chord.keys && chord.position.barres.length > 0;
 
   return (
     <Link
@@ -25,10 +27,14 @@ export function ChordCard({ chord, href }: { chord: ChordCardData; href: string 
         </span>
       )}
       <div className="flex w-full justify-center pb-2.5 pt-1">
-        <ChordDiagram
-          frets={chord.position.frets}
-          barres={chord.position.barres}
-          baseFret={chord.position.base_fret}
+        <ChordVisual
+          chord={{
+            frets: chord.position.frets,
+            barres: chord.position.barres,
+            baseFret: chord.position.base_fret,
+            keys: chord.keys,
+          }}
+          scale={chord.keys ? 1.15 : 1}
         />
       </div>
       <div className="text-center leading-[1.35]">

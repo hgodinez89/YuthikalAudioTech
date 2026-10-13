@@ -3,15 +3,18 @@
 import { Search, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { ChordDiagram } from "./chord-diagram";
+import { ChordVisual } from "./chord-visual";
 import { escapeLike, parseChordQuery } from "@/lib/chord-search";
-import type { Instrument } from "@/lib/instruments";
+import { catalogInstrument, isFretted, type Instrument } from "@/lib/instruments";
+import { PIANO_SUFFIXES, pianoRootKeys } from "@/lib/piano";
 import { supabaseBrowser } from "@/lib/supabase";
 
 type PickerChord = {
   name_en: string;
   name_es: string;
   position: { base_fret: number; frets: number[]; barres: number[] };
+  /** Piano: teclas del acorde. */
+  keys?: number[];
 };
 
 async function searchChords(
@@ -21,10 +24,12 @@ async function searchChords(
   let qb = supabaseBrowser()
     .from("chords")
     .select(
-      "name_en,name_es,positions:chord_positions!inner(base_fret,frets,barres,position)",
+      "key,suffix,name_en,name_es,positions:chord_positions!inner(base_fret,frets,barres,position)",
     )
-    .eq("instrument", instrument)
+    .eq("instrument", catalogInstrument(instrument))
     .eq("positions.position", 1);
+  // Piano: identidad del catálogo de guitarra, solo tipos que se tocan en teclado.
+  if (!isFretted(instrument)) qb = qb.in("suffix", PIANO_SUFFIXES);
 
   const parsed = parseChordQuery(query);
   if (parsed.kind === "chord") {
@@ -44,6 +49,9 @@ async function searchChords(
     name_en: row.name_en as string,
     name_es: row.name_es as string,
     position: (row.positions as PickerChord["position"][])[0],
+    keys: isFretted(instrument)
+      ? undefined
+      : pianoRootKeys(row.key as string, row.suffix as string),
   }));
 }
 
@@ -142,11 +150,14 @@ export function ChordPicker({
               className="flex w-full cursor-pointer items-center gap-3 rounded-[10px] px-2.5 py-2 text-left hover:bg-edge"
             >
               <span className="shrink-0">
-                <ChordDiagram
-                  frets={chord.position.frets}
-                  barres={chord.position.barres}
-                  baseFret={chord.position.base_fret}
-                  scale={0.62}
+                <ChordVisual
+                  chord={{
+                    frets: chord.position.frets,
+                    barres: chord.position.barres,
+                    baseFret: chord.position.base_fret,
+                    keys: chord.keys,
+                  }}
+                  scale={chord.keys ? 0.8 : 0.62}
                 />
               </span>
               <span className="min-w-0">

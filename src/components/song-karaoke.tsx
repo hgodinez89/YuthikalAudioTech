@@ -4,7 +4,7 @@ import { History, Info, LogOut, Pause, Play, SkipBack, X } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChordDiagram } from "./chord-diagram";
+import { ChordVisual } from "./chord-visual";
 import type { ChordDataMap } from "./chord-sheet";
 import { FloatingVideo, useVideoOpen, type VideoInsets } from "./floating-video";
 import {
@@ -425,12 +425,7 @@ export function SongKaraoke({
                 {t("now")}
               </span>
               <div className="rounded-xl border border-edge-2 bg-surface p-2 shadow-[0_0_24px_rgba(53,214,232,0.28)]">
-                <ChordDiagram
-                  frets={nowData.frets}
-                  barres={nowData.barres}
-                  baseFret={nowData.baseFret}
-                  scale={0.8}
-                />
+                <ChordVisual chord={nowData} scale={0.8} />
               </div>
               <span className="mt-1 text-sm font-extrabold">{nowChord}</span>
             </div>
@@ -441,12 +436,7 @@ export function SongKaraoke({
                 {t("next")}
               </span>
               <div className="rounded-xl border border-edge bg-surface-2 p-2">
-                <ChordDiagram
-                  frets={nextData.frets}
-                  barres={nextData.barres}
-                  baseFret={nextData.baseFret}
-                  scale={0.72}
-                />
+                <ChordVisual chord={nextData} scale={0.72} />
               </div>
               <span className="mt-1 text-[13px] font-bold">{nextChord}</span>
             </div>

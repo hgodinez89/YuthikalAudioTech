@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, type MouseEvent } from "react";
-import { ChordDiagram } from "./chord-diagram";
+import { ChordVisual } from "./chord-visual";
 import {
   isInstrumental,
   strumToArrows,
@@ -14,6 +14,8 @@ import {
 export type SheetChordData = {
   name: string;
   nameEs: string;
+  /** Piano: teclas del acorde (los trastes quedan vacíos). */
+  keys?: number[];
   frets: number[];
   barres: number[];
   baseFret: number;
@@ -218,12 +220,7 @@ export function ChordSheet({
                 className="mb-3 mr-3 inline-flex min-w-[118px] break-inside-avoid flex-col items-center rounded-2xl border border-edge bg-surface px-3.5 pb-3 pt-3.5 align-top"
               >
                 <div className="pb-2">
-                  <ChordDiagram
-                    frets={chord.frets}
-                    barres={chord.barres}
-                    baseFret={chord.baseFret}
-                    scale={zoom}
-                  />
+                  <ChordVisual chord={chord} scale={zoom} />
                 </div>
                 <span className="font-extrabold">{chord.name}</span>
                 <span className="text-xs text-sub">{chord.nameEs}</span>
@@ -244,11 +241,7 @@ export function ChordSheet({
           }}
         >
           <div className="pb-1.5">
-            <ChordDiagram
-              frets={popoverChord.frets}
-              barres={popoverChord.barres}
-              baseFret={popoverChord.baseFret}
-            />
+            <ChordVisual chord={popoverChord} />
           </div>
           <span className="text-[15px] font-extrabold">{popoverChord.name}</span>
           <span className="text-[11.5px] text-sub">{popoverChord.nameEs}</span>

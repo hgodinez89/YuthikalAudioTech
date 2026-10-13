@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { TUNINGS, type Instrument, type TuningString } from "@/lib/instruments";
+import { TUNINGS, type TuningString } from "@/lib/instruments";
 
 /** Ilustración del mástil (Guitar Strings.dc.html) — vitrina siempre oscura. */
 function NeckIllustration({ strings }: { strings: TuningString[] }) {
@@ -125,7 +125,11 @@ function GaugeBar({ th }: { th: number }) {
 }
 
 /** Sección "Cuerdas" de Básicos: afinación estándar del instrumento. */
-export async function InstrumentStrings({ instrument }: { instrument: Instrument }) {
+export async function InstrumentStrings({
+  instrument,
+}: {
+  instrument: "guitar" | "ukulele";
+}) {
   const t = await getTranslations("strings");
   const strings = TUNINGS[instrument];
 

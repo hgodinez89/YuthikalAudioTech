@@ -369,11 +369,13 @@
     "eyebrow": "Reference · {instrument}",
     "title": "Basics",
     "strings": "Strings",
-    "notes": "Notes"
+    "notes": "Notes",
+    "keyboard": "Keyboard",
+    "fingers": "Fingers"
   },
   "notes": {
     "title": "The musical notes",
-    "intro": "The 12 notes of the chromatic scale: 7 <em>natural</em> and 5 <em>altered</em> notes (sharps and flats), which on the neck live one fret apart.",
+    "intro": "The 12 notes of the chromatic scale: 7 <em>natural</em> and 5 <em>altered</em> notes (sharps and flats), {instrument, select, piano {which on the keyboard are the black keys} other {which on the neck live one fret apart}}.",
     "legend": "How to read the cards:",
     "natural": "Natural",
     "altered": "Altered",
@@ -444,7 +446,7 @@
     },
     "piano": {
       "name": "Piano",
-      "desc": "Keys, scales and chords."
+      "desc": "Chords with inversions, the keyboard and your songs."
     },
     "ukulele": {
       "name": "Ukulele",
@@ -472,5 +474,58 @@
     "fitHint": "Make the lyrics as large as fits on screen",
     "fullscreen": "Full screen",
     "exitFullscreen": "Exit full screen"
+  },
+  "piano": {
+    "listen": "Listen",
+    "inversionsTitle": "Inversions",
+    "inversionsCount": "{n, plural, one {1 shape} other {# shapes}}",
+    "hand": "Hand",
+    "rightHand": "Right hand",
+    "leftHand": "Left hand",
+    "inversion": {
+      "0": "Root position",
+      "1": "1st inversion",
+      "2": "2nd inversion",
+      "3": "3rd inversion"
+    },
+    "bass": "Bass: {en} ({es})",
+    "fingeringNote": "Suggested fingering (1 = thumb … 5 = pinky). Tap a key to hear its note.",
+    "practicalVoicing": "Practical one-hand voicing: {degrees} {count, plural, one {is} other {are}} left out.",
+    "degree": {
+      "3": "the 3rd",
+      "5": "the 5th",
+      "7": "the 7th",
+      "9": "the 9th",
+      "11": "the 11th"
+    }
+  },
+  "pianoBasics": {
+    "tapToHear": "Tap any key to hear it.",
+    "keyboardTitle": "The keyboard",
+    "keyboardIntro": "Keys repeat every 12: 7 white (natural notes) and 5 black (altered notes, sharp ♯ or flat ♭). Every black key has two names: C♯ is the same as D♭.",
+    "findCTitle": "Find C",
+    "findC": "C is always just to the left of the group of 2 black keys.",
+    "blackKeysTitle": "Groups of 2 and 3",
+    "blackKeys": "Black keys come in groups of 2 and 3; that pattern guides you across the whole keyboard.",
+    "octavesTitle": "Octaves and middle C",
+    "octavesIntro": "An 88-key piano goes from A0 to C8. Each octave starts on C and is numbered: C1, C2… Middle C (C4, highlighted) sits in the middle of the piano and is the reference for placing your hands. Shown here from C1 to B7; the outermost keys complete the 88.",
+    "middleCHint": "Middle C = C4. Tap the keys to hear the octaves go up.",
+    "fingersTitle": "Fingers",
+    "fingersIntro": "Each finger has a number on both hands, from thumb (1) to pinky (5). In the starting position, the left hand rests on C3–G3 (5-4-3-2-1) and the right hand on C4–G4 (1-2-3-4-5).",
+    "leftHand": "Left hand",
+    "rightHand": "Right hand",
+    "finger1": "Thumb",
+    "finger2": "Index",
+    "finger3": "Middle",
+    "finger4": "Ring",
+    "finger5": "Pinky",
+    "tonesTitle": "Whole step and half step",
+    "tonesIntro": "A half step (semitone) is the distance from one key to the very next, white or black. A whole step (tone) is two half steps. Tap each card to hear it.",
+    "semitoneTitle": "Half step without a black key",
+    "semitone": "E–F (and B–C) are half steps: there is no black key between them.",
+    "semitoneBlackTitle": "Half step",
+    "semitoneBlack": "C–C♯: from one key to the very next.",
+    "toneTitle": "Whole step",
+    "tone": "C–D: two half steps (skipping the black key in between)."
   }
 }

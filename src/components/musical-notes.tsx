@@ -37,7 +37,7 @@ const BLACK_KEYS = [
 ];
 
 /** Sección "Notas" de Básicos: las 12 notas cromáticas (común a todo instrumento). */
-export async function MusicalNotes() {
+export async function MusicalNotes({ instrument }: { instrument: string }) {
   const t = await getTranslations("notes");
 
   return (
@@ -48,6 +48,7 @@ export async function MusicalNotes() {
         </h2>
         <p className="max-w-[640px] leading-relaxed text-sub">
           {t.rich("intro", {
+            instrument,
             em: (chunks) => <span className="text-ink">{chunks}</span>,
           })}
         </p>
