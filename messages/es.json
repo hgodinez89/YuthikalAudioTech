@@ -273,12 +273,15 @@
       "toStartKey": "Inicio",
       "speed": "Menos / más velocidad",
       "mute": "Silenciar",
-      "review": "Repasar"
+      "review": "Repasar",
+      "video": "Mostrar / ocultar video"
     },
     "video": "Video",
     "videoMove": "Arrastra para mover el video",
     "videoLarger": "Agrandar video",
-    "videoSmaller": "Achicar video"
+    "videoSmaller": "Achicar video",
+    "videoClose": "Cerrar video",
+    "videoOpen": "Mostrar video"
   },
   "songView": {
     "keyPrefix": "Tonalidad:",

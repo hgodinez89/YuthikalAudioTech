@@ -273,12 +273,15 @@
       "toStartKey": "Home",
       "speed": "Slower / faster",
       "mute": "Mute",
-      "review": "Review"
+      "review": "Review",
+      "video": "Show / hide video"
     },
     "video": "Video",
     "videoMove": "Drag to move the video",
     "videoLarger": "Larger video",
-    "videoSmaller": "Smaller video"
+    "videoSmaller": "Smaller video",
+    "videoClose": "Hide video",
+    "videoOpen": "Show video"
   },
   "songView": {
     "keyPrefix": "Key:",

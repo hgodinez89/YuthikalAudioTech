@@ -33,6 +33,9 @@ import { supabaseBrowser } from "@/lib/supabase";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
 import { youtubeThumbnail } from "@/lib/youtube";
 
+/* Alto del header del sitio (sticky): límite superior de la zona visible. */
+const HEADER_HEIGHT = 72;
+
 type Row =
   | { kind: "section"; title: string }
   | {
@@ -169,6 +172,42 @@ export function SongCalibration({
 
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
   const engine = useAudioEngine(engineSource, youtubeContainerRef);
+  const hasVideo = engineSource?.type === "youtube";
+
+  /* Video flotante: se puede cerrar y se reabre solo al pasar a reproducir
+     (detectado durante el render comparando con el estado anterior). */
+  const [videoOpen, setVideoOpen] = useState(true);
+  const [wasPlaying, setWasPlaying] = useState(engine.playing);
+  if (engine.playing !== wasPlaying) {
+    setWasPlaying(engine.playing);
+    if (engine.playing && !videoOpen) setVideoOpen(true);
+  }
+  const toggleVideo = () => setVideoOpen((open) => !open);
+
+  /* Scroll automático: la línea actual se mantiene en una zona cómoda entre
+     el header y la barra de transporte, mostrando las líneas siguientes. */
+  const firstScroll = useRef(true);
+  useEffect(() => {
+    const initial = firstScroll.current;
+    firstScroll.current = false;
+    if (initial && cursor === 0) return; // al entrar sin marcas: no mover
+    const row = document.querySelector<HTMLElement>("[data-current]");
+    if (!row) return;
+    const top = HEADER_HEIGHT;
+    const bottom =
+      document.querySelector("[data-transport]")?.getBoundingClientRect().top ??
+      window.innerHeight;
+    const zone = bottom - top;
+    const rect = row.getBoundingClientRect();
+    const tooLow = rect.top > top + zone * 0.65 || rect.bottom > bottom - 8;
+    const tooHigh = rect.top < top;
+    if (!tooLow && !tooHigh) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({
+      top: window.scrollY + rect.top - (top + zone * 0.3),
+      behavior: initial || reduceMotion ? "auto" : "smooth",
+    });
+  }, [cursor]);
 
   /* Autosave de timestamps (debounce). */
   const dirtyRef = useRef(false);
@@ -210,9 +249,9 @@ export function SongCalibration({
 
   /* Atajos (fuera de campos de texto). El listener se suscribe una sola vez
      y lee la versión vigente de las acciones vía ref. */
-  const actionsRef = useRef({ mark, review, stepRate, engine });
+  const actionsRef = useRef({ mark, review, stepRate, engine, hasVideo, toggleVideo });
   useEffect(() => {
-    actionsRef.current = { mark, review, stepRate, engine };
+    actionsRef.current = { mark, review, stepRate, engine, hasVideo, toggleVideo };
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -237,6 +276,7 @@ export function SongCalibration({
         "]": () => a.stepRate(1),
         m: a.engine.toggleMute,
         r: () => a.review(),
+        v: () => a.hasVideo && a.toggleVideo(),
       };
       const action = actions[e.key.length === 1 ? e.key.toLowerCase() : e.key];
       if (!action) return;
@@ -344,8 +384,12 @@ export function SongCalibration({
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[340px_1fr]">
       {/* Video de YouTube en un mini-reproductor flotante (con MP3 no hay video) */}
-      {engineSource?.type === "youtube" && (
-        <FloatingVideo containerRef={youtubeContainerRef} />
+      {hasVideo && (
+        <FloatingVideo
+          containerRef={youtubeContainerRef}
+          open={videoOpen}
+          onClose={() => setVideoOpen(false)}
+        />
       )}
 
       {/* ASIDE IZQUIERDO */}
@@ -602,6 +646,7 @@ export function SongCalibration({
             return (
               <div
                 key={ri}
+                data-current={isCurrent || undefined}
                 className={`my-0.5 flex items-center gap-3 rounded-[10px] border-l-[3px] px-3.5 py-[11px] ${
                   isCurrent ? "border-l-accent bg-accent/[0.08]" : "border-l-transparent"
                 }`}
@@ -698,6 +743,7 @@ export function SongCalibration({
         onReview={() => review()}
         onReset={() => setConfirm("reset")}
         resetDisabled={stamps.size === 0}
+        video={hasVideo ? { open: videoOpen, onToggle: toggleVideo } : undefined}
       />
 
       {/* CONFIRMACIONES */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { GripHorizontal, Maximize2, Minimize2 } from "lucide-react";
+import { GripHorizontal, Maximize2, Minimize2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   useRef,
@@ -53,11 +53,18 @@ const noopSubscribe = () => () => {};
  * (`containerRef`) nunca cambia de lugar en el DOM —mover un iframe lo
  * recarga—; solo se reposiciona con CSS. Se arrastra y se acomoda en la
  * esquina más cercana; esquina y tamaño se recuerdan en el dispositivo.
+ *
+ * "Cerrar" no desmonta el iframe (eso destruiría el reproductor y cortaría
+ * el audio): la tarjeta sale de la pantalla con su tamaño real.
  */
 export function FloatingVideo({
   containerRef,
+  open,
+  onClose,
 }: {
   containerRef: RefObject<HTMLDivElement | null>;
+  open: boolean;
+  onClose: () => void;
 }) {
   const t = useTranslations("calibration");
   // Preferencias del navegador solo tras hidratar (el servidor no las conoce).
@@ -117,8 +124,11 @@ export function FloatingVideo({
   return (
     <div
       ref={cardRef}
+      aria-hidden={!open}
       className={`fixed z-40 w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge-2 bg-surface shadow-[0_18px_44px_rgba(0,0,0,0.55)] ${
-        CORNER_CLASS[placement]
+        open
+          ? CORNER_CLASS[placement]
+          : "pointer-events-none -left-[9999px] top-0 opacity-0"
       } ${SIZE_CLASS[width]} ${drag ? "" : "transition-[top,bottom,left,right] duration-200"}`}
       style={drag ? { transform: `translate(${drag.dx}px, ${drag.dy}px)` } : undefined}
     >
@@ -136,19 +146,30 @@ export function FloatingVideo({
           <GripHorizontal size={15} strokeWidth={2} />
           {t("video")}
         </span>
-        <button
-          type="button"
-          onClick={toggleSize}
-          aria-label={width === "sm" ? t("videoLarger") : t("videoSmaller")}
-          title={width === "sm" ? t("videoLarger") : t("videoSmaller")}
-          className="hidden size-6 cursor-pointer place-items-center rounded-md text-sub hover:bg-edge hover:text-ink sm:grid"
-        >
-          {width === "sm" ? (
-            <Maximize2 size={13} strokeWidth={2.2} />
-          ) : (
-            <Minimize2 size={13} strokeWidth={2.2} />
-          )}
-        </button>
+        <span className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={toggleSize}
+            aria-label={width === "sm" ? t("videoLarger") : t("videoSmaller")}
+            title={width === "sm" ? t("videoLarger") : t("videoSmaller")}
+            className="hidden size-6 cursor-pointer place-items-center rounded-md text-sub hover:bg-edge hover:text-ink sm:grid"
+          >
+            {width === "sm" ? (
+              <Maximize2 size={13} strokeWidth={2.2} />
+            ) : (
+              <Minimize2 size={13} strokeWidth={2.2} />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("videoClose")}
+            title={t("videoClose")}
+            className="grid size-6 cursor-pointer place-items-center rounded-md text-sub hover:bg-edge hover:text-ink"
+          >
+            <X size={14} strokeWidth={2.2} />
+          </button>
+        </span>
       </div>
       {/* Aquí monta el iframe el motor de audio; mientras se arrastra no
           debe robar los eventos del puntero. */}

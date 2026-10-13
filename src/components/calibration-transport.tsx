@@ -4,6 +4,7 @@ import {
   Gauge,
   History,
   Keyboard,
+  MonitorPlay,
   Pause,
   Play,
   RotateCcw,
@@ -34,6 +35,7 @@ const SHORTCUTS = [
   ["[ / ]", "speed"],
   ["M", "mute"],
   ["R", "review"],
+  ["V", "video"],
 ] as const;
 
 /**
@@ -45,11 +47,14 @@ export function CalibrationTransport({
   onReview,
   onReset,
   resetDisabled,
+  video,
 }: {
   engine: AudioEngine;
   onReview: () => void;
   onReset: () => void;
   resetDisabled: boolean;
+  /** Mostrar/ocultar el video flotante (solo con fuente YouTube). */
+  video?: { open: boolean; onToggle: () => void };
 }) {
   const t = useTranslations("calibration");
   const [hover, setHover] = useState<number | null>(null);
@@ -62,7 +67,10 @@ export function CalibrationTransport({
     "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border border-edge-2 bg-surface-2 px-2.5 text-[12.5px] font-semibold tabular-nums text-sub hover:text-ink disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-edge bg-page/95 backdrop-blur-[14px]">
+    <div
+      data-transport
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-edge bg-page/95 backdrop-blur-[14px]"
+    >
       {menu && <div className="fixed inset-0 z-40" onClick={() => setMenu(null)} />}
       <div className="mx-auto flex max-w-[1180px] flex-wrap items-center gap-x-3 gap-y-2.5 px-4 py-3 sm:px-7">
         {/* Navegación */}
@@ -231,6 +239,20 @@ export function CalibrationTransport({
             />
           </div>
 
+          {/* Video (YouTube): abre/cierra el mini-reproductor */}
+          {video && (
+            <button
+              type="button"
+              onClick={video.onToggle}
+              aria-pressed={video.open}
+              aria-label={video.open ? t("videoClose") : t("videoOpen")}
+              title={video.open ? t("videoClose") : t("videoOpen")}
+              className={`${smallButton} ${video.open ? "border-accent/50 text-accent" : ""}`}
+            >
+              <MonitorPlay size={16} strokeWidth={2} />
+            </button>
+          )}
+
           {/* Repasar */}
           <button
             type="button"
@@ -260,16 +282,18 @@ export function CalibrationTransport({
                   {t("shortcuts")}
                 </div>
                 <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12.5px]">
-                  {SHORTCUTS.map(([key, action]) => (
-                    <div key={action} className="contents">
-                      <dt>
-                        <kbd className="rounded-[5px] border border-edge-2 bg-surface-2 px-1.5 py-px font-mono text-[11px] text-ink">
-                          {key ?? t(`keys.${action}Key`)}
-                        </kbd>
-                      </dt>
-                      <dd className="text-sub">{t(`keys.${action}`)}</dd>
-                    </div>
-                  ))}
+                  {SHORTCUTS.filter(([, action]) => action !== "video" || video).map(
+                    ([key, action]) => (
+                      <div key={action} className="contents">
+                        <dt>
+                          <kbd className="rounded-[5px] border border-edge-2 bg-surface-2 px-1.5 py-px font-mono text-[11px] text-ink">
+                            {key ?? t(`keys.${action}Key`)}
+                          </kbd>
+                        </dt>
+                        <dd className="text-sub">{t(`keys.${action}`)}</dd>
+                      </div>
+                    ),
+                  )}
                 </dl>
               </div>
             )}
