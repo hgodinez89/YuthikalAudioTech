@@ -496,7 +496,8 @@ export function SongKaraoke({
                             color: isCurrent ? "var(--ink)" : "var(--sub)",
                           }}
                         >
-                          {seg.text}
+                          {/* acorde final sin palabra: mantiene la altura de la línea */}
+                          {seg.text || " "}
                         </span>
                       </span>
                     ))}

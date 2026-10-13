@@ -162,7 +162,9 @@ export function ChordSheet({
                         >
                           {segment.chord ?? ""}
                         </span>
-                        <span>{segment.text}</span>
+                        {/* acorde al final sin palabra: espacio duro para que la
+                            columna mida una línea y el acorde no se hunda */}
+                        <span>{segment.text || " "}</span>
                       </span>
                     ))}
                   </div>
