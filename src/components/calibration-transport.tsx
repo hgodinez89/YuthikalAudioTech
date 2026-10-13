@@ -262,7 +262,7 @@ export function CalibrationTransport({
             className={smallButton}
           >
             <History size={15} strokeWidth={2} />
-            <span className="hidden sm:inline">{t("review")}</span>
+            <span className="hidden xl:inline">{t("review")}</span>
           </button>
 
           {/* Atajos */}
@@ -307,7 +307,8 @@ export function CalibrationTransport({
             className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-[11px] border border-edge-2 bg-surface-2 px-3 text-[13px] font-semibold disabled:opacity-50"
           >
             <RotateCcw size={15} strokeWidth={2} />
-            <span className="hidden xl:inline">{t("reset")}</span>
+            {/* Solo ícono: con el texto la barra no cabe en una fila (confirma igual). */}
+            <span className="sr-only">{t("reset")}</span>
           </button>
         </div>
       </div>

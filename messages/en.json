@@ -281,7 +281,9 @@
     "videoLarger": "Larger video",
     "videoSmaller": "Smaller video",
     "videoClose": "Hide video",
-    "videoOpen": "Show video"
+    "videoOpen": "Show video",
+    "videoResize": "Resize video",
+    "videoResizeHint": "Drag to resize · double-click: smallest size · arrow keys: adjust"
   },
   "songView": {
     "keyPrefix": "Key:",

@@ -281,7 +281,9 @@
     "videoLarger": "Agrandar video",
     "videoSmaller": "Achicar video",
     "videoClose": "Cerrar video",
-    "videoOpen": "Mostrar video"
+    "videoOpen": "Mostrar video",
+    "videoResize": "Redimensionar video",
+    "videoResizeHint": "Arrastra para cambiar el tamaño · doble clic: tamaño mínimo · flechas: ajustar"
   },
   "songView": {
     "keyPrefix": "Tonalidad:",
