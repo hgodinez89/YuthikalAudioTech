@@ -119,7 +119,7 @@ src/components/           UI (fieles al handoff):
   song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets),
                           "Pegar cifrado" y datos de la canción (incl. playlist)
   song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte
-  song-karaoke            Pantalla hero: sincronizada + fallback autoscroll
+  song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll
   confirm-dialog          Confirmación destructiva estándar (no hay diálogos nativos)
 src/lib/                  Lógica y acceso a datos:
   chordpro.ts             Parser/edición ChordPro (+tests)

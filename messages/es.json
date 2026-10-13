@@ -329,10 +329,6 @@
   "karaoke": {
     "now": "Ahora",
     "next": "Sigue",
-    "variant": {
-      "sync": "Sincronizada",
-      "auto": "Sin calibrar"
-    },
     "exit": "Salir",
     "play": "Reproducir",
     "pause": "Pausar",

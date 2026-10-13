@@ -169,9 +169,8 @@ export function SongKaraoke({
   }, [sync, lines]);
 
   const syncAvailable = Boolean(audio && lineStarts?.some((s) => s !== null));
-  const [variant, setVariant] = useState<"sync" | "auto">(
-    syncAvailable ? "sync" : "auto",
-  );
+  /* Con sincronización sigue el audio; sin ella, autoscroll por tiempo fijo. */
+  const variant: "sync" | "auto" = syncAvailable ? "sync" : "auto";
 
   /* Motor de audio (solo variante sincronizada). */
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -293,7 +292,7 @@ export function SongKaraoke({
       top: node.offsetTop - container.clientHeight / 2 + node.clientHeight / 2,
       behavior: smooth ? "smooth" : "auto",
     });
-  }, [currentIndex, variant]);
+  }, [currentIndex]);
 
   const seekToLine = (index: number) => {
     const clamped = Math.max(0, Math.min(index, lines.length - 1));
@@ -416,7 +415,7 @@ export function SongKaraoke({
         />
       )}
 
-      {/* BARRA SUPERIOR: Ahora / Sigue + variante + salir */}
+      {/* BARRA SUPERIOR: Ahora / Sigue + salir */}
       <div className="flex shrink-0 items-start justify-between gap-4 px-6 pb-1 pt-3.5">
         <div className="flex gap-4">
           {nowData && (
@@ -443,33 +442,13 @@ export function SongKaraoke({
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          {syncAvailable && (
-            <div className="flex rounded-[11px] border border-edge bg-surface-3 p-1 text-xs font-semibold">
-              {(["sync", "auto"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setVariant(v)}
-                  className={
-                    variant === v
-                      ? "yk-gradient cursor-pointer whitespace-nowrap rounded-lg px-[13px] py-1.5"
-                      : "cursor-pointer whitespace-nowrap rounded-lg px-[13px] py-1.5 text-sub"
-                  }
-                >
-                  {t(`variant.${v}`)}
-                </button>
-              ))}
-            </div>
-          )}
-          <Link
-            href={exitHref}
-            aria-label={t("exit")}
-            className="grid size-10 place-items-center rounded-[11px] border border-edge bg-surface-3 text-sub hover:text-ink"
-          >
-            <X size={19} strokeWidth={2} />
-          </Link>
-        </div>
+        <Link
+          href={exitHref}
+          aria-label={t("exit")}
+          className="grid size-10 shrink-0 place-items-center rounded-[11px] border border-edge bg-surface-3 text-sub hover:text-ink"
+        >
+          <X size={19} strokeWidth={2} />
+        </Link>
       </div>
 
       {/* META */}
