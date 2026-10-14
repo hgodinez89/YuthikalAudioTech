@@ -153,6 +153,18 @@ describe("parseLyricUnits — edición visual", () => {
       ["where", true],
       ["we", false],
     ]);
+    const chordBeforeSpace = parseLyricUnits("have[Em] songs");
+    expect(chordBeforeSpace.map((u) => [u.text, u.spaceAfter])).toEqual([
+      ["have", true],
+      ["songs", false],
+    ]);
+    const split = parseLyricUnits("[C]Re[D]demp[G]tion songs");
+    expect(split.map((u) => [u.text, u.spaceAfter])).toEqual([
+      ["Re", false],
+      ["demp", false],
+      ["tion", true],
+      ["songs", false],
+    ]);
   });
 
   it("acordes seguidos sin letra no se pierden", () => {

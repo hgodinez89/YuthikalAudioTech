@@ -16,7 +16,7 @@ import {
 /* eslint-disable @next/next/no-img-element -- miniatura externa de YouTube */
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalibrationTransport, RATES, SKIP_SECONDS } from "./calibration-transport";
 import { ConfirmDialog } from "./confirm-dialog";
 import { FloatingVideo, useVideoOpen } from "./floating-video";
@@ -47,7 +47,8 @@ type Row =
   | { kind: "section"; title: string }
   | {
       kind: "line";
-      words: string[];
+      /** Trozos marcables; `spaceAfter` evita partir palabras con acordes ("Re·demp·tion"). */
+      words: { text: string; spaceAfter: boolean }[];
       firstTarget: number;
       targetCount: number;
       /** Vuelta de una línea con repetición (x2 → 1/2, 2/2). */
@@ -78,9 +79,11 @@ function buildRows(
       // En líneas instrumentales cada acorde es un objetivo "por palabra".
       const words = line.instrumental
         ? line.instrumental.tokens.flatMap((tk) =>
-            tk.kind === "chord" ? [tk.chord] : [],
+            tk.kind === "chord" ? [{ text: tk.chord, spaceAfter: true }] : [],
           )
-        : line.units.map((u) => u.text).filter(Boolean);
+        : line.units
+            .filter((u) => u.text)
+            .map((u) => ({ text: u.text, spaceAfter: u.spaceAfter }));
       for (; p < plan.length && plan[p].line === lineNo; p++) {
         const step = plan[p];
         rows.push({
@@ -156,6 +159,12 @@ export function SongCalibration({
     while (stamps.has(i)) i++;
     return i;
   });
+
+  /* "Sin fin" (sonar hasta el final del audio) es un estado válido y no se
+     persiste: al entrar con todo marcado y sin fin, ya está resuelto. */
+  const [endSkipped, setEndSkipped] = useState(
+    () => endAt === null && totalTargets > 0 && cursor >= totalTargets,
+  );
 
   /* Retomar a medias: el audio arranca (pausado) en el inicio de la última
      línea marcada. Solo con la fuente que había al entrar. */
@@ -277,13 +286,14 @@ export function SongCalibration({
 
   /* Todas las líneas marcadas: la siguiente marca (opcional) es el fin. */
   const allMarked = totalTargets > 0 && cursor >= totalTargets;
+  const endPending = allMarked && endAt === null && !endSkipped;
   const lastStamp = Math.max(0, ...stamps.values());
 
   const mark = () => {
     if (!engine.ready) return;
     const time = Math.round(engine.now() * 10) / 10;
     if (allMarked) {
-      if (endAt !== null || time <= lastStamp) return;
+      if (!endPending || time <= lastStamp) return;
       dirtyRef.current = true;
       setEndAt(time);
       return;
@@ -300,14 +310,25 @@ export function SongCalibration({
     if (endAt === null) return;
     dirtyRef.current = true;
     setEndAt(null);
+    setEndSkipped(false);
     if (engine.ready) {
       engine.seekTo(Math.max(0, endAt - REVIEW_PREROLL));
       engine.play();
     }
   };
+  /* Quitar el fin: queda resuelto como "hasta el final del audio". */
   const removeEnd = () => {
     dirtyRef.current = true;
     setEndAt(null);
+    setEndSkipped(true);
+  };
+  /* Agregar un fin después de omitirlo: se escucha desde la última línea. */
+  const addEnd = () => {
+    setEndSkipped(false);
+    if (engine.ready) {
+      engine.seekTo(Math.max(0, lastStamp - REVIEW_PREROLL));
+      engine.play();
+    }
   };
 
   /* Repasar: volver unos segundos antes de la última marca y escuchar. */
@@ -350,6 +371,7 @@ export function SongCalibration({
     dirtyRef.current = true;
     setStamps(new Map());
     setEndAt(null);
+    setEndSkipped(false);
     setCursor(0);
     engine.seekTo(0);
     setConfirm(null);
@@ -629,7 +651,7 @@ export function SongCalibration({
         <button
           type="button"
           onClick={mark}
-          disabled={!engine.ready || (allMarked && endAt !== null)}
+          disabled={!engine.ready || (allMarked && !endPending)}
           className="mb-2.5 flex w-full cursor-pointer items-center justify-center gap-3.5 rounded-2xl border-[1.5px] border-accent/40 bg-[linear-gradient(135deg,rgba(46,107,240,0.16),rgba(53,214,232,0.16))] p-[22px] transition-colors hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="grid size-[42px] shrink-0 place-items-center rounded-xl bg-page/40 text-accent">
@@ -643,19 +665,27 @@ export function SongCalibration({
             <span className="block font-bold">
               {allMarked && endAt !== null
                 ? t("endDone", { time: formatTime(endAt) })
-                : t.rich(allMarked ? "endTitle" : "tapTitle", {
-                    kbd: (chunks) => (
-                      <kbd className="rounded-md border border-edge-2 bg-surface-3 px-2 py-0.5 text-[13px] font-bold text-accent">
-                        {chunks}
-                      </kbd>
-                    ),
-                  })}
+                : allMarked && endSkipped
+                  ? t("endNoneDone")
+                  : t.rich(allMarked ? "endTitle" : "tapTitle", {
+                      kbd: (chunks) => (
+                        <kbd className="rounded-md border border-edge-2 bg-surface-3 px-2 py-0.5 text-[13px] font-bold text-accent">
+                          {chunks}
+                        </kbd>
+                      ),
+                    })}
             </span>
             <span className="mt-[3px] block text-[12.5px] text-sub">
               {!engine.ready
                 ? t("tapNeedsAudio")
                 : allMarked
-                  ? t(endAt !== null ? "endDoneHint" : "endHint")
+                  ? t(
+                      endAt !== null
+                        ? "endDoneHint"
+                        : endSkipped
+                          ? "endNoneDoneHint"
+                          : "endHint",
+                    )
                   : t("tapProgress", {
                       n: markNumber,
                       total: totalTargets,
@@ -743,29 +773,34 @@ export function SongCalibration({
                             : "text-sub"
                       }
                     >
-                      {row.words.join(" ")}
+                      {row.words
+                        .map((w) => (w.spaceAfter ? `${w.text} ` : w.text))
+                        .join("")
+                        .trimEnd()}
                     </span>
                   ) : (
-                    <span className="flex flex-wrap gap-x-[0.4em]">
+                    // Flujo inline con espacios reales: los trozos de una misma
+                    // palabra quedan pegados y no se separan al hacer salto de línea.
+                    <span className="leading-relaxed">
                       {row.words.map((word, wi) => {
                         const targetIndex = row.firstTarget + wi;
                         const wordDone = stamps.has(targetIndex);
                         const wordCurrent = targetIndex === cursor;
                         return (
-                          <span
-                            key={wi}
-                            className={
-                              wordCurrent
-                                ? "rounded bg-accent/20 px-1 font-bold text-ink"
-                                : wordDone
-                                  ? "text-mute underline decoration-accent/50 underline-offset-4"
-                                  : isCurrent
-                                    ? "text-sub"
+                          <Fragment key={wi}>
+                            <span
+                              className={
+                                wordCurrent
+                                  ? "rounded bg-accent/20 px-1 font-bold text-ink"
+                                  : wordDone
+                                    ? "text-mute underline decoration-accent/50 underline-offset-4"
                                     : "text-sub"
-                            }
-                          >
-                            {word}
-                          </span>
+                              }
+                            >
+                              {word.text}
+                            </span>
+                            {word.spaceAfter && " "}
+                          </Fragment>
                         );
                       })}
                     </span>
@@ -797,11 +832,9 @@ export function SongCalibration({
           {/* Fin opcional: aparece al marcar todas las líneas */}
           {allMarked && (
             <div
-              data-current={endAt === null || undefined}
+              data-current={endPending || undefined}
               className={`my-0.5 flex items-center gap-3 rounded-[10px] border-l-[3px] px-3.5 py-[11px] ${
-                endAt === null
-                  ? "border-l-accent bg-accent/[0.08]"
-                  : "border-l-transparent"
+                endPending ? "border-l-accent bg-accent/[0.08]" : "border-l-transparent"
               }`}
             >
               <div className="flex w-[74px] shrink-0 items-center gap-[7px]">
@@ -812,17 +845,43 @@ export function SongCalibration({
                       {formatStamp(endAt)}
                     </span>
                   </span>
-                ) : (
+                ) : endPending ? (
                   <span className="rounded-full border border-accent/40 px-2 py-[3px] text-[11px] font-bold uppercase tracking-[0.08em] text-accent">
                     {t("now")}
                   </span>
+                ) : (
+                  <Check size={15} strokeWidth={2.6} className="text-accent" />
                 )}
               </div>
               <span
-                className={`min-w-0 flex-1 ${endAt === null ? "text-[17px] font-bold text-ink" : "text-mute"}`}
+                className={`min-w-0 flex-1 ${endPending ? "text-[17px] font-bold text-ink" : "text-mute"}`}
               >
-                {t(endAt === null ? "endRowPending" : "endRow")}
+                {t(
+                  endAt !== null ? "endRow" : endPending ? "endRowPending" : "endRowNone",
+                )}
               </span>
+              {endPending && (
+                <button
+                  type="button"
+                  onClick={() => setEndSkipped(true)}
+                  title={t("endSkip")}
+                  aria-label={t("endSkip")}
+                  className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-warn"
+                >
+                  <X size={16} strokeWidth={2} />
+                </button>
+              )}
+              {endSkipped && endAt === null && (
+                <button
+                  type="button"
+                  onClick={addEnd}
+                  title={t("endAdd")}
+                  aria-label={t("endAdd")}
+                  className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
+                >
+                  <Flag size={16} strokeWidth={2} />
+                </button>
+              )}
               {endAt !== null && (
                 <>
                   <button
@@ -884,6 +943,7 @@ export function SongCalibration({
           dirtyRef.current = true;
           setStamps(new Map());
           setEndAt(null);
+          setEndSkipped(false);
           setGranularity(pendingGranularity.current);
           setCursor(0);
           setConfirm(null);

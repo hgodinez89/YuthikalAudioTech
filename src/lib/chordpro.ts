@@ -350,13 +350,13 @@ export function parseLyricUnits(rawLine: string): LyricUnit[] {
       pending = null;
       continue;
     }
-    // espacios: separan unidades; un acorde pendiente se conserva
+    // espacios: separan unidades; un acorde pendiente se conserva. Si el
+    // acorde va pegado a la palabra ("word[C] next"), el espacio igual cuenta.
     const last = units[units.length - 1];
     if (
-      !pending &&
       last &&
       last.text &&
-      last.textStart + last.text.length === match.index
+      last.textStart + last.text.length === (pending ? pending.start : match.index)
     ) {
       last.spaceAfter = true;
     }
