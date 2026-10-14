@@ -174,6 +174,29 @@ export function isInstrumental(line: SheetLine): boolean {
   return line.length > 0 && line.every((s) => s.bar || s.repeat || (s.chord && !s.text));
 }
 
+/**
+ * Agrupa los segmentos de una línea de letra en palabras indivisibles para el
+ * salto de renglón: `any[A7m]more, ` es un solo grupo con dos trozos, así una
+ * palabra con un acorde en medio baja completa en vez de partirse. Cada trozo
+ * conserva el acorde del inicio de su segmento; el espacio va al final del grupo.
+ */
+export function wordGroups(line: SheetLine): { chord: string | null; text: string }[][] {
+  const groups: { chord: string | null; text: string }[][] = [];
+  let current: { chord: string | null; text: string }[] = [];
+  for (const segment of line) {
+    const parts = segment.text.match(/\S+\s*|\s+/g) ?? [""];
+    parts.forEach((text, i) => {
+      current.push({ chord: i === 0 ? segment.chord : null, text });
+      if (/\s$/.test(text)) {
+        groups.push(current);
+        current = [];
+      }
+    });
+  }
+  if (current.length) groups.push(current);
+  return groups;
+}
+
 /** Vueltas de una línea (1 si no tiene repetición). */
 export function lineRepeat(line: SheetLine): number {
   return line.find((s) => s.repeat)?.repeat ?? 1;
@@ -380,6 +403,24 @@ export function parseLyricUnits(rawLine: string): LyricUnit[] {
     });
   }
   return units;
+}
+
+/**
+ * Unidades agrupadas por palabra (hasta la que tiene espacio después), para
+ * que el editor visual no parta en dos renglones una palabra con acorde en medio.
+ */
+export function unitGroups(units: LyricUnit[]): LyricUnit[][] {
+  const groups: LyricUnit[][] = [];
+  let current: LyricUnit[] = [];
+  for (const unit of units) {
+    current.push(unit);
+    if (unit.spaceAfter) {
+      groups.push(current);
+      current = [];
+    }
+  }
+  if (current.length) groups.push(current);
+  return groups;
 }
 
 /** Asigna, reemplaza o quita (chord = null) el acorde de una unidad. */

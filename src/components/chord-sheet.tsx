@@ -9,6 +9,7 @@ import {
   strumToArrows,
   type SheetSection,
   type SectionType,
+  wordGroups,
 } from "@/lib/chordpro";
 
 export type SheetChordData = {
@@ -171,17 +172,23 @@ export function ChordSheet({
                 data-line
                 className="mb-[0.22em] flex break-inside-avoid flex-wrap items-end"
               >
-                {line.map((segment, gi) => (
-                  <span key={gi} className="inline-flex flex-col whitespace-pre">
-                    <span
-                      {...chordHover(segment.chord)}
-                      className="min-h-[1.571em] text-[0.778em] font-extrabold leading-relaxed tracking-[0.01em] text-accent"
-                    >
-                      {segment.chord ?? ""}
-                    </span>
-                    {/* acorde al final sin palabra: espacio duro para que la
-                        columna mida una línea y el acorde no se hunda */}
-                    <span>{segment.text || " "}</span>
+                {/* El renglón salta entre palabras: una palabra con un acorde
+                    en medio (any[A7m]more) baja completa */}
+                {wordGroups(line).map((group, wi) => (
+                  <span key={wi} className="inline-flex items-end">
+                    {group.map((piece, pi) => (
+                      <span key={pi} className="inline-flex flex-col whitespace-pre">
+                        <span
+                          {...chordHover(piece.chord)}
+                          className="min-h-[1.571em] text-[0.778em] font-extrabold leading-relaxed tracking-[0.01em] text-accent"
+                        >
+                          {piece.chord ?? ""}
+                        </span>
+                        {/* acorde al final sin palabra: espacio duro para que la
+                            columna mida una línea y el acorde no se hunda */}
+                        <span>{piece.text || " "}</span>
+                      </span>
+                    ))}
                   </span>
                 ))}
               </div>

@@ -117,7 +117,9 @@ src/components/           UI (fieles al handoff):
   fretboard               Mástil SVG (escalas: mástil completo y posiciones)
   scale-picker/-view      Selector de escalas (enlaces) y vista con Notas/Grados y Escuchar
   chord-finder/-card      Buscador con selector nota + tipo, voz, scroll infinito, FAB
-  chord-sheet             Cifrado clásico: acordes sobre sílabas, popovers, leyenda
+  chord-sheet             Cifrado clásico: acordes sobre sílabas, popovers, leyenda. El renglón salta
+                          entre palabras, no en los acordes: `wordGroups` (y `unitGroups` en el editor
+                          visual) mantiene juntas las palabras con acorde en medio; el karaoke usa lo mismo
   songs-view              Lista plana de canciones con playlists como filtros
   song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets),
                           "Pegar cifrado" y datos de la canción (incl. playlist).

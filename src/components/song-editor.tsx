@@ -43,6 +43,7 @@ import {
   setChordAtUnit,
   setSectionStrum,
   strumToArrows,
+  unitGroups,
   type InstrumentalToken,
   type LyricUnit,
   type SectionType,
@@ -699,33 +700,41 @@ export function SongEditor({
                           </div>
                         ) : (
                           <div className="mb-1 flex flex-wrap items-end">
-                            {line.units.map((unit, ui) => (
+                            {/* Una palabra con acorde en medio no se parte entre renglones */}
+                            {unitGroups(line.units).map((group, gi) => (
                               <span
-                                key={ui}
-                                className={`inline-flex flex-col whitespace-pre ${
-                                  unit.spaceAfter ? "mr-[0.3em]" : ""
+                                key={gi}
+                                className={`inline-flex items-end ${
+                                  group.at(-1)?.spaceAfter ? "mr-[0.3em]" : ""
                                 }`}
                               >
-                                <span className="min-h-[22px] text-sm font-extrabold leading-relaxed tracking-[0.01em] text-accent">
-                                  {unit.chord ?? ""}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    const r = e.currentTarget.getBoundingClientRect();
-                                    setPicker({
-                                      lineIndex: line.lineIndex,
-                                      unit,
-                                      x: r.left + r.width / 2,
-                                      y: r.bottom + 8,
-                                    });
-                                  }}
-                                  aria-label={unit.text || unit.chord || undefined}
-                                  className="min-w-[1.1em] cursor-pointer text-left underline decoration-edge-2 decoration-dotted underline-offset-4 hover:decoration-accent"
-                                >
-                                  {/* acorde sin palabra: espacio clicable sin glifo */}
-                                  {unit.text || " "}
-                                </button>
+                                {group.map((unit, ui) => (
+                                  <span
+                                    key={ui}
+                                    className="inline-flex flex-col whitespace-pre"
+                                  >
+                                    <span className="min-h-[22px] text-sm font-extrabold leading-relaxed tracking-[0.01em] text-accent">
+                                      {unit.chord ?? ""}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        const r = e.currentTarget.getBoundingClientRect();
+                                        setPicker({
+                                          lineIndex: line.lineIndex,
+                                          unit,
+                                          x: r.left + r.width / 2,
+                                          y: r.bottom + 8,
+                                        });
+                                      }}
+                                      aria-label={unit.text || unit.chord || undefined}
+                                      className="min-w-[1.1em] cursor-pointer text-left underline decoration-edge-2 decoration-dotted underline-offset-4 hover:decoration-accent"
+                                    >
+                                      {/* acorde sin palabra: espacio clicable sin glifo */}
+                                      {unit.text || " "}
+                                    </button>
+                                  </span>
+                                ))}
                               </span>
                             ))}
                           </div>

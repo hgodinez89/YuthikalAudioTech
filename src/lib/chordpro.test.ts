@@ -14,7 +14,57 @@ import {
   setSectionStrum,
   strumToArrows,
   syncPlan,
+  unitGroups,
+  wordGroups,
 } from "./chordpro";
+
+describe("unitGroups", () => {
+  it("agrupa los trozos de una palabra hasta el espacio", () => {
+    const groups = unitGroups(parseLyricUnits("do this any[A7m]more, 'cause"));
+    expect(groups.map((g) => g.map((u) => u.text).join("|"))).toEqual([
+      "do",
+      "this",
+      "any|more,",
+      "'cause",
+    ]);
+  });
+
+  it("acordes sueltos separados por espacio quedan en grupos propios", () => {
+    const groups = unitGroups(parseLyricUnits("[C] [G] [Am]"));
+    expect(groups.map((g) => g.map((u) => u.chord))).toEqual([["C"], ["G"], ["Am"]]);
+  });
+});
+
+/* Grupos como texto legible: trozos unidos por "|", acorde entre corchetes. */
+const groupsOf = (raw: string) =>
+  wordGroups(parseChordPro(raw).sections[0].lines[0]).map((g) =>
+    g.map((p) => (p.chord ? `[${p.chord}]` : "") + p.text).join("|"),
+  );
+
+describe("wordGroups", () => {
+  it("una palabra con un acorde en medio es un solo grupo", () => {
+    expect(groupsOf("do this any[A7m]more, 'cause")).toEqual([
+      "do ",
+      "this ",
+      "any|[A7m]more, ",
+      "'cause",
+    ]);
+    expect(groupsOf("[C]Re[D]demp[G]tion songs")).toEqual([
+      "[C]Re|[D]demp|[G]tion ",
+      "songs",
+    ]);
+  });
+
+  it("acorde sobre un espacio, acordes seguidos y acorde final", () => {
+    expect(groupsOf("word [C] next")).toEqual(["word ", "[C] ", "next"]);
+    expect(groupsOf("[C][G]word")).toEqual(["[C]|[G]word"]);
+    expect(groupsOf("ever have[Em]")).toEqual(["ever ", "have|[Em]"]);
+  });
+
+  it("sin acordes, cada palabra con su espacio", () => {
+    expect(groupsOf("If the world")).toEqual(["If ", "the ", "world"]);
+  });
+});
 
 const SAMPLE = `{title: St. James Infirmary}
 {artist: Traditional}

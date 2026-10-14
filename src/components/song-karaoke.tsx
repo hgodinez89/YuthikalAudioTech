@@ -30,6 +30,7 @@ import {
   syncPlan,
   type SheetLine,
   type SectionType,
+  wordGroups,
 } from "@/lib/chordpro";
 import type { SongRow } from "@/lib/songs";
 import { supabaseBrowser } from "@/lib/supabase";
@@ -602,34 +603,39 @@ export function SongKaraoke({
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-end justify-center gap-y-0.5">
-                    {line.segments.map((seg, gi) => (
-                      <span
-                        key={gi}
-                        className="inline-flex flex-col whitespace-pre text-left"
-                      >
-                        <span
-                          className="font-extrabold leading-normal tracking-[0.01em] text-accent"
-                          style={{
-                            fontSize: isCurrent ? 17 : 13,
-                            minHeight: isCurrent ? 26 : 20,
-                            textShadow: isCurrent
-                              ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
-                              : "none",
-                          }}
-                        >
-                          {seg.chord ?? ""}
-                        </span>
-                        <span
-                          className="leading-[1.3]"
-                          style={{
-                            fontSize: isCurrent ? 30 : 21,
-                            fontWeight: isCurrent ? 700 : 500,
-                            color: isCurrent ? "var(--ink)" : "var(--sub)",
-                          }}
-                        >
-                          {/* acorde final sin palabra: mantiene la altura de la línea */}
-                          {seg.text || " "}
-                        </span>
+                    {/* Salta entre palabras: una palabra con un acorde en medio no se parte */}
+                    {wordGroups(line.segments).map((group, wi) => (
+                      <span key={wi} className="inline-flex items-end">
+                        {group.map((piece, pi) => (
+                          <span
+                            key={pi}
+                            className="inline-flex flex-col whitespace-pre text-left"
+                          >
+                            <span
+                              className="font-extrabold leading-normal tracking-[0.01em] text-accent"
+                              style={{
+                                fontSize: isCurrent ? 17 : 13,
+                                minHeight: isCurrent ? 26 : 20,
+                                textShadow: isCurrent
+                                  ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
+                                  : "none",
+                              }}
+                            >
+                              {piece.chord ?? ""}
+                            </span>
+                            <span
+                              className="leading-[1.3]"
+                              style={{
+                                fontSize: isCurrent ? 30 : 21,
+                                fontWeight: isCurrent ? 700 : 500,
+                                color: isCurrent ? "var(--ink)" : "var(--sub)",
+                              }}
+                            >
+                              {/* acorde final sin palabra: mantiene la altura de la línea */}
+                              {piece.text || " "}
+                            </span>
+                          </span>
+                        ))}
                       </span>
                     ))}
                   </div>
