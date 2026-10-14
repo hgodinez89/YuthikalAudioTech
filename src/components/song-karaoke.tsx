@@ -565,7 +565,7 @@ export function SongKaraoke({
                 ) : (
                   <div className="flex flex-wrap items-end justify-center gap-y-0.5">
                     {line.segments.map((seg, gi) => (
-                      <span key={gi} className="inline-flex flex-col whitespace-pre">
+                      <span key={gi} className="inline-flex flex-col whitespace-pre text-left">
                         <span
                           className="font-extrabold leading-normal tracking-[0.01em] text-accent"
                           style={{
