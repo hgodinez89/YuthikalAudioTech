@@ -188,7 +188,7 @@ export function ChordSheet({
             ),
           );
           return (
-            <section key={si} className="mb-[1.89em]">
+            <section key={si} data-section={si} className="mb-[1.89em]">
               {/* El título nunca queda solo al pie de una página: va con su primera línea */}
               {header ? (
                 <div className="break-inside-avoid">

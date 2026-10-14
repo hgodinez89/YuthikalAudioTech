@@ -19,7 +19,7 @@ import { useTranslations } from "next-intl";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalibrationTransport, RATES, SKIP_SECONDS } from "./calibration-transport";
 import { ConfirmDialog } from "./confirm-dialog";
-import { FloatingVideo, useVideoOpen } from "./floating-video";
+import { FloatingVideo } from "./floating-video";
 import {
   formatStamp,
   formatTime,
@@ -39,6 +39,7 @@ import { supabaseBrowser } from "@/lib/supabase";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
 import { usePlayerShortcuts } from "@/lib/use-player-shortcuts";
 import { youtubeThumbnail } from "@/lib/youtube";
+import { useStoredFlag } from "@/lib/use-stored-flag";
 
 /* Alto del header del sitio (sticky): límite superior de la zona visible. */
 const HEADER_HEIGHT = 72;
@@ -206,7 +207,7 @@ export function SongCalibration({
 
   /* Video flotante: se recuerda si quedó abierto; aquí se reabre solo al pasar
      a reproducir (detectado durante el render comparando con el estado anterior). */
-  const [videoOpen, setVideoOpen] = useVideoOpen("yk-video-open:calibration", true);
+  const [videoOpen, setVideoOpen] = useStoredFlag("yk-video-open:calibration", true);
   const [wasPlaying, setWasPlaying] = useState(engine.playing);
   if (engine.playing !== wasPlaying) {
     setWasPlaying(engine.playing);

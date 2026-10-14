@@ -39,6 +39,8 @@ export type SheetSection = {
   label: string | null;
   strum: string | null;
   lines: SheetLine[];
+  /** Línea del texto donde empieza (encabezado o primera línea): ancla del scroll del editor. */
+  startLine: number;
 };
 
 export type ParsedSong = {
@@ -199,7 +201,11 @@ export function parseChordPro(content: string): ParsedSong {
 
   // `open` es pura y `current` se asigna siempre en el flujo principal:
   // el análisis de flujo de TS no ve asignaciones hechas dentro de closures.
-  const open = (type: SectionType, label: string | null): SheetSection => {
+  const open = (
+    type: SectionType,
+    label: string | null,
+    startLine: number,
+  ): SheetSection => {
     counters[type] += 1;
     const section: SheetSection = {
       type,
@@ -207,12 +213,13 @@ export function parseChordPro(content: string): ParsedSong {
       label,
       strum: null,
       lines: [],
+      startLine,
     };
     song.sections.push(section);
     return section;
   };
 
-  for (const rawLine of content.split(/\r?\n/)) {
+  for (const [i, rawLine] of content.split(/\r?\n/).entries()) {
     const line = rawLine.trimEnd();
     const directive = line.trim().match(/^\{([^:}]+)(?::([\s\S]*))?\}$/);
 
@@ -225,13 +232,13 @@ export function parseChordPro(content: string): ParsedSong {
         song.artist = value || null;
       } else if (name === "key") song.key = value || null;
       else if (name === "strum") {
-        if (!current) current = open("plain", null);
+        if (!current) current = open("plain", null, i);
         current.strum = value || null;
       } else if (name in SECTION_STARTS) {
-        current = open(SECTION_STARTS[name], value || null);
+        current = open(SECTION_STARTS[name], value || null, i);
       } else if (SECTION_ENDS.has(name)) current = null;
       else if (NOTE_DIRECTIVES.has(name) && value) {
-        if (!current) current = open("plain", null);
+        if (!current) current = open("plain", null, i);
         current.lines.push([{ chord: null, text: value, note: true }]);
       }
       // directivas desconocidas (capo…) se ignoran sin fallar
@@ -240,7 +247,7 @@ export function parseChordPro(content: string): ParsedSong {
 
     const header = sectionHeaderLabel(line);
     if (header) {
-      current = open("plain", header);
+      current = open("plain", header, i);
       continue;
     }
 
@@ -256,7 +263,7 @@ export function parseChordPro(content: string): ParsedSong {
       continue;
     }
 
-    if (!current) current = open("plain", null);
+    if (!current) current = open("plain", null, i);
     const instrumental = parseInstrumentalLine(line);
     current.lines.push(
       instrumental ? instrumentalSegments(instrumental) : parseLine(line),

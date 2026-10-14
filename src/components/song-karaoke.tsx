@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChordVisual } from "./chord-visual";
 import type { ChordDataMap } from "./chord-sheet";
-import { FloatingVideo, useVideoOpen, type VideoInsets } from "./floating-video";
+import { FloatingVideo, type VideoInsets } from "./floating-video";
 import {
   ProgressWave,
   ShortcutsButton,
@@ -35,6 +35,7 @@ import type { SongRow } from "@/lib/songs";
 import { supabaseBrowser } from "@/lib/supabase";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
 import { usePlayerShortcuts } from "@/lib/use-player-shortcuts";
+import { useStoredFlag } from "@/lib/use-stored-flag";
 
 /* Velocidades: con audio, la de reproducción; sin audio, la del autoscroll. */
 const AUDIO_RATES = [0.5, 0.75, 1, 1.25] as const;
@@ -419,7 +420,7 @@ export function SongKaraoke({
   /* Video: solo con YouTube y solo cuando lo pides (no se abre al dar play);
      se recuerda si lo dejaste abierto. */
   const hasVideo = engineSource?.type === "youtube";
-  const [videoOpen, setVideoOpen] = useVideoOpen("yk-video-open:karaoke", false);
+  const [videoOpen, setVideoOpen] = useStoredFlag("yk-video-open:karaoke", false);
   const toggleVideo = () => setVideoOpen(!videoOpen);
 
   const transportDisabled = variant === "sync" && !engine.ready;

@@ -7,10 +7,12 @@ import {
   Code,
   Eye,
   Info,
+  Link2,
   Pencil,
   Settings,
   Trash2,
   TriangleAlert,
+  Unlink2,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -46,11 +48,16 @@ import {
   type SectionType,
 } from "@/lib/chordpro";
 import type { Instrument } from "@/lib/instruments";
+import { invertPoints, mapScroll } from "@/lib/scroll-sync";
 import { deleteSong, updateSongContent, updateSongMeta } from "@/lib/song-actions";
 import { detectKey, type DetectedKey } from "@/lib/key-detect";
 import { KEY_OPTIONS, keyLabel, validateSong, type SongRow } from "@/lib/songs";
+import { useStoredFlag } from "@/lib/use-stored-flag";
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
+
+/* Editor y vista previa lado a lado (breakpoint lg): solo ahí se vincula el scroll. */
+const SIDE_BY_SIDE = "(min-width: 64rem)";
 
 /* ---------- resaltado de sintaxis del modo texto ---------- */
 
@@ -325,6 +332,12 @@ export function SongEditor({
   } | null>(null);
 
   const highlightRef = useRef<HTMLPreElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  /* Scroll vinculado entre ChordPro y vista previa (por defecto sí, recordado). */
+  const [scrollLinked, setScrollLinked] = useStoredFlag("yk-editor-scroll-link", true);
+  /* Último scroll aplicado a cada panel: su evento de vuelta se ignora (sin rebote). */
+  const scrollEchoRef = useRef(new Map<Element, number>());
   const contentRef = useRef(content);
   contentRef.current = content;
 
@@ -346,6 +359,47 @@ export function SongEditor({
     () => (subMode === "visual" ? buildVisualModel(content) : []),
     [subMode, content],
   );
+
+  /* Lleva el otro panel a la posición equivalente, anclando cada sección:
+     en el texto, su línea de inicio; en la vista previa, su bloque. */
+  const followScroll = (fromText: boolean) => {
+    const text = textareaRef.current;
+    const preview = previewRef.current;
+    if (!text || !preview || !window.matchMedia(SIDE_BY_SIDE).matches) return;
+    const source = fromText ? text : preview;
+    const target = fromText ? preview : text;
+    const echo = scrollEchoRef.current.get(source);
+    if (echo !== undefined) {
+      scrollEchoRef.current.delete(source);
+      if (Math.abs(source.scrollTop - echo) < 2) return;
+    }
+
+    const textStyle = getComputedStyle(text);
+    const lineHeight =
+      parseFloat(textStyle.lineHeight) || parseFloat(textStyle.fontSize) * 1.85;
+    const previewPad = parseFloat(getComputedStyle(preview).paddingTop) || 0;
+    const blocks = preview.querySelectorAll<HTMLElement>("[data-section]");
+    const points = parsed.sections.flatMap((section, i) =>
+      blocks[i]
+        ? [{ from: section.startLine * lineHeight, to: blocks[i].offsetTop - previewPad }]
+        : [],
+    );
+    const textMax = text.scrollHeight - text.clientHeight;
+    const previewMax = preview.scrollHeight - preview.clientHeight;
+    const top = fromText
+      ? mapScroll(points, textMax, previewMax, text.scrollTop)
+      : mapScroll(invertPoints(points), previewMax, textMax, preview.scrollTop);
+    if (Math.abs(target.scrollTop - top) < 1) return;
+    target.scrollTop = top;
+    scrollEchoRef.current.set(target, target.scrollTop);
+  };
+
+  const toggleScrollLink = () => {
+    const next = !scrollLinked;
+    setScrollLinked(next);
+    scrollEchoRef.current.clear();
+    if (next) followScroll(true); // al vincular, la vista previa se alinea al texto
+  };
 
   const applyChord = (chord: string | null) => {
     if (!picker) return;
@@ -443,9 +497,10 @@ export function SongEditor({
         </div>
       </div>
 
-      {/* MODO TEXTO: editor + preview, cada panel con su propio scroll y cabecera fija */}
+      {/* MODO TEXTO: editor + preview, cada panel con su propio scroll y cabecera fija;
+          lado a lado, el botón del centro vincula ambos scrolls */}
       {subMode === "text" && (
-        <div className="grid items-stretch gap-4 lg:h-[calc(100dvh-160px)] lg:min-h-[480px] lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)]">
+        <div className="relative grid items-stretch gap-4 lg:h-[calc(100dvh-160px)] lg:min-h-[480px] lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)] lg:gap-x-12">
           <div className="flex h-[65dvh] min-h-[380px] flex-col overflow-hidden rounded-2xl border border-edge bg-surface-3 lg:h-auto lg:min-h-0 dark:bg-[#0b0d12]">
             <div className="flex shrink-0 items-center justify-between border-b border-edge px-4 py-3">
               <span className="text-xs font-bold uppercase tracking-[0.14em] text-tert">
@@ -483,6 +538,7 @@ export function SongEditor({
                 {content.split("\n").map((line, i) => highlightLine(line, i))}
               </pre>
               <textarea
+                ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 onScroll={(e) => {
@@ -490,6 +546,7 @@ export function SongEditor({
                     highlightRef.current.scrollTop = e.currentTarget.scrollTop;
                     highlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
                   }
+                  if (scrollLinked) followScroll(true);
                 }}
                 spellCheck={false}
                 aria-label="ChordPro"
@@ -505,7 +562,11 @@ export function SongEditor({
                 {t("preview")}
               </span>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-[22px]">
+            <div
+              ref={previewRef}
+              onScroll={scrollLinked ? () => followScroll(false) : undefined}
+              className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-[22px]"
+            >
               {parsed.sections.length ? (
                 <ChordSheet
                   sections={parsed.sections}
@@ -517,6 +578,38 @@ export function SongEditor({
                 <p className="text-sm text-tert">{t("previewEmpty")}</p>
               )}
             </div>
+          </div>
+
+          {/* Vincular scroll: un "puente" en acento une ambos paneles cuando está activo */}
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 hidden w-12 -translate-x-1/2 -translate-y-1/2 items-center lg:flex">
+            <span
+              className={`h-0.5 flex-1 bg-accent/60 transition-opacity duration-200 motion-reduce:transition-none ${
+                scrollLinked ? "opacity-100" : "opacity-0"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={toggleScrollLink}
+              aria-pressed={scrollLinked}
+              aria-label={t("scrollLink")}
+              title={t(scrollLinked ? "scrollLinkedHint" : "scrollUnlinkedHint")}
+              className={`pointer-events-auto grid size-8 shrink-0 cursor-pointer place-items-center rounded-full border transition-[color,background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none ${
+                scrollLinked
+                  ? "border-accent/50 bg-accent/15 text-accent shadow-[0_0_14px_rgba(53,214,232,0.3)] hover:border-accent"
+                  : "border-edge-2 bg-surface-2 text-mute hover:border-accent hover:text-accent"
+              }`}
+            >
+              {scrollLinked ? (
+                <Link2 size={15} strokeWidth={2.2} />
+              ) : (
+                <Unlink2 size={15} strokeWidth={2.2} />
+              )}
+            </button>
+            <span
+              className={`h-0.5 flex-1 bg-accent/60 transition-opacity duration-200 motion-reduce:transition-none ${
+                scrollLinked ? "opacity-100" : "opacity-0"
+              }`}
+            />
           </div>
         </div>
       )}

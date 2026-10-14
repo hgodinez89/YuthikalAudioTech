@@ -120,7 +120,12 @@ src/components/           UI (fieles al handoff):
   chord-sheet             Cifrado clásico: acordes sobre sílabas, popovers, leyenda
   songs-view              Lista plana de canciones con playlists como filtros
   song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets),
-                          "Pegar cifrado" y datos de la canción (incl. playlist)
+                          "Pegar cifrado" y datos de la canción (incl. playlist).
+                          Lado a lado (lg+), el botón entre paneles vincula el scroll
+                          de ChordPro y vista previa (por defecto sí, recordado en
+                          localStorage): cada sección es un ancla (`startLine` en el
+                          texto, `[data-section]` en la vista previa) y entre anclas
+                          se interpola (`lib/scroll-sync.ts`)
   song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte. Al retomar a medias, el audio arranca (pausado) en el inicio de la última línea marcada; las marcas pendientes se guardan al salir. Con todas las líneas marcadas, ESPACIO marca un fin opcional; la X lo descarta y el audio suena completo. "Sin fin" no se guarda: al volver a entrar sin fin marcado, la sincronización se muestra completa (la bandera permite agregar uno después). En modo palabra, los trozos que separa un acorde (`Re[D]demp[G]tion`) se muestran pegados según `spaceAfter`, aunque cada uno sea su propia marca
   song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll. Con audio, la intro queda fuera: play, "Al inicio" y los saltos empiezan 3 s antes de la primera línea sincronizada, y la barra cuenta 0:00 desde ahí. Con fin marcado, la barra termina en él y el audio se apaga con un fundido de 2 s y se pausa
   confirm-dialog          Confirmación destructiva estándar (no hay diálogos nativos)

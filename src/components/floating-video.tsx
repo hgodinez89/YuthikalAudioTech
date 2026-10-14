@@ -3,7 +3,6 @@
 import { GripHorizontal, Maximize2, Minimize2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
-  useEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -21,6 +20,7 @@ import {
   VIDEO_MIN_WIDTH,
   type VideoCorner,
 } from "@/lib/video-size";
+import { readPref, writePref } from "@/lib/use-stored-flag";
 
 const CORNER_KEY = "yk-video-corner";
 const SIZE_KEY = "yk-video-size";
@@ -39,28 +39,6 @@ export type VideoInsets = { top: number; bottom: number; bottomMobile: number };
 /* Calibración: bajo el header del sitio y sobre la barra de transporte. */
 const DEFAULT_INSETS: VideoInsets = { top: 88, bottom: 120, bottomMobile: 156 };
 
-/**
- * Abierto/cerrado del video, recordado por pantalla en el dispositivo. Antes
- * de hidratar devuelve `initial` (el servidor no conoce la preferencia).
- */
-export function useVideoOpen(storageKey: string, initial: boolean) {
-  const mounted = useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  );
-  const [open, setOpen] = useState(() => {
-    const saved = typeof window === "undefined" ? null : readPref(storageKey);
-    return saved === null ? initial : saved === "1";
-  });
-  // Se guarda en un efecto: el estado puede cambiar durante el render
-  // (apertura automática al reproducir) y ahí no se tocan efectos externos.
-  useEffect(() => {
-    if (mounted) writePref(storageKey, open ? "1" : "0");
-  }, [mounted, open, storageKey]);
-  return [mounted ? open : initial, setOpen] as const;
-}
-
 /* El asa va en la esquina libre (opuesta al anclaje), con su cursor. */
 const HANDLE_CLASS: Record<VideoCorner, string> = {
   br: "left-0 top-0 cursor-nwse-resize",
@@ -70,21 +48,6 @@ const HANDLE_CLASS: Record<VideoCorner, string> = {
 };
 /* Rotación del dibujo del asa (diagonales hacia la esquina libre). */
 const HANDLE_ROTATION: Record<VideoCorner, number> = { tl: 0, bl: -90, br: 180, tr: 90 };
-
-function readPref(key: string): string | null {
-  try {
-    return window.localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-function writePref(key: string, value: string) {
-  try {
-    window.localStorage.setItem(key, value);
-  } catch {
-    /* sin almacenamiento: dura solo esta visita */
-  }
-}
 
 const noopSubscribe = () => () => {};
 

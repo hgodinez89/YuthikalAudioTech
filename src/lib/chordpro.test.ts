@@ -51,6 +51,17 @@ describe("parseChordPro — secciones", () => {
     expect(song.sections[1]).toMatchObject({ type: "chorus", number: 1, strum: null });
   });
 
+  it("cada sección recuerda la línea del texto donde empieza", () => {
+    const song = parseChordPro(
+      "Intro sin sección\n\n[[Coro]]\n{strum: D U}\n[C]hola\n{sov}\nverso",
+    );
+    expect(song.sections.map((s) => [s.label, s.startLine])).toEqual([
+      [null, 0],
+      ["Coro", 2],
+      [null, 5],
+    ]);
+  });
+
   it("numera versos consecutivos y respeta etiquetas explícitas", () => {
     const song = parseChordPro(
       "{sov}\n[C]uno\n{eov}\n{sov: Verso especial}\n[D]dos\n{eov}",
