@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampTime, reviewStart, stepRate } from "./audio";
+import { clampTime, resumePoint, reviewStart, stepRate } from "./audio";
 
 describe("clampTime", () => {
   it("limita entre 0 y la duración", () => {
@@ -28,6 +28,54 @@ describe("reviewStart", () => {
   it("sin marcas previas o cerca del inicio, desde 0", () => {
     expect(reviewStart(new Map(), 0)).toBe(0);
     expect(reviewStart(new Map([[0, 1.2]]), 1)).toBe(0);
+  });
+});
+
+describe("resumePoint", () => {
+  // Por línea: un objetivo por línea.
+  const byLine = [0, 1, 2, 3].map((i) => ({ firstTarget: i, targetCount: 1 }));
+  // Por palabra: líneas de 3 y 2 palabras.
+  const byWord = [
+    { firstTarget: 0, targetCount: 3 },
+    { firstTarget: 3, targetCount: 2 },
+  ];
+
+  it("sin marcas o completa: no hay que retomar", () => {
+    expect(resumePoint(new Map(), 0, byLine, 4)).toBeNull();
+    const all = new Map([
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+    ]);
+    expect(resumePoint(all, 4, byLine, 4)).toBeNull();
+  });
+
+  it("por línea: inicio de la última línea marcada", () => {
+    const stamps = new Map([
+      [0, 75],
+      [1, 80.4],
+    ]);
+    expect(resumePoint(stamps, 2, byLine, 4)).toBe(80.4);
+  });
+
+  it("por palabra con la línea a medias: vuelve a su inicio", () => {
+    const stamps = new Map([
+      [0, 10],
+      [1, 11],
+      [2, 12],
+      [3, 15.2],
+    ]);
+    expect(resumePoint(stamps, 4, byWord, 5)).toBe(15.2);
+  });
+
+  it("con marcas sueltas tras un hueco (re-marcar) manda el cursor", () => {
+    const stamps = new Map([
+      [0, 75],
+      [2, 90],
+      [3, 95],
+    ]);
+    expect(resumePoint(stamps, 1, byLine, 4)).toBe(75);
   });
 });
 

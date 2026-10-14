@@ -291,6 +291,7 @@
     "noContent": "This song has no lyrics yet. Write them in the editor first.",
     "saving": "Saving…",
     "saved": "Sync saved",
+    "resumeFrom": "Resuming from {time}",
     "saveError": "Could not save the sync",
     "play": "Play",
     "pause": "Pause",

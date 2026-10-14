@@ -120,7 +120,7 @@ src/components/           UI (fieles al handoff):
   songs-view              Lista plana de canciones con playlists como filtros
   song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets),
                           "Pegar cifrado" y datos de la canción (incl. playlist)
-  song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte
+  song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte. Al retomar a medias, el audio arranca (pausado) en el inicio de la última línea marcada; las marcas pendientes se guardan al salir
   song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll. Con audio, la intro queda fuera: play, "Al inicio" y los saltos empiezan 3 s antes de la primera línea sincronizada, y la barra cuenta 0:00 desde ahí
   confirm-dialog          Confirmación destructiva estándar (no hay diálogos nativos)
   instrument-toggles      Instrumentos de una canción: selector múltiple e iconos

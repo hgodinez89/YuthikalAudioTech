@@ -3,6 +3,7 @@
 import {
   Check,
   FileMusic,
+  History,
   Link2,
   Music,
   Play,
@@ -21,6 +22,7 @@ import {
   formatStamp,
   formatTime,
   MAX_MP3_BYTES,
+  resumePoint,
   reviewStart,
   stepRate,
   type SongAudioRow,
@@ -150,6 +152,16 @@ export function SongCalibration({
     return i;
   });
 
+  /* Retomar a medias: el audio arranca (pausado) en el inicio de la última
+     línea marcada. Solo con la fuente que había al entrar. */
+  const [resume] = useState(() => {
+    const lines = rows.flatMap((r) => (r.kind === "line" ? [r] : []));
+    const at = resumePoint(stamps, cursor, lines, totalTargets);
+    const sourceId = audio?.source === "youtube" ? audio.youtube_id : audio?.file_path;
+    return at === null || !sourceId ? null : { at, sourceId };
+  });
+  const [showResume, setShowResume] = useState(resume !== null);
+
   /* URL firmada del MP3 (bucket privado). */
   useEffect(() => {
     if (audio?.source !== "file" || !audio.file_path) return;
@@ -165,11 +177,13 @@ export function SongCalibration({
     };
   }, [audio?.source, audio?.file_path]);
 
+  const startFor = (sourceId: string | null | undefined) =>
+    resume && resume.sourceId === sourceId ? resume.at : undefined;
   const engineSource: AudioSource | null =
     audio?.source === "youtube" && audio.youtube_id
-      ? { type: "youtube", videoId: audio.youtube_id }
+      ? { type: "youtube", videoId: audio.youtube_id, start: startFor(audio.youtube_id) }
       : audio?.source === "file" && fileUrl
-        ? { type: "file", url: fileUrl }
+        ? { type: "file", url: fileUrl, start: startFor(audio.file_path) }
         : null;
 
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
@@ -183,6 +197,7 @@ export function SongCalibration({
   if (engine.playing !== wasPlaying) {
     setWasPlaying(engine.playing);
     if (engine.playing && !videoOpen) setVideoOpen(true);
+    if (engine.playing) setShowResume(false);
   }
   const toggleVideo = () => setVideoOpen(!videoOpen);
 
@@ -211,22 +226,40 @@ export function SongCalibration({
     });
   }, [cursor]);
 
-  /* Autosave de timestamps (debounce). */
+  /* Autosave de timestamps (debounce). Lo pendiente queda en un ref para
+     guardarlo igual si se sale de la pantalla antes de que venza. */
   const dirtyRef = useRef(false);
+  const pendingSave = useRef<{
+    granularity: "line" | "word";
+    list: SyncStamp[];
+  } | null>(null);
   useEffect(() => {
     if (!dirtyRef.current) return;
-    const timer = setTimeout(async () => {
-      setSaveState("saving");
-      const list: SyncStamp[] = [...stamps.entries()]
+    const pending = {
+      granularity,
+      list: [...stamps.entries()]
         .map(([i, tt]) => ({ i, t: tt }))
-        .sort((a, b) => a.i - b.i);
-      const result = await saveSync(song.id, granularity, list);
+        .sort((a, b) => a.i - b.i),
+    };
+    pendingSave.current = pending;
+    const timer = setTimeout(async () => {
+      pendingSave.current = null;
+      setSaveState("saving");
+      const result = await saveSync(song.id, pending.granularity, pending.list);
       setSaveState(result.ok ? "saved" : "error");
       if (result.ok) router.refresh();
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stamps, granularity, song.id]);
+
+  useEffect(() => {
+    const songId = song.id;
+    return () => {
+      const pending = pendingSave.current;
+      if (pending) void saveSync(songId, pending.granularity, pending.list);
+    };
+  }, [song.id]);
 
   const mark = () => {
     if (!engine.ready || cursor >= totalTargets) return;
@@ -582,8 +615,14 @@ export function SongCalibration({
           </span>
         </button>
 
-        {/* estado de guardado */}
-        <div className="mb-3 flex justify-end text-[12px] font-semibold">
+        {/* retomar + estado de guardado */}
+        <div className="mb-3 flex justify-end gap-3 text-[12px] font-semibold">
+          {showResume && resume && (
+            <span className="mr-auto inline-flex items-center gap-1 text-sub">
+              <History size={13} strokeWidth={2.2} />
+              {t("resumeFrom", { time: formatTime(resume.at) })}
+            </span>
+          )}
           {saveState === "saving" && <span className="text-sub">{t("saving")}</span>}
           {saveState === "saved" && (
             <span className="inline-flex items-center gap-1 text-accent">

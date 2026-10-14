@@ -291,6 +291,7 @@
     "noContent": "Esta canción aún no tiene letra. Escríbela en el editor primero.",
     "saving": "Guardando…",
     "saved": "Sincronización guardada",
+    "resumeFrom": "Continúas desde {time}",
     "saveError": "No se pudo guardar la sincronización",
     "play": "Reproducir",
     "pause": "Pausar",

@@ -70,6 +70,31 @@ export function reviewStart(stamps: Map<number, number>, cursor: number): number
   return last === null ? 0 : Math.max(0, last - REVIEW_PREROLL);
 }
 
+/**
+ * Al retomar una sincronización a medias: inicio de la línea del último
+ * objetivo marcado (el anterior al cursor). Null si no hay nada marcado o ya
+ * está completa: entonces se empieza desde 0:00.
+ */
+export function resumePoint(
+  stamps: Map<number, number>,
+  cursor: number,
+  lines: { firstTarget: number; targetCount: number }[],
+  totalTargets: number,
+): number | null {
+  if (cursor <= 0 || cursor >= totalTargets) return null;
+  const last = cursor - 1;
+  const line = lines.find(
+    (l) => last >= l.firstTarget && last < l.firstTarget + l.targetCount,
+  );
+  if (!line) return null;
+  let start: number | null = null;
+  for (let i = line.firstTarget; i < line.firstTarget + line.targetCount; i++) {
+    const t = stamps.get(i);
+    if (t !== undefined && (start === null || t < start)) start = t;
+  }
+  return start;
+}
+
 /** Velocidad siguiente/anterior dentro de una lista (sin salirse de ella). */
 export function stepRate(
   rates: readonly number[],

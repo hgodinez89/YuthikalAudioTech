@@ -3,8 +3,11 @@
 import { useEffect, useState, type RefObject } from "react";
 import { clampTime } from "./audio";
 
-export type AudioSource =
-  { type: "youtube"; videoId: string } | { type: "file"; url: string };
+/* `start`: posición inicial (s), sin reproducir. Solo se lee al crear el
+   reproductor: no forma parte de la clave de la fuente. */
+export type AudioSource = (
+  { type: "youtube"; videoId: string } | { type: "file"; url: string }
+) & { start?: number };
 
 export type AudioEngine = {
   ready: boolean;
@@ -130,6 +133,7 @@ export function useAudioEngine(
     if (!source || !sourceKey) return;
     let cancelled = false;
     const key = sourceKey;
+    const start = source.start && source.start > 0 ? source.start : 0;
 
     const patch = (update: Partial<Snapshot>) => {
       if (cancelled) return;
@@ -164,10 +168,21 @@ export function useAudioEngine(
           // Llena su contenedor (el mini-reproductor visible).
           width: "100%",
           height: "100%",
-          playerVars: { controls: 0, disablekb: 1, playsinline: 1 },
+          // `start` deja el video en ese segundo sin reproducirlo (un seekTo
+          // en estado "cued" lo pondría a sonar).
+          playerVars: {
+            controls: 0,
+            disablekb: 1,
+            playsinline: 1,
+            ...(start ? { start: Math.floor(start) } : {}),
+          },
           events: {
             onReady: () => {
-              patch({ ready: true, duration: player?.getDuration() ?? 0 });
+              patch({
+                ready: true,
+                duration: player?.getDuration() ?? 0,
+                currentTime: Math.floor(start),
+              });
               if (cancelled || !player) return;
               const p = player;
               setControls({
@@ -217,7 +232,8 @@ export function useAudioEngine(
     const audio = new Audio(source.url);
     audio.preload = "metadata";
     const onMeta = () => {
-      patch({ ready: true, duration: audio.duration || 0 });
+      if (start) audio.currentTime = start;
+      patch({ ready: true, duration: audio.duration || 0, currentTime: start });
       setControls({
         now: () => audio.currentTime,
         toggle: () => {
