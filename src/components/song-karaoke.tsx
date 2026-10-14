@@ -310,7 +310,8 @@ export function SongKaraoke({
     .map((line, i) => (line.section ? i : -1))
     .filter((i) => i >= 0);
 
-  /* Desde dónde empezar a tocar: poco antes de la primera línea sincronizada. */
+  /* Desde dónde empezar a tocar: poco antes de la primera línea sincronizada.
+     La intro queda fuera del karaoke: la barra empieza ahí en 0:00. */
   const firstStart = lineStarts?.reduce<number | null>(
     (min, s) => (s !== null && (min === null || s < min) ? s : min),
     null,
@@ -347,15 +348,18 @@ export function SongKaraoke({
     if (next !== undefined) seekToLine(next);
   };
 
-  /* ±10 s y saltos en la onda: sobre el audio o sobre el reloj del autoscroll. */
+  /* ±10 s y saltos en la onda: sobre el audio (sin volver a la intro) o
+     sobre el reloj del autoscroll. */
   const seekTo = (seconds: number) => {
-    if (variant === "sync") engine.seekTo(seconds);
+    if (variant === "sync") engine.seekTo(Math.max(introEnd, seconds));
     else setAutoT(clampTime(seconds, autoTotal));
   };
   const skip = (seconds: number) => {
-    if (variant === "sync") engine.skip(seconds);
+    if (variant === "sync") seekTo(engine.currentTime + seconds);
     else setAutoT((t) => clampTime(t + seconds, autoTotal));
   };
+  /* La barra cuenta desde el final de la intro. */
+  const barOffset = variant === "sync" ? introEnd : 0;
 
   /* Repasar: repetir la línea actual desde un poco antes de su inicio. */
   const repeatLine = () => {
@@ -605,11 +609,11 @@ export function SongKaraoke({
 
       {/* TRANSPORTE */}
       <div className="shrink-0 border-t border-edge bg-[linear-gradient(180deg,transparent_0%,var(--surface-3)_30%)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3 sm:px-6">
-        {/* Progreso: tiempo real del audio, o el reloj del autoscroll */}
+        {/* Progreso: el audio sin la intro, o el reloj del autoscroll */}
         <ProgressWave
-          current={clock}
-          duration={total}
-          onSeek={seekTo}
+          current={Math.max(0, clock - barOffset)}
+          duration={Math.max(0, total - barOffset)}
+          onSeek={(seconds) => seekTo(seconds + barOffset)}
           bars={72}
           className="mx-auto mb-1.5 max-w-[640px]"
         />
