@@ -3,6 +3,7 @@
 import {
   Check,
   FileMusic,
+  Flag,
   History,
   Link2,
   Music,
@@ -10,6 +11,7 @@ import {
   RotateCcw,
   TriangleAlert,
   Upload,
+  X,
 } from "lucide-react";
 /* eslint-disable @next/next/no-img-element -- miniatura externa de YouTube */
 import { useRouter } from "next/navigation";
@@ -22,6 +24,7 @@ import {
   formatStamp,
   formatTime,
   MAX_MP3_BYTES,
+  REVIEW_PREROLL,
   resumePoint,
   reviewStart,
   stepRate,
@@ -123,6 +126,8 @@ export function SongCalibration({
   const [stamps, setStamps] = useState<Map<number, number>>(
     () => new Map((sync?.stamps ?? []).map((s) => [s.i, s.t])),
   );
+  /* Fin opcional: el karaoke termina ahí; sin él, suena hasta el final. */
+  const [endAt, setEndAt] = useState<number | null>(sync?.end_at ?? null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
     "idle",
   );
@@ -232,6 +237,7 @@ export function SongCalibration({
   const pendingSave = useRef<{
     granularity: "line" | "word";
     list: SyncStamp[];
+    endAt: number | null;
   } | null>(null);
   useEffect(() => {
     if (!dirtyRef.current) return;
@@ -240,33 +246,68 @@ export function SongCalibration({
       list: [...stamps.entries()]
         .map(([i, tt]) => ({ i, t: tt }))
         .sort((a, b) => a.i - b.i),
+      endAt,
     };
     pendingSave.current = pending;
     const timer = setTimeout(async () => {
       pendingSave.current = null;
       setSaveState("saving");
-      const result = await saveSync(song.id, pending.granularity, pending.list);
+      const result = await saveSync(
+        song.id,
+        pending.granularity,
+        pending.list,
+        pending.endAt,
+      );
       setSaveState(result.ok ? "saved" : "error");
       if (result.ok) router.refresh();
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stamps, granularity, song.id]);
+  }, [stamps, granularity, endAt, song.id]);
 
   useEffect(() => {
     const songId = song.id;
     return () => {
       const pending = pendingSave.current;
-      if (pending) void saveSync(songId, pending.granularity, pending.list);
+      if (pending) {
+        void saveSync(songId, pending.granularity, pending.list, pending.endAt);
+      }
     };
   }, [song.id]);
 
+  /* Todas las líneas marcadas: la siguiente marca (opcional) es el fin. */
+  const allMarked = totalTargets > 0 && cursor >= totalTargets;
+  const lastStamp = Math.max(0, ...stamps.values());
+
   const mark = () => {
-    if (!engine.ready || cursor >= totalTargets) return;
+    if (!engine.ready) return;
     const time = Math.round(engine.now() * 10) / 10;
+    if (allMarked) {
+      if (endAt !== null || time <= lastStamp) return;
+      dirtyRef.current = true;
+      setEndAt(time);
+      return;
+    }
     dirtyRef.current = true;
     setStamps((prev) => new Map(prev).set(cursor, time));
     setCursor((c) => Math.min(c + 1, totalTargets));
+    // Una línea marcada en el fin o después lo invalida.
+    if (endAt !== null && time >= endAt) setEndAt(null);
+  };
+
+  /* Re-marcar el fin: se borra y se vuelve a escuchar un poco antes. */
+  const remarkEnd = () => {
+    if (endAt === null) return;
+    dirtyRef.current = true;
+    setEndAt(null);
+    if (engine.ready) {
+      engine.seekTo(Math.max(0, endAt - REVIEW_PREROLL));
+      engine.play();
+    }
+  };
+  const removeEnd = () => {
+    dirtyRef.current = true;
+    setEndAt(null);
   };
 
   /* Repasar: volver unos segundos antes de la última marca y escuchar. */
@@ -308,6 +349,7 @@ export function SongCalibration({
   const applyReset = () => {
     dirtyRef.current = true;
     setStamps(new Map());
+    setEndAt(null);
     setCursor(0);
     engine.seekTo(0);
     setConfirm(null);
@@ -587,30 +629,38 @@ export function SongCalibration({
         <button
           type="button"
           onClick={mark}
-          disabled={!engine.ready}
+          disabled={!engine.ready || (allMarked && endAt !== null)}
           className="mb-2.5 flex w-full cursor-pointer items-center justify-center gap-3.5 rounded-2xl border-[1.5px] border-accent/40 bg-[linear-gradient(135deg,rgba(46,107,240,0.16),rgba(53,214,232,0.16))] p-[22px] transition-colors hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="grid size-[42px] shrink-0 place-items-center rounded-xl bg-page/40 text-accent">
-            <Music size={22} strokeWidth={2} />
+            {allMarked ? (
+              <Flag size={22} strokeWidth={2} />
+            ) : (
+              <Music size={22} strokeWidth={2} />
+            )}
           </span>
           <span className="text-left">
             <span className="block font-bold">
-              {t.rich("tapTitle", {
-                kbd: (chunks) => (
-                  <kbd className="rounded-md border border-edge-2 bg-surface-3 px-2 py-0.5 text-[13px] font-bold text-accent">
-                    {chunks}
-                  </kbd>
-                ),
-              })}
+              {allMarked && endAt !== null
+                ? t("endDone", { time: formatTime(endAt) })
+                : t.rich(allMarked ? "endTitle" : "tapTitle", {
+                    kbd: (chunks) => (
+                      <kbd className="rounded-md border border-edge-2 bg-surface-3 px-2 py-0.5 text-[13px] font-bold text-accent">
+                        {chunks}
+                      </kbd>
+                    ),
+                  })}
             </span>
             <span className="mt-[3px] block text-[12.5px] text-sub">
-              {engine.ready
-                ? t("tapProgress", {
-                    n: markNumber,
-                    total: totalTargets,
-                    granularity: t(`granularityShort.${granularity}`),
-                  })
-                : t("tapNeedsAudio")}
+              {!engine.ready
+                ? t("tapNeedsAudio")
+                : allMarked
+                  ? t(endAt !== null ? "endDoneHint" : "endHint")
+                  : t("tapProgress", {
+                      n: markNumber,
+                      total: totalTargets,
+                      granularity: t(`granularityShort.${granularity}`),
+                    })}
             </span>
           </span>
         </button>
@@ -744,6 +794,59 @@ export function SongCalibration({
               </div>
             );
           })}
+          {/* Fin opcional: aparece al marcar todas las líneas */}
+          {allMarked && (
+            <div
+              data-current={endAt === null || undefined}
+              className={`my-0.5 flex items-center gap-3 rounded-[10px] border-l-[3px] px-3.5 py-[11px] ${
+                endAt === null
+                  ? "border-l-accent bg-accent/[0.08]"
+                  : "border-l-transparent"
+              }`}
+            >
+              <div className="flex w-[74px] shrink-0 items-center gap-[7px]">
+                {endAt !== null ? (
+                  <span className="inline-flex items-center gap-[5px]">
+                    <Flag size={14} strokeWidth={2.4} className="text-accent" />
+                    <span className="text-[11.5px] font-semibold tabular-nums text-accent">
+                      {formatStamp(endAt)}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="rounded-full border border-accent/40 px-2 py-[3px] text-[11px] font-bold uppercase tracking-[0.08em] text-accent">
+                    {t("now")}
+                  </span>
+                )}
+              </div>
+              <span
+                className={`min-w-0 flex-1 ${endAt === null ? "text-[17px] font-bold text-ink" : "text-mute"}`}
+              >
+                {t(endAt === null ? "endRowPending" : "endRow")}
+              </span>
+              {endAt !== null && (
+                <>
+                  <button
+                    type="button"
+                    onClick={remarkEnd}
+                    title={t("endRemark")}
+                    aria-label={t("endRemark")}
+                    className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
+                  >
+                    <RotateCcw size={16} strokeWidth={2} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removeEnd}
+                    title={t("endRemove")}
+                    aria-label={t("endRemove")}
+                    className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-warn"
+                  >
+                    <X size={16} strokeWidth={2} />
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           {rows.length === 0 && (
             <p className="px-4 py-8 text-center text-sm text-tert">{t("noContent")}</p>
           )}
@@ -780,6 +883,7 @@ export function SongCalibration({
         onConfirm={() => {
           dirtyRef.current = true;
           setStamps(new Map());
+          setEndAt(null);
           setGranularity(pendingGranularity.current);
           setCursor(0);
           setConfirm(null);

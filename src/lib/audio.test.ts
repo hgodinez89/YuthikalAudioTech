@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { clampTime, resumePoint, reviewStart, stepRate } from "./audio";
+import {
+  clampTime,
+  fadeGain,
+  resumePoint,
+  reviewStart,
+  stepRate,
+  validateSyncEnd,
+} from "./audio";
 
 describe("clampTime", () => {
   it("limita entre 0 y la duración", () => {
@@ -76,6 +83,44 @@ describe("resumePoint", () => {
       [3, 95],
     ]);
     expect(resumePoint(stamps, 1, byLine, 4)).toBe(75);
+  });
+});
+
+describe("validateSyncEnd", () => {
+  const stamps = [
+    { i: 0, t: 10 },
+    { i: 1, t: 20 },
+  ];
+
+  it("sin fin es válido", () => {
+    expect(validateSyncEnd(null, stamps)).toBe(true);
+  });
+
+  it("debe ir después de todas las marcas", () => {
+    expect(validateSyncEnd(25, stamps)).toBe(true);
+    expect(validateSyncEnd(20, stamps)).toBe(false);
+    expect(validateSyncEnd(15, stamps)).toBe(false);
+  });
+
+  it("rechaza valores no numéricos o no positivos", () => {
+    expect(validateSyncEnd(Number.NaN, [])).toBe(false);
+    expect(validateSyncEnd(-3, [])).toBe(false);
+    expect(validateSyncEnd(0, [])).toBe(false);
+    expect(validateSyncEnd("30", [])).toBe(false);
+  });
+});
+
+describe("fadeGain", () => {
+  it("sin fin no hay fundido", () => {
+    expect(fadeGain(500, null)).toBe(1);
+  });
+
+  it("baja en los últimos segundos y llega a 0 en el fin", () => {
+    expect(fadeGain(90, 100)).toBe(1);
+    expect(fadeGain(98, 100)).toBe(1);
+    expect(fadeGain(99, 100)).toBeCloseTo(0.5);
+    expect(fadeGain(100, 100)).toBe(0);
+    expect(fadeGain(101, 100)).toBe(0);
   });
 });
 

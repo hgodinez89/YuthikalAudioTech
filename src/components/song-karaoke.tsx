@@ -16,7 +16,13 @@ import {
   VideoToggle,
   VolumeControl,
 } from "./player-controls";
-import { clampTime, stepRate, type SongAudioRow, type SongSyncRow } from "@/lib/audio";
+import {
+  clampTime,
+  fadeGain,
+  stepRate,
+  type SongAudioRow,
+  type SongSyncRow,
+} from "@/lib/audio";
 import {
   isInstrumental,
   parseChordPro,
@@ -231,7 +237,14 @@ export function SongKaraoke({
 
   /* Línea actual + progreso dentro de ella. */
   const clock = variant === "sync" ? engine.currentTime : autoT;
-  const total = variant === "sync" ? engine.duration : autoTotal;
+  /* Fin marcado al sincronizar (opcional): ahí termina la canción. */
+  const endAt =
+    variant === "sync" &&
+    sync?.end_at &&
+    (engine.duration === 0 || sync.end_at < engine.duration)
+      ? sync.end_at
+      : null;
+  const total = variant === "sync" ? (endAt ?? engine.duration) : autoTotal;
   const playing = variant === "sync" ? engine.playing : autoPlaying;
 
   const { currentIndex, progress } = useMemo(() => {
@@ -323,8 +336,10 @@ export function SongKaraoke({
 
   const togglePlay = () => {
     if (variant === "sync") {
-      // Antes de la primera línea, play salta la intro en lugar de esperarla.
-      if (!engine.playing && engine.currentTime < introEnd) {
+      // Antes de la primera línea, play salta la intro en lugar de esperarla;
+      // en el fin, vuelve a empezar.
+      const atEnd = endAt !== null && engine.currentTime >= endAt - 0.1;
+      if (!engine.playing && (engine.currentTime < introEnd || atEnd)) {
         engine.seekTo(introEnd);
         engine.play();
       } else engine.toggle();
@@ -348,11 +363,12 @@ export function SongKaraoke({
     if (next !== undefined) seekToLine(next);
   };
 
-  /* ±10 s y saltos en la onda: sobre el audio (sin volver a la intro) o
-     sobre el reloj del autoscroll. */
+  /* ±10 s y saltos en la onda: sobre el audio (sin volver a la intro ni
+     pasar del fin) o sobre el reloj del autoscroll. */
   const seekTo = (seconds: number) => {
-    if (variant === "sync") engine.seekTo(Math.max(introEnd, seconds));
-    else setAutoT(clampTime(seconds, autoTotal));
+    if (variant === "sync") {
+      engine.seekTo(Math.min(endAt ?? Infinity, Math.max(introEnd, seconds)));
+    } else setAutoT(clampTime(seconds, autoTotal));
   };
   const skip = (seconds: number) => {
     if (variant === "sync") seekTo(engine.currentTime + seconds);
@@ -360,6 +376,27 @@ export function SongKaraoke({
   };
   /* La barra cuenta desde el final de la intro. */
   const barOffset = variant === "sync" ? introEnd : 0;
+
+  /* Con fin marcado: fundido en los últimos segundos y pausa al llegar. El
+     motor cambia de identidad en cada render; el intervalo usa el vigente. */
+  const engineRef = useRef(engine);
+  useEffect(() => {
+    engineRef.current = engine;
+  });
+  const enginePlaying = engine.playing;
+  useEffect(() => {
+    if (endAt === null || !enginePlaying) return;
+    const interval = setInterval(() => {
+      const current = engineRef.current;
+      const now = current.now();
+      current.setFade(fadeGain(now, endAt));
+      if (now >= endAt) {
+        current.pause();
+        current.setFade(1);
+      }
+    }, 50);
+    return () => clearInterval(interval);
+  }, [endAt, enginePlaying]);
 
   /* Repasar: repetir la línea actual desde un poco antes de su inicio. */
   const repeatLine = () => {
@@ -565,7 +602,10 @@ export function SongKaraoke({
                 ) : (
                   <div className="flex flex-wrap items-end justify-center gap-y-0.5">
                     {line.segments.map((seg, gi) => (
-                      <span key={gi} className="inline-flex flex-col whitespace-pre text-left">
+                      <span
+                        key={gi}
+                        className="inline-flex flex-col whitespace-pre text-left"
+                      >
                         <span
                           className="font-extrabold leading-normal tracking-[0.01em] text-accent"
                           style={{
@@ -611,7 +651,7 @@ export function SongKaraoke({
       <div className="shrink-0 border-t border-edge bg-[linear-gradient(180deg,transparent_0%,var(--surface-3)_30%)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3 sm:px-6">
         {/* Progreso: el audio sin la intro, o el reloj del autoscroll */}
         <ProgressWave
-          current={Math.max(0, clock - barOffset)}
+          current={Math.max(0, Math.min(clock, total) - barOffset)}
           duration={Math.max(0, total - barOffset)}
           onSeek={(seconds) => seekTo(seconds + barOffset)}
           bars={72}

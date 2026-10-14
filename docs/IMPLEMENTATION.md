@@ -39,7 +39,7 @@ Copiar `.env.example` a `.env.local` (local) y configurar las mismas en Vercel (
 | `playlists` | Playlists del usuario (género, rating "Me gusta" 1–5) | RLS solo dueño |
 | `songs` | Canciones: metadatos + contenido ChordPro (con directiva propia `{strum:}`); `playlist_id` opcional (lista plana); `instruments` (guitar/ukulele/piano, informativo) | RLS solo dueño |
 | `song_audio` | Fuente de audio por canción: YouTube (video id + título) o archivo (ruta en Storage) | RLS solo dueño |
-| `song_sync` | Sincronización: granularidad (línea/palabra) + timestamps JSONB `[{i, t}]` | RLS solo dueño |
+| `song_sync` | Sincronización: granularidad (línea/palabra) + timestamps JSONB `[{i, t}]` + fin opcional `end_at` | RLS solo dueño |
 
 Storage: bucket privado **`audio`** (15 MB máx., solo `audio/mpeg`), políticas por carpeta `audio/<uid>/…`.
 
@@ -53,6 +53,7 @@ Storage: bucket privado **`audio`** (15 MB máx., solo `audio/mpeg`), políticas
 6. `supabase/migrations/00000000000005_instruments_flat_songs.sql` (columna `chords.instrument`, `songs.playlist_id` opcional con `on delete set null`, RLS de inserción/actualización que valida la playlist destino)
 7. `supabase/migrations/00000000000006_song_instruments.sql` (columna `songs.instruments`; ejecutar **antes** de desplegar el código que la usa)
 8. `supabase/migrations/00000000000007_drop_playlist_difficulty.sql` (borra `playlists.rating_difficulty`; ejecutar **después** de desplegar el código que ya no la usa)
+9. `supabase/migrations/00000000000008_sync_end.sql` (columna `song_sync.end_at`; ejecutar **antes** de desplegar el código que la usa)
 
 ### 3.3 Seed del catálogo de acordes
 
@@ -120,8 +121,8 @@ src/components/           UI (fieles al handoff):
   songs-view              Lista plana de canciones con playlists como filtros
   song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets),
                           "Pegar cifrado" y datos de la canción (incl. playlist)
-  song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte. Al retomar a medias, el audio arranca (pausado) en el inicio de la última línea marcada; las marcas pendientes se guardan al salir
-  song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll. Con audio, la intro queda fuera: play, "Al inicio" y los saltos empiezan 3 s antes de la primera línea sincronizada, y la barra cuenta 0:00 desde ahí
+  song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte. Al retomar a medias, el audio arranca (pausado) en el inicio de la última línea marcada; las marcas pendientes se guardan al salir. Con todas las líneas marcadas, ESPACIO marca un fin opcional (sin él, el audio suena completo y la sincronización igual está completa)
+  song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll. Con audio, la intro queda fuera: play, "Al inicio" y los saltos empiezan 3 s antes de la primera línea sincronizada, y la barra cuenta 0:00 desde ahí. Con fin marcado, la barra termina en él y el audio se apaga con un fundido de 2 s y se pausa
   confirm-dialog          Confirmación destructiva estándar (no hay diálogos nativos)
   instrument-toggles      Instrumentos de una canción: selector múltiple e iconos
 src/lib/                  Lógica y acceso a datos:

@@ -89,7 +89,7 @@ export default async function SongPage({
         .maybeSingle<SongAudioRow>(),
       supabase
         .from("song_sync")
-        .select("song_id,granularity,stamps")
+        .select("song_id,granularity,stamps,end_at")
         .eq("song_id", songId)
         .maybeSingle<SongSyncRow>(),
     ]);

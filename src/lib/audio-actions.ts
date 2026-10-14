@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { validateStamps, type SyncStamp } from "./audio";
+import { validateStamps, validateSyncEnd, type SyncStamp } from "./audio";
 import { supabaseWithSession } from "./supabase-server";
 import { parseYouTubeId } from "./youtube";
 
@@ -92,12 +92,14 @@ export async function saveSync(
   songId: string,
   granularity: "line" | "word",
   stamps: SyncStamp[],
+  endAt: number | null,
 ): Promise<ActionResult> {
   if (!isUuid(songId)) return { ok: false, error: "id" };
   if (granularity !== "line" && granularity !== "word") {
     return { ok: false, error: "granularity" };
   }
   if (!validateStamps(stamps)) return { ok: false, error: "stamps" };
+  if (!validateSyncEnd(endAt, stamps)) return { ok: false, error: "end" };
 
   const supabase = await supabaseWithSession();
   const {
@@ -110,6 +112,7 @@ export async function saveSync(
     user_id: user.id,
     granularity,
     stamps,
+    end_at: endAt,
     updated_at: new Date().toISOString(),
   });
   if (error) return { ok: false, error: "db" };

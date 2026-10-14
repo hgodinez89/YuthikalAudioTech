@@ -14,6 +14,8 @@ export type SongSyncRow = {
   song_id: string;
   granularity: "line" | "word";
   stamps: SyncStamp[];
+  /** Fin opcional (s): el karaoke termina ahí. null = hasta el final del audio. */
+  end_at: number | null;
 };
 
 export const MAX_MP3_BYTES = 15 * 1024 * 1024;
@@ -57,6 +59,24 @@ export function clampTime(seconds: number, duration: number): number {
 
 /** Segundos de "pre-roll" al repasar o re-marcar: se escucha la entrada. */
 export const REVIEW_PREROLL = 3;
+
+/** El fin es opcional; si existe, va después de todas las marcas. */
+export function validateSyncEnd(endAt: unknown, stamps: SyncStamp[]): boolean {
+  if (endAt === null) return true;
+  if (typeof endAt !== "number" || !Number.isFinite(endAt) || endAt <= 0) return false;
+  return stamps.every((s) => s.t < endAt);
+}
+
+/** Segundos de fundido antes del fin de la sincronización. */
+export const FADE_SECONDS = 2;
+
+/** Ganancia del fundido final: 1 fuera de la ventana, baja a 0 en el fin. */
+export function fadeGain(now: number, endAt: number | null): number {
+  if (endAt === null) return 1;
+  const left = endAt - now;
+  if (left <= 0) return 0;
+  return Math.min(1, left / FADE_SECONDS);
+}
 
 /**
  * Punto desde donde repasar: unos segundos antes de la última marca anterior

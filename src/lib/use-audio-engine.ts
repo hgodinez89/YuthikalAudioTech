@@ -21,12 +21,15 @@ export type AudioEngine = {
   muted: boolean;
   toggle: () => void;
   play: () => void;
+  pause: () => void;
   seekTo: (seconds: number) => void;
   /** Avanza (positivo) o retrocede (negativo), dentro de la canción. */
   skip: (seconds: number) => void;
   setRate: (rate: number) => void;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
+  /** Fundido (0–1) sobre el volumen elegido, sin cambiarlo. */
+  setFade: (gain: number) => void;
   /** Lectura precisa del reloj en el instante de la marca. */
   now: () => number;
 };
@@ -107,10 +110,12 @@ type Controls = {
   now: () => number;
   toggle: () => void;
   play: () => void;
+  pause: () => void;
   seekTo: (seconds: number) => void;
   setRate: (rate: number) => void;
   setVolume: (volume: number) => void;
   setMuted: (muted: boolean) => void;
+  setFade: (gain: number) => void;
 };
 
 /**
@@ -134,6 +139,9 @@ export function useAudioEngine(
     let cancelled = false;
     const key = sourceKey;
     const start = source.start && source.start > 0 ? source.start : 0;
+    // Volumen que suena = el elegido × el fundido.
+    let volume = 100;
+    let gain = 1;
 
     const patch = (update: Partial<Snapshot>) => {
       if (cancelled) return;
@@ -192,6 +200,7 @@ export function useAudioEngine(
                   else p.playVideo();
                 },
                 play: () => p.playVideo(),
+                pause: () => p.pauseVideo(),
                 seekTo: (seconds) => {
                   p.seekTo(seconds, true);
                   patch({ currentTime: seconds });
@@ -200,9 +209,15 @@ export function useAudioEngine(
                   p.setPlaybackRate(rate);
                   patch({ rate });
                 },
-                setVolume: (volume) => {
-                  p.setVolume(volume);
+                setVolume: (next) => {
+                  volume = next;
+                  p.setVolume(Math.round(volume * gain));
                   patch({ volume });
+                },
+                setFade: (next) => {
+                  if (next === gain) return;
+                  gain = next;
+                  p.setVolume(Math.round(volume * gain));
                 },
                 setMuted: (muted) => {
                   if (muted) p.mute();
@@ -241,6 +256,7 @@ export function useAudioEngine(
           else audio.pause();
         },
         play: () => void audio.play(),
+        pause: () => audio.pause(),
         seekTo: (seconds) => {
           audio.currentTime = seconds;
           patch({ currentTime: seconds });
@@ -249,9 +265,15 @@ export function useAudioEngine(
           audio.playbackRate = rate;
           patch({ rate });
         },
-        setVolume: (volume) => {
-          audio.volume = volume / 100;
+        setVolume: (next) => {
+          volume = next;
+          audio.volume = (volume / 100) * gain;
           patch({ volume });
+        },
+        setFade: (next) => {
+          if (next === gain) return;
+          gain = next;
+          audio.volume = (volume / 100) * gain;
         },
         setMuted: (muted) => {
           audio.muted = muted;
@@ -306,6 +328,7 @@ export function useAudioEngine(
     now: () => controls?.now() ?? 0,
     toggle: () => controls?.toggle(),
     play: () => controls?.play(),
+    pause: () => controls?.pause(),
     seekTo: (seconds) => controls?.seekTo(clampTime(seconds, duration)),
     skip: (seconds) => {
       if (!controls) return;
@@ -318,5 +341,6 @@ export function useAudioEngine(
       if (muted && volume > 0) controls?.setMuted(false);
     },
     toggleMute: () => controls?.setMuted(!muted),
+    setFade: (gain) => controls?.setFade(Math.min(1, Math.max(0, gain))),
   };
 }

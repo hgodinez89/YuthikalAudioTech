@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseWithSession } from "./supabase-server";
-import { validateStamps, type SongAudioRow, type SongSyncRow } from "./audio";
+import {
+  validateStamps,
+  validateSyncEnd,
+  type SongAudioRow,
+  type SongSyncRow,
+} from "./audio";
 import {
   MAX_CONTENT_LENGTH,
   normalizeInclude,
@@ -148,7 +153,7 @@ export async function duplicateSong(
   const { data: source } = await supabase
     .from("songs")
     .select(
-      "content,audio:song_audio(source,youtube_id,youtube_title,file_path),sync:song_sync(granularity,stamps)",
+      "content,audio:song_audio(source,youtube_id,youtube_title,file_path),sync:song_sync(granularity,stamps,end_at)",
     )
     .eq("id", sourceId)
     .maybeSingle<{
@@ -211,6 +216,9 @@ export async function duplicateSong(
       user_id: user.id,
       granularity: source.sync.granularity,
       stamps: source.sync.stamps,
+      end_at: validateSyncEnd(source.sync.end_at, source.sync.stamps)
+        ? source.sync.end_at
+        : null,
     });
     if (error) return undo("db");
   }
