@@ -121,7 +121,7 @@ src/components/           UI (fieles al handoff):
   song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets),
                           "Pegar cifrado" y datos de la canción (incl. playlist)
   song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte
-  song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll
+  song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll. Con audio, play y "Al inicio" saltan la intro (3 s antes de la primera línea sincronizada)
   confirm-dialog          Confirmación destructiva estándar (no hay diálogos nativos)
   instrument-toggles      Instrumentos de una canción: selector múltiple e iconos
 src/lib/                  Lógica y acceso a datos:

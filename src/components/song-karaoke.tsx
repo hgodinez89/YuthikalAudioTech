@@ -35,6 +35,8 @@ const AUDIO_RATES = [0.5, 0.75, 1, 1.25] as const;
 const AUTO_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 /* Repasar: se vuelve un poco antes del inicio de la línea. */
 const REPEAT_PREROLL = 1;
+/* Saltar la intro: se empieza un poco antes de la primera línea sincronizada. */
+const INTRO_PREROLL = 3;
 /* Video flotante entre la cabecera (Ahora/Sigue) y la barra de transporte. */
 const KARAOKE_VIDEO_INSETS: VideoInsets = { top: 132, bottom: 236, bottomMobile: 268 };
 
@@ -308,16 +310,31 @@ export function SongKaraoke({
     .map((line, i) => (line.section ? i : -1))
     .filter((i) => i >= 0);
 
+  /* Desde dónde empezar a tocar: poco antes de la primera línea sincronizada. */
+  const firstStart = lineStarts?.reduce<number | null>(
+    (min, s) => (s !== null && (min === null || s < min) ? s : min),
+    null,
+  );
+  const introEnd =
+    firstStart === null || firstStart === undefined
+      ? 0
+      : Math.max(0, firstStart - INTRO_PREROLL);
+
   const togglePlay = () => {
-    if (variant === "sync") engine.toggle();
-    else {
+    if (variant === "sync") {
+      // Antes de la primera línea, play salta la intro en lugar de esperarla.
+      if (!engine.playing && engine.currentTime < introEnd) {
+        engine.seekTo(introEnd);
+        engine.play();
+      } else engine.toggle();
+    } else {
       if (!autoPlaying && autoT >= autoTotal) setAutoT(0);
       setAutoPlaying((p) => !p);
     }
   };
 
   const restart = () => {
-    if (variant === "sync") engine.seekTo(0);
+    if (variant === "sync") engine.seekTo(introEnd);
     else setAutoT(0);
   };
 
