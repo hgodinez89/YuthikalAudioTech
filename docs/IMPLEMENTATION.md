@@ -116,7 +116,8 @@ src/components/           UI (fieles al handoff):
   piano-keyboard/-chord   Teclado SVG (nombres, dedos, sonido) e inversiones de piano
   fretboard               Mástil SVG (escalas: mástil completo y posiciones)
   scale-picker/-view      Selector de escalas (enlaces) y vista con Notas/Grados y Escuchar
-  chord-finder/-card      Buscador con selector nota + tipo, voz, scroll infinito, FAB
+  chord-finder/-card      Buscador con selector nota + tipo (una o varias), voz, scroll
+                          infinito, FAB
   chord-sheet             Cifrado clásico: acordes sobre sílabas, popovers, leyenda. El renglón salta
                           entre palabras, no en los acordes: `wordGroups` (y `unitGroups` en el editor
                           visual) mantiene juntas las palabras con acorde en medio; el karaoke usa lo mismo
@@ -185,6 +186,7 @@ Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del
 - *Lista plana de canciones*: las playlists son filtros opcionales; borrar una playlist conserva sus canciones. Las playlists mantienen género y doble calificación.
 - *Canción*: Ver (con **Tocar** como acción principal) y Editar en dos pasos, **Letra → Audio** (la antigua "Calibración", ahora "Sincronizar audio"; `?mode=calibrate` sigue funcionando).
 - *Sin pantalla de carga global* (rendimiento/Lighthouse): el título y el contenido se pintan en el primer render, sin el cambio desde "Afinando tu sesión…". Solo `[instrument]/songs` tiene `loading.tsx` (sesión + BD). Por eso las URLs inexistentes responden 404 real; bajo `/songs`, por el streaming, siguen respondiendo HTTP 200 con la UI correcta (404 visual / redirect a login). Los datos jamás se filtran (los guards corren antes de cualquier query).
+- *Selector rápido del buscador*: con **una opción** (por defecto) los botones escriben la búsqueda ("Dom7") y su estado se deriva del texto. Con **Selección múltiple** (interruptor recordado por navegador en localStorage, `yk-finder-multi`) los botones tienen estado propio: varias notas y varios tipos, que se suman dentro de cada fila y se combinan entre filas ((Do o Re) y (m o m7)); la fila de tipos se muestra siempre y un resumen lista lo elegido con "Limpiar". La selección y la búsqueda escrita/dictada se reemplazan entre sí, para que nunca se contradigan. Al activar, lo elegido pasa a la selección; al desactivar se limpia. `fetchChords` solo acepta valores de las listas del selector (`DB_KEYS`, `QUICK_TYPES`).
 - *Rendimiento del buscador*: la primera página de acordes se consulta en el servidor (catálogo público, anon key) y viaja en el HTML; supabase-js se carga de forma diferida (al buscar/paginar y tras hidratar el menú de cuenta, que lee la sesión con `onAuthStateChange` sin ir a la red). Las tarjetas no se prefetchean al entrar en pantalla (solo al pasar el ratón); los logos por tema no se precargan (solo baja el visible); JetBrains Mono no se precarga.
 - *SEO*: el sitio es indexable; `robots.txt` excluye login, auth, api y playlists; el sitemap incluye básicos, buscador, escalas y detalle de acordes por instrumento (las canciones son de cada usuario). Medir Lighthouse en incógnito: la Vercel Toolbar (sesión de Vercel) inyecta un script que la CSP bloquea a propósito.
 - *Pantalla de consentimiento de Google* muestra el dominio de Supabase: comportamiento estándar sin dominio propio; se aceptó (opción A) — cambiarlo requiere el add-on Custom Domain de Supabase + verificación de Google.

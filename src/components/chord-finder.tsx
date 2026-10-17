@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Check,
   ChevronDown,
   ChevronUp,
   Info,
@@ -14,16 +15,25 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { ChordCard } from "./chord-card";
 import {
   fetchChords,
+  QUICK_TYPES,
   type ChordGrouping,
   type ChordPage,
+  type ChordPicks,
   type ChordRow,
 } from "@/lib/chord-query";
 import { chordSlug, composeChordQuery, parseChordQuery } from "@/lib/chord-search";
 import { DB_KEYS, NOTE_LABELS, ROOT_SHORT_ES, type ChordCategory } from "@/lib/chords";
 import type { Instrument } from "@/lib/instruments";
+import { useStoredFlag } from "@/lib/use-stored-flag";
 
-/* Tipos del selector rápido (los más usados), en el orden de aprendizaje. */
-const QUICK_TYPES = ["major", "minor", "7", "m7", "maj7", "sus4", "dim", "aug", "9"];
+const NO_PICKS: ChordPicks = { keys: [], suffixes: [] };
+
+/* Agrega o quita un valor conservando el orden del selector. */
+function togglePick(list: string[], value: string, order: readonly string[]): string[] {
+  return list.includes(value)
+    ? list.filter((v) => v !== value)
+    : order.filter((v) => v === value || list.includes(v));
+}
 
 /* Reconocimiento de voz (Chrome/Edge). Tipado mínimo del API Web Speech. */
 type SpeechRecognitionInstance = {
@@ -84,9 +94,10 @@ async function fetchPage(
   query: string,
   grouping: ChordGrouping,
   offset: number,
+  picks: ChordPicks,
 ): Promise<ChordPage> {
   const { supabaseBrowser } = await import("@/lib/supabase");
-  return fetchChords(supabaseBrowser(), instrument, query, grouping, offset);
+  return fetchChords(supabaseBrowser(), instrument, query, grouping, offset, picks);
 }
 
 function groupRows(rows: ChordRow[], grouping: ChordGrouping) {
@@ -114,6 +125,10 @@ export function ChordFinder({
 
   const [query, setQuery] = useState("");
   const [grouping, setGrouping] = useState<ChordGrouping>("cat");
+  /* Selección múltiple: los botones tienen estado propio y reemplazan la
+     búsqueda escrita (y viceversa). Sin ella, los botones escriben la búsqueda. */
+  const [multi, setMulti] = useStoredFlag("yk-finder-multi", false);
+  const [picks, setPicks] = useState<ChordPicks>(NO_PICKS);
   const [rows, setRows] = useState<ChordRow[]>(initial.rows);
   const [total, setTotal] = useState(initial.total);
   const [loading, setLoading] = useState(false);
@@ -138,15 +153,20 @@ export function ChordFinder({
 
   if (error) throw error; // → error boundary (BD pausada / sin conexión)
 
-  /* Cada cambio de búsqueda/agrupación (con debounce). Sin búsqueda y por
-     categoría se reutiliza la primera página del servidor, sin red ni loader. */
+  const picking = picks.keys.length > 0 || picks.suffixes.length > 0;
+
+  /* Cada cambio de búsqueda/selección/agrupación (con debounce). Sin filtros y
+     por categoría se reutiliza la primera página del servidor, sin red ni loader. */
   useEffect(() => {
     const id = ++requestId.current;
-    const isInitial = !query && grouping === "cat";
+    const isInitial = !query && !picking && grouping === "cat";
     const timer = setTimeout(
       () => {
         if (!isInitial) setLoading(true);
-        (isInitial ? Promise.resolve(initial) : fetchPage(instrument, query, grouping, 0))
+        (isInitial
+          ? Promise.resolve(initial)
+          : fetchPage(instrument, query, grouping, 0, picks)
+        )
           .then((res) => {
             if (requestId.current !== id) return;
             setRows(res.rows);
@@ -155,23 +175,24 @@ export function ChordFinder({
           })
           .catch((e: Error) => requestId.current === id && setError(e));
       },
-      query ? 300 : 0,
+      // varios botones seguidos se agrupan en una sola consulta
+      query ? 300 : picking ? 150 : 0,
     );
     return () => clearTimeout(timer);
-  }, [instrument, initial, query, grouping]);
+  }, [instrument, initial, query, grouping, picks, picking]);
 
   const hasMore = rows.length < total;
 
   const loadMore = useCallback(() => {
     const id = requestId.current;
-    fetchPage(instrument, query, grouping, rows.length)
+    fetchPage(instrument, query, grouping, rows.length, picks)
       .then((res) => {
         if (requestId.current !== id) return;
         setRows((prev) => [...prev, ...res.rows]);
         setTotal(res.total);
       })
       .catch((e: Error) => requestId.current === id && setError(e));
-  }, [instrument, query, grouping, rows.length]);
+  }, [instrument, query, grouping, rows.length, picks]);
 
   /* Scroll infinito: el loader del fondo dispara la siguiente página. */
   useEffect(() => {
@@ -198,6 +219,11 @@ export function ChordFinder({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const search = (text: string) => {
+    setQuery(text);
+    if (text) setPicks(NO_PICKS);
+  };
+
   const toggleMic = () => {
     if (!voiceReady) return;
     if (listening) {
@@ -217,7 +243,7 @@ export function ChordFinder({
       for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript;
       }
-      setQuery(transcript);
+      search(transcript);
     };
     recognition.onend = () => setListening(false);
     recognition.onerror = (event) => {
@@ -231,19 +257,50 @@ export function ChordFinder({
     recognition.start();
   };
 
-  /* Selector rápido: su estado se deriva del texto buscado (sin estado propio). */
+  /* Selector rápido. Una opción: su estado se deriva del texto buscado.
+     Varias: estado propio (picks). */
   const parsedQuery = parseChordQuery(query);
   const activeKey = parsedQuery.kind === "chord" ? parsedQuery.keys[0] : null;
   const activeType =
     parsedQuery.kind === "chord" ? (parsedQuery.suffixes?.[0] ?? null) : null;
-  const pickNote = (key: string) =>
-    setQuery(key === activeKey ? "" : composeChordQuery(key, activeType, locale));
-  const pickType = (suffix: string) =>
-    activeKey &&
-    setQuery(composeChordQuery(activeKey, suffix === activeType ? null : suffix, locale));
+  const noteOn = (key: string) => (multi ? picks.keys.includes(key) : activeKey === key);
+  const typeOn = (suffix: string) =>
+    multi ? picks.suffixes.includes(suffix) : activeType === suffix;
+  const pickNote = (key: string) => {
+    if (multi) {
+      setQuery("");
+      setPicks((p) => ({ ...p, keys: togglePick(p.keys, key, DB_KEYS) }));
+    } else {
+      setQuery(key === activeKey ? "" : composeChordQuery(key, activeType, locale));
+    }
+  };
+  const pickType = (suffix: string) => {
+    if (multi) {
+      setQuery("");
+      setPicks((p) => ({ ...p, suffixes: togglePick(p.suffixes, suffix, QUICK_TYPES) }));
+    } else if (activeKey) {
+      setQuery(
+        composeChordQuery(activeKey, suffix === activeType ? null : suffix, locale),
+      );
+    }
+  };
+  /* Al activar, lo elegido pasa a ser la primera selección; al desactivar se limpia. */
+  const toggleMulti = () => {
+    if (multi) {
+      setPicks(NO_PICKS);
+    } else if (activeKey) {
+      setPicks({ keys: [activeKey], suffixes: activeType ? [activeType] : [] });
+      setQuery("");
+    }
+    setMulti(!multi);
+  };
+
+  const noteLabel = (key: string) => (locale === "es" ? ROOT_SHORT_ES[key] : key);
+  const typeLabel = (suffix: string) =>
+    suffix === "major" || suffix === "minor" ? t(`types.${suffix}`) : suffix;
 
   const groups = groupRows(rows, grouping);
-  const showEmpty = !loading && rows.length === 0 && query.length > 0;
+  const showEmpty = !loading && rows.length === 0 && (query.length > 0 || picking);
 
   return (
     <div className="mx-auto max-w-[1120px] px-5 pb-20 pt-7">
@@ -257,6 +314,32 @@ export function ChordFinder({
 
       {/* SELECTOR RÁPIDO: NOTA → TIPO */}
       <div className="mb-4 flex flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-sub">
+            {t("quickPick")}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={multi}
+            onClick={toggleMulti}
+            title={multi ? t("multiOnHint") : t("multiOffHint")}
+            className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-semibold text-sub hover:text-ink"
+          >
+            {t("multi")}
+            <span
+              className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                multi ? "yk-gradient" : "border border-edge-2 bg-surface-3"
+              }`}
+            >
+              <span
+                className={`absolute top-1/2 size-3.5 -translate-y-1/2 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.35)] transition-[left] ${
+                  multi ? "left-[19px]" : "left-[2px]"
+                }`}
+              />
+            </span>
+          </button>
+        </div>
         <div
           role="group"
           aria-label={t("pickNote")}
@@ -267,18 +350,19 @@ export function ChordFinder({
               key={key}
               type="button"
               onClick={() => pickNote(key)}
-              aria-pressed={activeKey === key}
-              className={
-                activeKey === key
-                  ? "yk-gradient min-w-[46px] shrink-0 cursor-pointer rounded-[10px] px-2.5 py-2 text-[13.5px] font-bold"
-                  : "min-w-[46px] shrink-0 cursor-pointer rounded-[10px] border border-edge bg-surface-2 px-2.5 py-2 text-[13.5px] font-semibold text-sub hover:border-edge-2 hover:text-ink"
-              }
+              aria-pressed={noteOn(key)}
+              className={`inline-flex min-w-[46px] shrink-0 cursor-pointer items-center justify-center gap-1 rounded-[10px] px-2.5 py-2 text-[13.5px] ${
+                noteOn(key)
+                  ? "yk-gradient font-bold"
+                  : "border border-edge bg-surface-2 font-semibold text-sub hover:border-edge-2 hover:text-ink"
+              }`}
             >
-              {locale === "es" ? ROOT_SHORT_ES[key] : key}
+              {multi && noteOn(key) && <Check size={13} strokeWidth={3} />}
+              {noteLabel(key)}
             </button>
           ))}
         </div>
-        {activeKey && (
+        {(multi || activeKey) && (
           <div
             role="group"
             aria-label={t("pickType")}
@@ -289,16 +373,55 @@ export function ChordFinder({
                 key={suffix}
                 type="button"
                 onClick={() => pickType(suffix)}
-                aria-pressed={activeType === suffix}
-                className={
-                  activeType === suffix
-                    ? "shrink-0 cursor-pointer rounded-full border border-accent bg-accent/15 px-3.5 py-1.5 text-[13px] font-bold text-accent"
-                    : "shrink-0 cursor-pointer rounded-full border border-edge bg-surface-2 px-3.5 py-1.5 text-[13px] font-semibold text-sub hover:text-ink"
-                }
+                aria-pressed={typeOn(suffix)}
+                className={`inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-3.5 py-1.5 text-[13px] ${
+                  typeOn(suffix)
+                    ? "border-accent bg-accent/15 font-bold text-accent"
+                    : "border-edge bg-surface-2 font-semibold text-sub hover:text-ink"
+                }`}
               >
-                {suffix === "major" || suffix === "minor" ? t(`types.${suffix}`) : suffix}
+                {multi && typeOn(suffix) && <Check size={12} strokeWidth={3} />}
+                {typeLabel(suffix)}
               </button>
             ))}
+          </div>
+        )}
+        {/* RESUMEN DE LA SELECCIÓN MÚLTIPLE (en móvil las filas se desplazan
+            y parte de lo elegido puede quedar fuera de vista) */}
+        {multi && picking && (
+          <div
+            aria-live="polite"
+            className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-sub"
+          >
+            {picks.keys.length > 0 && (
+              <span>
+                <span className="font-semibold text-ink">
+                  {t("pickedNotes", { count: picks.keys.length })}
+                </span>
+                {": "}
+                {picks.keys.map(noteLabel).join(", ")}
+              </span>
+            )}
+            {picks.keys.length > 0 && picks.suffixes.length > 0 && (
+              <span className="text-tert">·</span>
+            )}
+            {picks.suffixes.length > 0 && (
+              <span>
+                <span className="font-semibold text-ink">
+                  {t("pickedTypes", { count: picks.suffixes.length })}
+                </span>
+                {": "}
+                {picks.suffixes.map(typeLabel).join(", ")}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setPicks(NO_PICKS)}
+              className="inline-flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 font-semibold text-accent hover:bg-accent/10"
+            >
+              <X size={13} strokeWidth={2.4} />
+              {t("clearPicks")}
+            </button>
           </div>
         )}
       </div>
@@ -313,7 +436,7 @@ export function ChordFinder({
           />
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => search(e.target.value)}
             placeholder={t("searchPlaceholder")}
             className="h-[54px] w-full rounded-[14px] border border-edge bg-surface-2 px-[46px] text-base text-ink outline-none transition-shadow focus:border-accent focus:shadow-[0_0_0_3px_rgba(53,214,232,0.14)] dark:bg-surface-2"
           />
@@ -445,8 +568,12 @@ export function ChordFinder({
       {showEmpty && (
         <div className="px-5 py-[70px] text-center text-tert">
           <Search size={42} strokeWidth={1.6} className="mx-auto mb-3.5 text-edge-2" />
-          <div className="font-semibold text-ink">{t("empty", { query })}</div>
-          <div className="mt-1.5 text-[13.5px]">{t("emptyHint")}</div>
+          <div className="font-semibold text-ink">
+            {query ? t("empty", { query }) : t("emptyPicks")}
+          </div>
+          <div className="mt-1.5 text-[13.5px]">
+            {query ? t("emptyHint") : t("emptyPicksHint")}
+          </div>
         </div>
       )}
 

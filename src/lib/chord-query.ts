@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ChordCardData } from "@/components/chord-card";
 import { escapeLike, parseChordQuery } from "./chord-search";
-import type { ChordCategory } from "./chords";
+import { DB_KEYS, type ChordCategory } from "./chords";
 import { catalogInstrument, isFretted, type Instrument } from "./instruments";
 import { PIANO_SUFFIXES, pianoRootKeys } from "./piano";
 
@@ -17,6 +17,22 @@ export type ChordPage = { rows: ChordRow[]; total: number };
 
 export type ChordGrouping = "cat" | "note";
 
+/* Tipos del selector rápido (los más usados), en el orden de aprendizaje. */
+export const QUICK_TYPES = [
+  "major",
+  "minor",
+  "7",
+  "m7",
+  "maj7",
+  "sus4",
+  "dim",
+  "aug",
+  "9",
+];
+
+/** Selección múltiple del selector rápido: notas OR, tipos OR, ambas filas AND. */
+export type ChordPicks = { keys: string[]; suffixes: string[] };
+
 /**
  * Una página del buscador de acordes. Sirve en servidor (primera página,
  * `supabaseServer()`) y en cliente (búsqueda y scroll, `supabaseBrowser()`).
@@ -27,6 +43,7 @@ export async function fetchChords(
   rawQuery: string,
   grouping: ChordGrouping,
   offset: number,
+  picks?: ChordPicks,
 ): Promise<ChordPage> {
   const parsed = parseChordQuery(rawQuery);
   let qb = client
@@ -46,6 +63,12 @@ export async function fetchChords(
   } else if (parsed.kind === "text") {
     qb = qb.ilike("search_text", `%${escapeLike(parsed.text)}%`);
   }
+  // Solo valores del selector: nada del usuario llega como texto libre.
+  const keys =
+    picks?.keys.filter((k) => (DB_KEYS as readonly string[]).includes(k)) ?? [];
+  const suffixes = picks?.suffixes.filter((s) => QUICK_TYPES.includes(s)) ?? [];
+  if (keys.length) qb = qb.in("key", keys);
+  if (suffixes.length) qb = qb.in("suffix", suffixes);
 
   qb =
     grouping === "cat"

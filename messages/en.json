@@ -450,6 +450,15 @@
     },
     "pickNote": "Pick a note",
     "pickType": "Pick a chord type",
+    "quickPick": "Quick filter",
+    "multi": "Multiple selection",
+    "multiOffHint": "Pick several notes and types at once",
+    "multiOnHint": "Back to a single note and type (clears the selection)",
+    "pickedNotes": "{count, plural, one {1 note} other {# notes}}",
+    "pickedTypes": "{count, plural, one {1 type} other {# types}}",
+    "clearPicks": "Clear",
+    "emptyPicks": "No chords match that combination",
+    "emptyPicksHint": "Try adding another note or removing a type.",
     "types": {
       "major": "Major",
       "minor": "minor"

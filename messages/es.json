@@ -450,6 +450,15 @@
     },
     "pickNote": "Elegir nota",
     "pickType": "Elegir tipo de acorde",
+    "quickPick": "Filtro rápido",
+    "multi": "Selección múltiple",
+    "multiOffHint": "Elige varias notas y tipos a la vez",
+    "multiOnHint": "Volver a una sola nota y tipo (limpia la selección)",
+    "pickedNotes": "{count, plural, one {1 nota} other {# notas}}",
+    "pickedTypes": "{count, plural, one {1 tipo} other {# tipos}}",
+    "clearPicks": "Limpiar",
+    "emptyPicks": "Ningún acorde con esa combinación",
+    "emptyPicksHint": "Prueba agregando otra nota o quitando algún tipo.",
     "types": {
       "major": "Mayor",
       "minor": "menor"
