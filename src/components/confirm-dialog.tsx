@@ -15,6 +15,7 @@ export function ConfirmDialog({
   confirmLabel,
   confirmIcon,
   pending = false,
+  error = null,
   onCancel,
   onConfirm,
 }: {
@@ -25,6 +26,8 @@ export function ConfirmDialog({
   confirmLabel: string;
   confirmIcon?: ReactNode;
   pending?: boolean;
+  /** Fallo al confirmar (el diálogo sigue abierto para reintentar). */
+  error?: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -54,6 +57,11 @@ export function ConfirmDialog({
         </div>
         <h2 className="mb-3 text-[19px] font-extrabold tracking-[-0.01em]">{title}</h2>
         <p className="mb-7 text-[14.5px] leading-[1.55] text-sub">{message}</p>
+        {error && (
+          <p role="alert" className="-mt-3 mb-5 text-[13px] font-semibold text-warn">
+            {error}
+          </p>
+        )}
         <div className="flex justify-center gap-2.5">
           <button
             type="button"

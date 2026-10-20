@@ -9,7 +9,7 @@ import { SongCalibration } from "@/components/song-calibration";
 import { SongInstruments } from "@/components/instrument-toggles";
 import { SongEditor } from "@/components/song-editor";
 import { SongKaraoke } from "@/components/song-karaoke";
-import type { SongAudioRow, SongSyncRow } from "@/lib/audio";
+import { reconcileSync, type SongAudioRow, type SongSyncRow } from "@/lib/audio";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
 import { loadChordData } from "@/lib/chord-data";
 import type { Instrument } from "@/lib/instruments";
@@ -80,6 +80,8 @@ export default async function SongPage({
 
   let audio: SongAudioRow | null = null;
   let sync: SongSyncRow | null = null;
+  /* Objetivos nuevos sin marca porque la letra cambió después de sincronizar. */
+  let syncMissing = 0;
   if (step === "audio" || mode === "karaoke") {
     const [audioRes, syncRes] = await Promise.all([
       supabase
@@ -89,12 +91,16 @@ export default async function SongPage({
         .maybeSingle<SongAudioRow>(),
       supabase
         .from("song_sync")
-        .select("song_id,granularity,stamps,end_at")
+        .select("song_id,granularity,stamps,targets,end_at")
         .eq("song_id", songId)
-        .maybeSingle<SongSyncRow>(),
+        .maybeSingle<SongSyncRow & { targets: string[] | null }>(),
     ]);
     audio = audioRes.data;
-    sync = syncRes.data;
+    if (syncRes.data) {
+      const reconciled = reconcileSync(syncRes.data, song.content);
+      sync = reconciled.sync;
+      syncMissing = reconciled.missing;
+    }
   }
 
   const playlists =
@@ -260,7 +266,14 @@ export default async function SongPage({
       )}
 
       {mode === "edit" && step === "audio" && (
-        <SongCalibration song={song} audio={audio} sync={sync} />
+        // Cambiar de audio borra la sincronización: la clave remonta con el estado nuevo.
+        <SongCalibration
+          key={audio ? (audio.youtube_id ?? audio.file_path) : "none"}
+          song={song}
+          audio={audio}
+          sync={sync}
+          syncMissing={syncMissing}
+        />
       )}
 
       {mode === "karaoke" &&
@@ -269,6 +282,7 @@ export default async function SongPage({
             song={song}
             audio={audio}
             sync={sync}
+            syncMissing={syncMissing}
             chords={chordData}
             exitHref={songUrl}
             syncHref={`${songUrl}?mode=edit&step=audio`}

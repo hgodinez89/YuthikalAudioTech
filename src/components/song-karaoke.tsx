@@ -137,10 +137,13 @@ export function SongKaraoke({
   chords,
   exitHref,
   syncHref,
+  syncMissing = 0,
 }: {
   song: SongRow;
   audio: SongAudioRow | null;
   sync: SongSyncRow | null;
+  /** Líneas nuevas sin marca (la letra cambió después de sincronizar). */
+  syncMissing?: number;
   chords: ChordDataMap;
   exitHref: string;
   /** Paso "Audio" del editor, para sincronizar desde el aviso sin calibración. */
@@ -664,6 +667,16 @@ export function SongKaraoke({
           bars={72}
           className="mx-auto mb-1.5 max-w-[640px]"
         />
+        {variant === "sync" && syncMissing > 0 && (
+          <div className="mb-2 flex flex-wrap items-center justify-center gap-[7px] text-xs text-warn">
+            <Info size={14} strokeWidth={2} />
+            {t("syncDrift", { count: syncMissing })}
+            <span aria-hidden>·</span>
+            <Link href={syncHref} className="font-semibold text-accent hover:underline">
+              {t("syncReview")}
+            </Link>
+          </div>
+        )}
         {variant === "auto" && (
           <div className="mb-2 flex items-center justify-center gap-[7px] text-xs text-tert">
             <Info size={14} strokeWidth={2} />

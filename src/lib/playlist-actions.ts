@@ -48,7 +48,7 @@ export async function updatePlaylist(
 
   const supabase = await supabaseWithSession();
   // RLS: solo el dueño puede actualizar.
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("playlists")
     .update({
       name: input.name.trim(),
@@ -58,8 +58,11 @@ export async function updatePlaylist(
       rating_like: input.ratingLike,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) return { ok: false, error: "db" };
+  // Sin filas: la playlist ya no existe o no es del usuario (RLS).
+  if (!data?.length) return { ok: false, error: "missing" };
 
   revalidateSongs();
   return { ok: true };
@@ -71,8 +74,13 @@ export async function deletePlaylist(id: string): Promise<ActionResult> {
   const supabase = await supabaseWithSession();
   // RLS garantiza que solo el dueño puede borrar su fila; sus canciones se
   // conservan sin playlist (FK on delete set null).
-  const { error } = await supabase.from("playlists").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("playlists")
+    .delete()
+    .eq("id", id)
+    .select("id");
   if (error) return { ok: false, error: "db" };
+  if (!data?.length) return { ok: false, error: "missing" };
 
   revalidateSongs();
   return { ok: true };

@@ -644,6 +644,37 @@ export function syncPlan(content: string, granularity: "line" | "word"): SyncPas
   return plan;
 }
 
+/**
+ * Huella de la sincronización: el texto de cada objetivo en el mismo orden
+ * que `syncPlan` (línea completa o palabra, más su vuelta). Si la letra cambia,
+ * comparar huellas dice qué marcas siguen valiendo.
+ */
+export function syncTargets(content: string, granularity: "line" | "word"): string[] {
+  const keys: string[] = [];
+  for (const section of buildVisualModel(content)) {
+    for (const lyric of section.lines) {
+      const passes = lyric.instrumental?.repeat ?? 1;
+      const words = lyric.instrumental
+        ? lyric.instrumental.tokens.flatMap((tk) =>
+            tk.kind === "chord" ? [tk.chord] : [],
+          )
+        : lyric.units.filter((u) => u.text).map((u) => u.text);
+      const lineText = lyric.instrumental
+        ? words.join(" ")
+        : lyric.units
+            .map((u) => (u.spaceAfter ? `${u.text} ` : u.text))
+            .join("")
+            .trim();
+      for (let pass = 1; pass <= passes; pass++) {
+        if (granularity === "line" || words.length === 0)
+          keys.push(`${lineText}#${pass}`);
+        else for (const word of words) keys.push(`${word}#${pass}`);
+      }
+    }
+  }
+  return keys;
+}
+
 /** Acordes únicos de la canción, en orden de aparición. */
 export function collectChords(song: ParsedSong): string[] {
   const seen = new Set<string>();

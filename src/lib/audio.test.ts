@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   clampTime,
   fadeGain,
+  nextUnmarked,
+  reconcileSync,
+  remapStamps,
   resumePoint,
   reviewStart,
   stepRate,
   validateSyncEnd,
 } from "./audio";
+import { syncTargets } from "./chordpro";
 
 describe("clampTime", () => {
   it("limita entre 0 y la duración", () => {
@@ -107,6 +111,116 @@ describe("validateSyncEnd", () => {
     expect(validateSyncEnd(-3, [])).toBe(false);
     expect(validateSyncEnd(0, [])).toBe(false);
     expect(validateSyncEnd("30", [])).toBe(false);
+  });
+
+  it("como máximo 24 h", () => {
+    expect(validateSyncEnd(86400, [])).toBe(true);
+    expect(validateSyncEnd(86401, [])).toBe(false);
+  });
+});
+
+describe("remapStamps — la letra cambió después de sincronizar", () => {
+  const stamps = (...times: number[]) => times.map((t, i) => ({ i, t }));
+
+  it("misma cantidad de objetivos (errata corregida): todo se conserva", () => {
+    const result = remapStamps(
+      ["a#1", "b#1", "c#1"],
+      ["a#1", "B#1", "c#1"],
+      stamps(1, 2, 3),
+    );
+    expect(result).toEqual({ stamps: stamps(1, 2, 3), missing: 0 });
+  });
+
+  it("línea nueva en medio: se conservan inicio y final, falta solo la nueva", () => {
+    const result = remapStamps(
+      ["a#1", "b#1", "c#1"],
+      ["a#1", "b#1", "nueva#1", "c#1"],
+      stamps(1, 2, 3),
+    );
+    expect(result).toEqual({
+      stamps: [
+        { i: 0, t: 1 },
+        { i: 1, t: 2 },
+        { i: 3, t: 3 },
+      ],
+      missing: 1,
+    });
+  });
+
+  it("línea borrada: las siguientes se corren hacia atrás", () => {
+    const result = remapStamps(["a#1", "b#1", "c#1"], ["a#1", "c#1"], stamps(1, 2, 3));
+    expect(result).toEqual({
+      stamps: [
+        { i: 0, t: 1 },
+        { i: 1, t: 3 },
+      ],
+      missing: 0,
+    });
+  });
+
+  it("líneas agregadas al final: quedan por marcar", () => {
+    const result = remapStamps(
+      ["a#1", "b#1"],
+      ["a#1", "b#1", "c#1", "d#1"],
+      stamps(1, 2),
+    );
+    expect(result).toEqual({ stamps: stamps(1, 2), missing: 2 });
+  });
+
+  it("sin huella (sincronización anterior): se descartan solo las que ya no existen", () => {
+    const result = remapStamps(null, ["a#1", "b#1"], stamps(1, 2, 3));
+    expect(result).toEqual({ stamps: stamps(1, 2), missing: 0 });
+  });
+});
+
+describe("reconcileSync", () => {
+  it("reubica contra la letra actual y quita la huella del resultado", () => {
+    const before = "[[Verse]]\nUno\nTres";
+    const after = "[[Verse]]\nUno\nDos\nTres";
+    const { sync, missing } = reconcileSync(
+      {
+        song_id: "s",
+        granularity: "line",
+        stamps: [
+          { i: 0, t: 5 },
+          { i: 1, t: 9 },
+        ],
+        targets: syncTargets(before, "line"),
+        end_at: 12,
+      },
+      after,
+    );
+    expect(missing).toBe(1);
+    expect(sync).toEqual({
+      song_id: "s",
+      granularity: "line",
+      stamps: [
+        { i: 0, t: 5 },
+        { i: 2, t: 9 },
+      ],
+      end_at: 12,
+    });
+  });
+});
+
+describe("nextUnmarked", () => {
+  it("avanza al siguiente libre sin pisar los marcados", () => {
+    const marked = new Map([
+      [0, 1],
+      [1, 2],
+      [3, 4],
+    ]);
+    expect(nextUnmarked(marked, 1, 5)).toBe(2);
+    expect(nextUnmarked(new Map([...marked, [2, 3]]), 2, 5)).toBe(4);
+  });
+
+  it("vuelve al primer hueco anterior; todo marcado → total", () => {
+    const marked = new Map([
+      [1, 2],
+      [2, 3],
+    ]);
+    expect(nextUnmarked(marked, 2, 3)).toBe(0);
+    expect(nextUnmarked(new Map([...marked, [0, 1]]), 0, 3)).toBe(3);
   });
 });
 

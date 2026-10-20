@@ -24,21 +24,23 @@ import {
   formatStamp,
   formatTime,
   MAX_MP3_BYTES,
+  MP3_ENABLED,
+  nextUnmarked,
   REVIEW_PREROLL,
   resumePoint,
   reviewStart,
   stepRate,
   type SongAudioRow,
   type SongSyncRow,
-  type SyncStamp,
 } from "@/lib/audio";
 import { saveSync, setFileAudio, setYouTubeAudio } from "@/lib/audio-actions";
 import { buildVisualModel, syncPlan, type SectionType } from "@/lib/chordpro";
 import type { SongRow } from "@/lib/songs";
 import { supabaseBrowser } from "@/lib/supabase";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
+import { useAutosave } from "@/lib/use-autosave";
 import { usePlayerShortcuts } from "@/lib/use-player-shortcuts";
-import { youtubeThumbnail } from "@/lib/youtube";
+import { parseYouTubeId, youtubeThumbnail } from "@/lib/youtube";
 import { useStoredFlag } from "@/lib/use-stored-flag";
 
 /* Alto del header del sitio (sticky): límite superior de la zona visible. */
@@ -106,10 +108,13 @@ export function SongCalibration({
   song,
   audio,
   sync,
+  syncMissing = 0,
 }: {
   song: SongRow;
   audio: SongAudioRow | null;
   sync: SongSyncRow | null;
+  /** Objetivos nuevos sin marca: la letra cambió después de sincronizar. */
+  syncMissing?: number;
 }) {
   const t = useTranslations("calibration");
   const tSongView = useTranslations("songView");
@@ -118,6 +123,8 @@ export function SongCalibration({
   const [sourceTab, setSourceTab] = useState<"youtube" | "file">(
     audio?.source ?? "youtube",
   );
+  /* Subida de MP3 en "Próximamente": la pestaña solo se abre si ya hay un MP3. */
+  const fileTabEnabled = MP3_ENABLED || audio?.source === "file";
   const [urlInput, setUrlInput] = useState("");
   const [sourceError, setSourceError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -132,10 +139,7 @@ export function SongCalibration({
   );
   /* Fin opcional: el karaoke termina ahí; sin él, suena hasta el final. */
   const [endAt, setEndAt] = useState<number | null>(sync?.end_at ?? null);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
-    "idle",
-  );
-  const [confirm, setConfirm] = useState<"reset" | "granularity" | null>(null);
+  const [confirm, setConfirm] = useState<"reset" | "granularity" | "source" | null>(null);
   const pendingGranularity = useRef<"line" | "word">("line");
 
   const sectionTitle = useCallback(
@@ -241,49 +245,29 @@ export function SongCalibration({
     });
   }, [cursor]);
 
-  /* Autosave de timestamps (debounce). Lo pendiente queda en un ref para
-     guardarlo igual si se sale de la pantalla antes de que venza. */
-  const dirtyRef = useRef(false);
-  const pendingSave = useRef<{
-    granularity: "line" | "word";
-    list: SyncStamp[];
-    endAt: number | null;
-  } | null>(null);
-  useEffect(() => {
-    if (!dirtyRef.current) return;
-    const pending = {
+  /* Autosave de las marcas (debounce): guarda también al salir de la pantalla
+     y avisa si se cierra la pestaña con marcas sin guardar. */
+  const [touched, setTouched] = useState(false);
+  const syncValue = useMemo(
+    () => ({
       granularity,
       list: [...stamps.entries()]
         .map(([i, tt]) => ({ i, t: tt }))
         .sort((a, b) => a.i - b.i),
       endAt,
-    };
-    pendingSave.current = pending;
-    const timer = setTimeout(async () => {
-      pendingSave.current = null;
-      setSaveState("saving");
-      const result = await saveSync(
-        song.id,
-        pending.granularity,
-        pending.list,
-        pending.endAt,
-      );
-      setSaveState(result.ok ? "saved" : "error");
+    }),
+    [stamps, granularity, endAt],
+  );
+  const autosave = useAutosave({
+    value: syncValue,
+    dirty: touched,
+    delay: 800,
+    save: async (value) => {
+      const result = await saveSync(song.id, value.granularity, value.list, value.endAt);
       if (result.ok) router.refresh();
-    }, 800);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stamps, granularity, endAt, song.id]);
-
-  useEffect(() => {
-    const songId = song.id;
-    return () => {
-      const pending = pendingSave.current;
-      if (pending) {
-        void saveSync(songId, pending.granularity, pending.list, pending.endAt);
-      }
-    };
-  }, [song.id]);
+      return result;
+    },
+  });
 
   /* Todas las líneas marcadas: la siguiente marca (opcional) es el fin. */
   const allMarked = totalTargets > 0 && cursor >= totalTargets;
@@ -295,13 +279,16 @@ export function SongCalibration({
     const time = Math.round(engine.now() * 10) / 10;
     if (allMarked) {
       if (!endPending || time <= lastStamp) return;
-      dirtyRef.current = true;
+      setTouched(true);
       setEndAt(time);
       return;
     }
-    dirtyRef.current = true;
-    setStamps((prev) => new Map(prev).set(cursor, time));
-    setCursor((c) => Math.min(c + 1, totalTargets));
+    setTouched(true);
+    const next = new Map(stamps).set(cursor, time);
+    setStamps(next);
+    // Sigue en el próximo objetivo libre: una línea re-marcada (o nueva tras
+    // editar la letra) no pisa las que ya estaban marcadas.
+    setCursor(nextUnmarked(next, cursor, totalTargets));
     // Una línea marcada en el fin o después lo invalida.
     if (endAt !== null && time >= endAt) setEndAt(null);
   };
@@ -309,7 +296,7 @@ export function SongCalibration({
   /* Re-marcar el fin: se borra y se vuelve a escuchar un poco antes. */
   const remarkEnd = () => {
     if (endAt === null) return;
-    dirtyRef.current = true;
+    setTouched(true);
     setEndAt(null);
     setEndSkipped(false);
     if (engine.ready) {
@@ -319,7 +306,7 @@ export function SongCalibration({
   };
   /* Quitar el fin: queda resuelto como "hasta el final del audio". */
   const removeEnd = () => {
-    dirtyRef.current = true;
+    setTouched(true);
     setEndAt(null);
     setEndSkipped(true);
   };
@@ -360,7 +347,7 @@ export function SongCalibration({
   /* Re-marcar: borra las marcas de la fila y la vuelve a escuchar desde un
      poco antes de la marca anterior, para no tener que buscarla a mano. */
   const remarkLine = (row: Extract<Row, { kind: "line" }>) => {
-    dirtyRef.current = true;
+    setTouched(true);
     const next = new Map(stamps);
     for (let i = 0; i < row.targetCount; i++) next.delete(row.firstTarget + i);
     setStamps(next);
@@ -369,7 +356,7 @@ export function SongCalibration({
   };
 
   const applyReset = () => {
-    dirtyRef.current = true;
+    setTouched(true);
     setStamps(new Map());
     setEndAt(null);
     setEndSkipped(false);
@@ -389,13 +376,29 @@ export function SongCalibration({
     setCursor(0);
   };
 
+  /* Conectar otro audio borra la sincronización (sus tiempos son de otra
+     grabación): con marcas, se confirma antes. */
+  const requestYouTube = () => {
+    const videoId = parseYouTubeId(urlInput);
+    const replaces =
+      audio !== null && (audio.source !== "youtube" || audio.youtube_id !== videoId);
+    if (videoId && replaces && (stamps.size > 0 || endAt !== null)) {
+      setConfirm("source");
+      return;
+    }
+    void connectYouTube();
+  };
+
   const connectYouTube = async () => {
+    setConfirm(null);
     setConnecting(true);
     setSourceError(null);
-    const result = await setYouTubeAudio(song.id, urlInput);
+    // Lo pendiente era del audio anterior: no debe guardarse al remontar.
+    autosave.discard();
+    const result = await setYouTubeAudio(song.id, urlInput).catch(() => null);
     setConnecting(false);
-    if (!result.ok) {
-      setSourceError(t(`errors.${result.error}`));
+    if (!result?.ok) {
+      setSourceError(t(`errors.${result?.error ?? "network"}`));
       return;
     }
     setUrlInput("");
@@ -431,10 +434,10 @@ export function SongCalibration({
       setSourceError(t("errors.upload"));
       return;
     }
-    const result = await setFileAudio(song.id, path);
+    const result = await setFileAudio(song.id, path).catch(() => null);
     setUploading(false);
-    if (!result.ok) {
-      setSourceError(t(`errors.${result.error}`));
+    if (!result?.ok) {
+      setSourceError(t(`errors.${result?.error ?? "network"}`));
       return;
     }
     setFileUrl(null); // se regenerará la URL firmada
@@ -475,20 +478,31 @@ export function SongCalibration({
           </div>
           <div className="p-4">
             <div className="mb-3.5 flex rounded-[10px] border border-edge bg-surface-3 p-1 text-[13px] font-semibold">
-              {(["youtube", "file"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setSourceTab(tab)}
-                  className={
-                    sourceTab === tab
-                      ? "yk-gradient flex-1 cursor-pointer rounded-lg py-[7px]"
-                      : "flex-1 cursor-pointer rounded-lg py-[7px] text-sub"
-                  }
-                >
-                  {tab === "youtube" ? "YouTube" : t("fileTab")}
-                </button>
-              ))}
+              {(["youtube", "file"] as const).map((tab) => {
+                const disabled = tab === "file" && !fileTabEnabled;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setSourceTab(tab)}
+                    disabled={disabled}
+                    aria-pressed={sourceTab === tab}
+                    title={disabled ? t("fileSoonHint") : undefined}
+                    className={
+                      sourceTab === tab
+                        ? "yk-gradient flex-1 cursor-pointer rounded-lg py-[7px]"
+                        : "inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg py-[7px] text-sub disabled:cursor-not-allowed disabled:text-disabled"
+                    }
+                  >
+                    {tab === "youtube" ? "YouTube" : t("fileTab")}
+                    {disabled && (
+                      <span className="rounded-full border border-edge-2 px-1.5 py-px text-[10px] font-bold uppercase tracking-[0.06em] text-tert">
+                        {t("soon")}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {sourceTab === "youtube" && (
@@ -502,13 +516,13 @@ export function SongCalibration({
                   <input
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && connectYouTube()}
+                    onKeyDown={(e) => e.key === "Enter" && requestYouTube()}
                     placeholder={t("urlPlaceholder")}
                     className="h-10 w-full rounded-[10px] border border-edge bg-surface-2 pl-9 pr-20 text-[13px] text-ink outline-none focus:border-accent"
                   />
                   <button
                     type="button"
-                    onClick={connectYouTube}
+                    onClick={requestYouTube}
                     disabled={connecting || !urlInput.trim()}
                     className="yk-gradient absolute right-1.5 cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-bold disabled:opacity-50"
                   >
@@ -550,30 +564,35 @@ export function SongCalibration({
 
             {sourceTab === "file" && (
               <div>
-                <label
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const file = e.dataTransfer.files[0];
-                    if (file) void uploadFile(file);
-                  }}
-                  className="flex cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border-[1.5px] border-dashed border-edge-2 bg-surface-2 px-4 py-7 text-center hover:border-accent"
-                >
-                  <input
-                    type="file"
-                    accept="audio/mpeg,.mp3"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
+                {!MP3_ENABLED && (
+                  <p className="mb-3 text-[12.5px] text-tert">{t("fileSoonHint")}</p>
+                )}
+                {MP3_ENABLED && (
+                  <label
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files[0];
                       if (file) void uploadFile(file);
                     }}
-                  />
-                  <Upload size={28} strokeWidth={1.8} className="text-accent" />
-                  <div className="text-[13.5px] font-semibold">
-                    {uploading ? t("uploading") : t("dropTitle")}
-                  </div>
-                  <div className="text-xs text-tert">{t("dropHint")}</div>
-                </label>
+                    className="flex cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border-[1.5px] border-dashed border-edge-2 bg-surface-2 px-4 py-7 text-center hover:border-accent"
+                  >
+                    <input
+                      type="file"
+                      accept="audio/mpeg,.mp3"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void uploadFile(file);
+                      }}
+                    />
+                    <Upload size={28} strokeWidth={1.8} className="text-accent" />
+                    <div className="text-[13.5px] font-semibold">
+                      {uploading ? t("uploading") : t("dropTitle")}
+                    </div>
+                    <div className="text-xs text-tert">{t("dropHint")}</div>
+                  </label>
+                )}
                 {audio?.source === "file" && audio.file_path && (
                   <div className="mt-3 flex items-center gap-3 rounded-xl border border-edge-2 bg-surface-2 p-2.5">
                     <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
@@ -696,6 +715,16 @@ export function SongCalibration({
           </span>
         </button>
 
+        {syncMissing > 0 && (
+          <p
+            role="status"
+            className="mb-3 flex items-start gap-2 rounded-xl border border-warn/40 bg-warn/10 px-3.5 py-2.5 text-[12.5px] font-semibold text-warn"
+          >
+            <TriangleAlert size={14} strokeWidth={2.2} className="mt-px shrink-0" />
+            {t("driftNotice", { count: syncMissing })}
+          </p>
+        )}
+
         {/* retomar + estado de guardado */}
         <div className="mb-3 flex justify-end gap-3 text-[12px] font-semibold">
           {showResume && resume && (
@@ -704,16 +733,30 @@ export function SongCalibration({
               {t("resumeFrom", { time: formatTime(resume.at) })}
             </span>
           )}
-          {saveState === "saving" && <span className="text-sub">{t("saving")}</span>}
-          {saveState === "saved" && (
-            <span className="inline-flex items-center gap-1 text-accent">
-              <Check size={13} strokeWidth={2.5} /> {t("saved")}
-            </span>
-          )}
-          {saveState === "error" && (
-            <span className="inline-flex items-center gap-1 text-warn">
-              <TriangleAlert size={13} strokeWidth={2} /> {t("saveError")}
-            </span>
+          <span role="status" className="contents">
+            {autosave.state === "saving" && (
+              <span className="text-sub">{t("saving")}</span>
+            )}
+            {autosave.state === "saved" && touched && (
+              <span className="inline-flex items-center gap-1 text-accent">
+                <Check size={13} strokeWidth={2.5} /> {t("saved")}
+              </span>
+            )}
+            {autosave.state === "error" && (
+              <span className="inline-flex items-center gap-1 text-warn">
+                <TriangleAlert size={13} strokeWidth={2} /> {t("saveError")}
+              </span>
+            )}
+          </span>
+          {autosave.state === "error" && (
+            <button
+              type="button"
+              onClick={autosave.retry}
+              className="inline-flex cursor-pointer items-center gap-1 text-accent hover:underline"
+            >
+              <RotateCcw size={12} strokeWidth={2.4} />
+              {t("retry")}
+            </button>
           )}
         </div>
 
@@ -934,6 +977,15 @@ export function SongCalibration({
         onConfirm={applyReset}
       />
       <ConfirmDialog
+        open={confirm === "source"}
+        title={t("sourceChangeTitle")}
+        message={t("sourceChangeMessage", { count: stamps.size })}
+        cancelLabel={t("cancel")}
+        confirmLabel={t("sourceChangeConfirm")}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => void connectYouTube()}
+      />
+      <ConfirmDialog
         open={confirm === "granularity"}
         title={t("granularityChangeTitle")}
         message={t("granularityChangeMessage")}
@@ -941,7 +993,7 @@ export function SongCalibration({
         confirmLabel={t("granularityChangeConfirm")}
         onCancel={() => setConfirm(null)}
         onConfirm={() => {
-          dirtyRef.current = true;
+          setTouched(true);
           setStamps(new Map());
           setEndAt(null);
           setEndSkipped(false);

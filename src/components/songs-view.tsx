@@ -534,6 +534,8 @@ export function SongsView({
   };
   const [createForSong, setCreateForSong] = useState<SongListRow | null>(null);
   const [deletingSong, startDeleteSong] = useTransition();
+  const [deleteSongError, setDeleteSongError] = useState<string | null>(null);
+  const [deleteListError, setDeleteListError] = useState<string | null>(null);
   const [newSongOpen, setNewSongOpen] = useState(false);
   const [newListOpen, setNewListOpen] = useState(false);
   const [editListOpen, setEditListOpen] = useState(false);
@@ -601,7 +603,12 @@ export function SongsView({
   const removeSong = () => {
     if (!songToDelete) return;
     startDeleteSong(async () => {
-      await deleteSong(songToDelete.id);
+      setDeleteSongError(null);
+      const result = await deleteSong(songToDelete.id).catch(() => null);
+      if (!result?.ok) {
+        setDeleteSongError(t(`errors.${result?.error ?? "db"}`));
+        return;
+      }
       setSongToDelete(null);
       router.refresh();
     });
@@ -610,7 +617,12 @@ export function SongsView({
   const removeList = () => {
     if (!activeList) return;
     startDelete(async () => {
-      await deletePlaylist(activeList.id);
+      setDeleteListError(null);
+      const result = await deletePlaylist(activeList.id).catch(() => null);
+      if (!result?.ok) {
+        setDeleteListError(tPlaylists(`errors.${result?.error ?? "db"}`));
+        return;
+      }
       setDeleteListOpen(false);
       router.push(base);
     });
@@ -952,7 +964,11 @@ export function SongsView({
         confirmLabel={deletingSong ? tEditor("deleting") : tEditor("deleteConfirm")}
         confirmIcon={<Trash2 size={15} strokeWidth={2.2} />}
         pending={deletingSong}
-        onCancel={() => setSongToDelete(null)}
+        error={deleteSongError}
+        onCancel={() => {
+          setDeleteSongError(null);
+          setSongToDelete(null);
+        }}
         onConfirm={removeSong}
       />
       <ConfirmDialog
@@ -973,7 +989,11 @@ export function SongsView({
         }
         confirmIcon={<Trash2 size={15} strokeWidth={2.2} />}
         pending={deleting}
-        onCancel={() => setDeleteListOpen(false)}
+        error={deleteListError}
+        onCancel={() => {
+          setDeleteListError(null);
+          setDeleteListOpen(false);
+        }}
         onConfirm={removeList}
       />
     </div>

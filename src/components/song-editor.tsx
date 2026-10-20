@@ -9,6 +9,7 @@ import {
   Info,
   Link2,
   Pencil,
+  RotateCcw,
   Settings,
   Trash2,
   TriangleAlert,
@@ -20,7 +21,6 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   Fragment,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -52,10 +52,18 @@ import type { Instrument } from "@/lib/instruments";
 import { invertPoints, mapScroll } from "@/lib/scroll-sync";
 import { deleteSong, updateSongContent, updateSongMeta } from "@/lib/song-actions";
 import { detectKey, type DetectedKey } from "@/lib/key-detect";
-import { KEY_OPTIONS, keyLabel, validateSong, type SongRow } from "@/lib/songs";
+import {
+  KEY_OPTIONS,
+  keyLabel,
+  MAX_CONTENT_LENGTH,
+  validateSong,
+  type SongRow,
+} from "@/lib/songs";
+import { useAutosave, type SaveState } from "@/lib/use-autosave";
 import { useStoredFlag } from "@/lib/use-stored-flag";
 
-type SaveState = "saved" | "dirty" | "saving" | "error";
+/* El contador de caracteres aparece al acercarse al límite. */
+const COUNTER_FROM = MAX_CONTENT_LENGTH * 0.9;
 
 /* Editor y vista previa lado a lado (breakpoint lg): solo ahí se vincula el scroll. */
 const SIDE_BY_SIDE = "(min-width: 64rem)";
@@ -316,13 +324,10 @@ export function SongEditor({
   playlists: PlaylistOption[];
 }) {
   const t = useTranslations("editor");
-  const tSongs = useTranslations("songs");
   const tSongView = useTranslations("songView");
-  const router = useRouter();
 
   const [content, setContent] = useState(song.content);
   const [subMode, setSubMode] = useState<"text" | "visual">("text");
-  const [saveState, setSaveState] = useState<SaveState>("saved");
   const [metaOpen, setMetaOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -339,21 +344,19 @@ export function SongEditor({
   const [scrollLinked, setScrollLinked] = useStoredFlag("yk-editor-scroll-link", true);
   /* Último scroll aplicado a cada panel: su evento de vuelta se ignora (sin rebote). */
   const scrollEchoRef = useRef(new Map<Element, number>());
-  const contentRef = useRef(content);
-  contentRef.current = content;
 
-  /* Autosave con debounce; el estado se refleja en la barra del editor. */
-  useEffect(() => {
-    if (content === song.content && saveState === "saved") return;
-    setSaveState("dirty");
-    const timer = setTimeout(async () => {
-      setSaveState("saving");
-      const result = await updateSongContent(song.id, contentRef.current);
-      setSaveState(result.ok ? "saved" : "error");
-    }, 1200);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content, song.id]);
+  /* Autosave con debounce: guarda también al salir y avisa si se cierra la
+     pestaña con cambios. Se arma con la primera edición (detectada en render). */
+  const [touched, setTouched] = useState(false);
+  if (!touched && content !== song.content) setTouched(true);
+  const autosave = useAutosave({
+    value: content,
+    dirty: touched,
+    delay: 1200,
+    save: (value) => updateSongContent(song.id, value),
+  });
+  const saveState = autosave.state;
+  const tooLong = content.length > MAX_CONTENT_LENGTH;
 
   const parsed = useMemo(() => parseChordPro(content), [content]);
   const visualModel = useMemo(
@@ -440,7 +443,12 @@ export function SongEditor({
     },
     error: {
       icon: <TriangleAlert size={14} strokeWidth={2} />,
-      label: t("saveError"),
+      label:
+        autosave.error === "content"
+          ? t("saveErrorTooLong")
+          : autosave.error === "missing"
+            ? t("saveErrorMissing")
+            : t("saveError"),
       cls: "text-warn",
     },
   };
@@ -473,12 +481,30 @@ export function SongEditor({
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {content.length >= COUNTER_FROM && (
+            <span
+              className={`text-[12px] font-semibold tabular-nums ${tooLong ? "text-warn" : "text-tert"}`}
+            >
+              {t("charCount", { count: content.length, max: MAX_CONTENT_LENGTH })}
+            </span>
+          )}
           <span
+            role="status"
             className={`inline-flex items-center gap-[7px] text-[12.5px] font-semibold ${save.cls}`}
           >
             {save.icon}
             {save.label}
           </span>
+          {saveState === "error" && autosave.error !== "content" && (
+            <button
+              type="button"
+              onClick={autosave.retry}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-warn/40 px-3 py-[7px] text-[12.5px] font-semibold text-warn hover:bg-warn/10"
+            >
+              <RotateCcw size={13} strokeWidth={2.2} />
+              {t("retry")}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setPasteOpen(true)}
@@ -809,43 +835,66 @@ export function SongEditor({
       <DeleteSongDialog
         open={deleteOpen}
         song={song}
+        instrument={instrument}
         onCancel={() => setDeleteOpen(false)}
+        // Ya no hay nada que guardar: la canción se borra.
+        onDeleted={autosave.discard}
       />
     </div>
   );
+}
 
-  function DeleteSongDialog({
-    open,
-    song,
-    onCancel,
-  }: {
-    open: boolean;
-    song: SongRow;
-    onCancel: () => void;
-  }) {
-    const [pending, startTransition] = useTransition();
-    return (
-      <ConfirmDialog
-        open={open}
-        title={t("deleteTitle")}
-        message={t.rich("deleteMessage", {
-          name: song.name,
-          b: (chunks) => <span className="font-bold text-ink">{chunks}</span>,
-        })}
-        cancelLabel={tSongs("cancel")}
-        confirmLabel={pending ? t("deleting") : t("deleteConfirm")}
-        confirmIcon={<Trash2 size={15} strokeWidth={2.2} />}
-        pending={pending}
-        onCancel={onCancel}
-        onConfirm={() =>
-          startTransition(async () => {
-            await deleteSong(song.id);
-            router.push(`/${instrument}/songs`);
-          })
-        }
-      />
-    );
-  }
+/* ---------- confirmar eliminar canción ---------- */
+
+function DeleteSongDialog({
+  open,
+  song,
+  instrument,
+  onCancel,
+  onDeleted,
+}: {
+  open: boolean;
+  song: SongRow;
+  instrument: Instrument;
+  onCancel: () => void;
+  onDeleted: () => void;
+}) {
+  const t = useTranslations("editor");
+  const tSongs = useTranslations("songs");
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <ConfirmDialog
+      open={open}
+      title={t("deleteTitle")}
+      message={t.rich("deleteMessage", {
+        name: song.name,
+        b: (chunks) => <span className="font-bold text-ink">{chunks}</span>,
+      })}
+      cancelLabel={tSongs("cancel")}
+      confirmLabel={pending ? t("deleting") : t("deleteConfirm")}
+      confirmIcon={<Trash2 size={15} strokeWidth={2.2} />}
+      pending={pending}
+      error={error}
+      onCancel={() => {
+        setError(null);
+        onCancel();
+      }}
+      onConfirm={() =>
+        startTransition(async () => {
+          setError(null);
+          const result = await deleteSong(song.id).catch(() => null);
+          if (!result?.ok) {
+            setError(tSongs(`errors.${result?.error ?? "db"}`));
+            return;
+          }
+          onDeleted();
+          router.push(`/${instrument}/songs`);
+        })
+      }
+    />
+  );
 }
 
 /* ---------- drawer "Datos de la canción" ---------- */

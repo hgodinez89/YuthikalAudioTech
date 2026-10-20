@@ -14,6 +14,7 @@ import {
   setSectionStrum,
   strumToArrows,
   syncPlan,
+  syncTargets,
   unitGroups,
   wordGroups,
 } from "./chordpro";
@@ -445,6 +446,31 @@ describe("líneas instrumentales", () => {
     expect(replaceInstrumentalToken(content, 1, tokens[2], null)).toBe(
       "[[Intro]]\nEm D C x2",
     );
+  });
+});
+
+describe("syncTargets — huella de la sincronización", () => {
+  const SONG = ["[[Intro]]", "Em D Bm C x2", "", "[[Verse]]", "On a [Em]cobweb"].join(
+    "\n",
+  );
+
+  it("una clave por objetivo, en el mismo orden que syncPlan", () => {
+    for (const granularity of ["line", "word"] as const) {
+      const plan = syncPlan(SONG, granularity);
+      const last = plan[plan.length - 1];
+      expect(syncTargets(SONG, granularity)).toHaveLength(
+        last.firstTarget + last.targets,
+      );
+    }
+  });
+
+  it("línea: texto completo y vuelta; palabra: cada palabra o acorde", () => {
+    expect(syncTargets(SONG, "line")).toEqual([
+      "Em D Bm C#1",
+      "Em D Bm C#2",
+      "On a cobweb#1",
+    ]);
+    expect(syncTargets(SONG, "word").slice(-3)).toEqual(["On#1", "a#1", "cobweb#1"]);
   });
 });
 

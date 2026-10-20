@@ -3,11 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { supabaseWithSession } from "./supabase-server";
 import {
+  MP3_ENABLED,
   validateStamps,
   validateSyncEnd,
   type SongAudioRow,
   type SongSyncRow,
 } from "./audio";
+import { syncTargets } from "./chordpro";
 import {
   MAX_CONTENT_LENGTH,
   normalizeInclude,
@@ -61,7 +63,7 @@ export async function updateSongMeta(
   if (invalid) return { ok: false, error: invalid };
 
   const supabase = await supabaseWithSession();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("songs")
     .update({
       name: input.name.trim(),
@@ -72,8 +74,11 @@ export async function updateSongMeta(
       playlist_id: input.playlistId,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) return { ok: false, error: "db" };
+  // Sin filas: la canción ya no existe o no es del usuario (RLS).
+  if (!data?.length) return { ok: false, error: "missing" };
 
   revalidateSongs();
   return { ok: true };
@@ -89,11 +94,13 @@ export async function moveSongToPlaylist(
 
   const supabase = await supabaseWithSession();
   // RLS: la canción y la playlist destino deben ser del mismo usuario.
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("songs")
     .update({ playlist_id: playlistId, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) return { ok: false, error: "db" };
+  if (!data?.length) return { ok: false, error: "missing" };
 
   revalidateSongs();
   return { ok: true };
@@ -108,21 +115,34 @@ export async function updateSongContent(
 
   const supabase = await supabaseWithSession();
   // RLS: solo el dueño puede actualizar su canción.
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("songs")
     .update({ content, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) return { ok: false, error: "db" };
+  if (!data?.length) return { ok: false, error: "missing" };
 
   return { ok: true };
 }
 
+/** Borra la canción (su audio y sincronización caen en cascada) y su MP3. */
 export async function deleteSong(id: string): Promise<ActionResult> {
   if (!isUuid(id)) return { ok: false, error: "id" };
 
   const supabase = await supabaseWithSession();
-  const { error } = await supabase.from("songs").delete().eq("id", id);
+  const { data: audio } = await supabase
+    .from("song_audio")
+    .select("file_path")
+    .eq("song_id", id)
+    .maybeSingle<{ file_path: string | null }>();
+
+  const { data, error } = await supabase.from("songs").delete().eq("id", id).select("id");
   if (error) return { ok: false, error: "db" };
+  if (!data?.length) return { ok: false, error: "missing" };
+
+  // Sin la fila, el archivo quedaría huérfano ocupando Storage.
+  if (audio?.file_path) await supabase.storage.from("audio").remove([audio.file_path]);
 
   revalidateSongs();
   return { ok: true };
@@ -153,15 +173,20 @@ export async function duplicateSong(
   const { data: source } = await supabase
     .from("songs")
     .select(
-      "content,audio:song_audio(source,youtube_id,youtube_title,file_path),sync:song_sync(granularity,stamps,end_at)",
+      "content,audio:song_audio(source,youtube_id,youtube_title,file_path),sync:song_sync(granularity,stamps,targets,end_at)",
     )
     .eq("id", sourceId)
     .maybeSingle<{
       content: string;
       audio: Omit<SongAudioRow, "song_id"> | null;
-      sync: Omit<SongSyncRow, "song_id"> | null;
+      sync: (Omit<SongSyncRow, "song_id"> & { targets: string[] | null }) | null;
     }>();
   if (!source) return { ok: false, error: "id" };
+  // Con la subida de MP3 deshabilitada, un MP3 no se puede copiar (ni su sincronización).
+  const copyAudio =
+    want.audio &&
+    source.audio !== null &&
+    (MP3_ENABLED || source.audio.source !== "file");
 
   const { data: created, error: createError } = await supabase
     .from("songs")
@@ -187,7 +212,7 @@ export async function duplicateSong(
     return { ok: false, error };
   };
 
-  if (want.audio && source.audio) {
+  if (copyAudio && source.audio) {
     const audio = source.audio;
     let filePath: string | null = null;
     if (audio.source === "file" && audio.file_path) {
@@ -210,12 +235,21 @@ export async function duplicateSong(
     if (error) return undo("db");
   }
 
-  if (want.sync && source.audio && source.sync && validateStamps(source.sync.stamps)) {
+  const total = source.sync
+    ? syncTargets(source.content, source.sync.granularity).length
+    : 0;
+  if (
+    want.sync &&
+    copyAudio &&
+    source.sync &&
+    validateStamps(source.sync.stamps, total)
+  ) {
     const { error } = await supabase.from("song_sync").insert({
       song_id: newId,
       user_id: user.id,
       granularity: source.sync.granularity,
       stamps: source.sync.stamps,
+      targets: source.sync.targets,
       end_at: validateSyncEnd(source.sync.end_at, source.sync.stamps)
         ? source.sync.end_at
         : null,

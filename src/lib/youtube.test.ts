@@ -37,25 +37,37 @@ describe("parseYouTubeId", () => {
 describe("validateStamps", () => {
   it("acepta lista válida", () => {
     expect(
-      validateStamps([
-        { i: 0, t: 1.2 },
-        { i: 1, t: 5 },
-      ]),
+      validateStamps(
+        [
+          { i: 0, t: 1.2 },
+          { i: 1, t: 5 },
+        ],
+        2,
+      ),
     ).toBe(true);
-    expect(validateStamps([])).toBe(true);
+    expect(validateStamps([], 0)).toBe(true);
   });
 
   it("rechaza índices duplicados, negativos o tiempos inválidos", () => {
     expect(
-      validateStamps([
-        { i: 0, t: 1 },
-        { i: 0, t: 2 },
-      ]),
+      validateStamps(
+        [
+          { i: 0, t: 1 },
+          { i: 0, t: 2 },
+        ],
+        5,
+      ),
     ).toBe(false);
-    expect(validateStamps([{ i: -1, t: 1 }])).toBe(false);
-    expect(validateStamps([{ i: 0, t: NaN }])).toBe(false);
-    expect(validateStamps([{ i: 0.5, t: 1 }])).toBe(false);
-    expect(validateStamps("x")).toBe(false);
+    expect(validateStamps([{ i: -1, t: 1 }], 5)).toBe(false);
+    expect(validateStamps([{ i: 0, t: NaN }], 5)).toBe(false);
+    expect(validateStamps([{ i: 0.5, t: 1 }], 5)).toBe(false);
+    expect(validateStamps("x", 5)).toBe(false);
+  });
+
+  it("solo índices que existen en la letra actual", () => {
+    expect(validateStamps([{ i: 2, t: 1 }], 3)).toBe(true);
+    expect(validateStamps([{ i: 3, t: 1 }], 3)).toBe(false);
+    expect(validateStamps([{ i: 0, t: 1 }], 0)).toBe(false);
   });
 });
 

@@ -7,6 +7,7 @@ import { InstrumentToggles } from "./instrument-toggles";
 import { FIELD_CLASS } from "./playlist-form-modal";
 import type { SongListRow } from "./songs-view";
 import type { PlaylistRow } from "@/lib/playlists";
+import { MP3_ENABLED } from "@/lib/audio";
 import { duplicateSong } from "@/lib/song-actions";
 import { copyName, KEY_OPTIONS, keyLabel, validateSong } from "@/lib/songs";
 
@@ -17,12 +18,15 @@ function CheckOption({
   onChange,
   title,
   detail,
+  badge,
 }: {
   checked: boolean;
   disabled?: boolean;
   onChange: (checked: boolean) => void;
   title: string;
   detail: string;
+  /** Insignia junto al título (p. ej. "Próximamente"). */
+  badge?: string;
 }) {
   return (
     <button
@@ -41,7 +45,14 @@ function CheckOption({
         {checked && <Check size={12} strokeWidth={3} />}
       </span>
       <span className="min-w-0">
-        <span className="block text-[14px] font-semibold">{title}</span>
+        <span className="flex items-center gap-2 text-[14px] font-semibold">
+          {title}
+          {badge && (
+            <span className="rounded-full border border-edge-2 px-1.5 py-px text-[10px] font-bold uppercase tracking-[0.06em] text-tert">
+              {badge}
+            </span>
+          )}
+        </span>
         <span className="block truncate text-[12.5px] text-tert">{detail}</span>
       </span>
     </button>
@@ -71,8 +82,10 @@ export function DuplicateSongModal({
     instruments: song.instruments,
     playlistId: song.playlist_id ?? "",
   });
-  const [audio, setAudio] = useState(song.source !== null);
-  const [sync, setSync] = useState(song.synced);
+  /* Con la subida de MP3 deshabilitada, un MP3 (y su sincronización) no se copia. */
+  const audioLocked = song.source === "file" && !MP3_ENABLED;
+  const [audio, setAudio] = useState(song.source !== null && !audioLocked);
+  const [sync, setSync] = useState(song.synced && !audioLocked);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -237,9 +250,11 @@ export function DuplicateSongModal({
               {song.source && (
                 <CheckOption
                   checked={audio}
+                  disabled={audioLocked}
                   onChange={setAudio}
                   title={t("copyAudio")}
-                  detail={audioDetail}
+                  detail={audioLocked ? t("copyFileSoon") : audioDetail}
+                  badge={audioLocked ? t("soon") : undefined}
                 />
               )}
               {song.synced && (

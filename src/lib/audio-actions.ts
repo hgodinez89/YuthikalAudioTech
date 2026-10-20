@@ -1,7 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { validateStamps, validateSyncEnd, type SyncStamp } from "./audio";
+import {
+  MP3_ENABLED,
+  validateStamps,
+  validateSyncEnd,
+  type SongAudioRow,
+  type SyncStamp,
+} from "./audio";
+import { syncTargets } from "./chordpro";
 import { supabaseWithSession } from "./supabase-server";
 import { parseYouTubeId } from "./youtube";
 
@@ -26,6 +33,11 @@ async function fetchYouTubeTitle(videoId: string): Promise<string | null> {
   }
 }
 
+/**
+ * Conecta un video de YouTube. Si reemplaza otro audio, la sincronización
+ * anterior se borra (sus tiempos eran de otra grabación) y el MP3 previo, si
+ * lo había, se elimina de Storage.
+ */
 export async function setYouTubeAudio(
   songId: string,
   url: string,
@@ -40,6 +52,12 @@ export async function setYouTubeAudio(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "auth" };
 
+  const { data: previous } = await supabase
+    .from("song_audio")
+    .select("source,youtube_id,file_path")
+    .eq("song_id", songId)
+    .maybeSingle<Pick<SongAudioRow, "source" | "youtube_id" | "file_path">>();
+
   const title = await fetchYouTubeTitle(videoId);
   const { error } = await supabase.from("song_audio").upsert({
     song_id: songId,
@@ -52,6 +70,15 @@ export async function setYouTubeAudio(
   });
   if (error) return { ok: false, error: "db" };
 
+  const changed =
+    previous && (previous.source !== "youtube" || previous.youtube_id !== videoId);
+  if (changed) {
+    await supabase.from("song_sync").delete().eq("song_id", songId);
+    if (previous.file_path) {
+      await supabase.storage.from("audio").remove([previous.file_path]);
+    }
+  }
+
   revalidatePath("/[instrument]/songs", "page");
   return { ok: true };
 }
@@ -61,6 +88,7 @@ export async function setFileAudio(
   songId: string,
   filePath: string,
 ): Promise<ActionResult> {
+  if (!MP3_ENABLED) return { ok: false, error: "mp3Disabled" };
   if (!isUuid(songId)) return { ok: false, error: "id" };
 
   const supabase = await supabaseWithSession();
@@ -68,10 +96,8 @@ export async function setFileAudio(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "auth" };
-  // La ruta debe vivir en la carpeta del usuario y ser un mp3.
-  if (!filePath.startsWith(`${user.id}/`) || !filePath.endsWith(".mp3")) {
-    return { ok: false, error: "path" };
-  }
+  // Un archivo por canción, en la carpeta del usuario.
+  if (filePath !== `${user.id}/${songId}.mp3`) return { ok: false, error: "path" };
 
   const { error } = await supabase.from("song_audio").upsert({
     song_id: songId,
@@ -88,6 +114,11 @@ export async function setFileAudio(
   return { ok: true };
 }
 
+/**
+ * Guarda las marcas validadas contra la letra actual de la canción (leída de
+ * la BD, no del cliente) junto con su huella, para poder reubicarlas si la
+ * letra cambia después.
+ */
 export async function saveSync(
   songId: string,
   granularity: "line" | "word",
@@ -98,8 +129,6 @@ export async function saveSync(
   if (granularity !== "line" && granularity !== "word") {
     return { ok: false, error: "granularity" };
   }
-  if (!validateStamps(stamps)) return { ok: false, error: "stamps" };
-  if (!validateSyncEnd(endAt, stamps)) return { ok: false, error: "end" };
 
   const supabase = await supabaseWithSession();
   const {
@@ -107,11 +136,24 @@ export async function saveSync(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "auth" };
 
+  // RLS: solo se lee si la canción es del usuario.
+  const { data: song } = await supabase
+    .from("songs")
+    .select("content")
+    .eq("id", songId)
+    .maybeSingle<{ content: string }>();
+  if (!song) return { ok: false, error: "id" };
+
+  const targets = syncTargets(song.content, granularity);
+  if (!validateStamps(stamps, targets.length)) return { ok: false, error: "stamps" };
+  if (!validateSyncEnd(endAt, stamps)) return { ok: false, error: "end" };
+
   const { error } = await supabase.from("song_sync").upsert({
     song_id: songId,
     user_id: user.id,
     granularity,
     stamps,
+    targets,
     end_at: endAt,
     updated_at: new Date().toISOString(),
   });

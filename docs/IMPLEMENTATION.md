@@ -25,6 +25,7 @@ Copiar `.env.example` a `.env.local` (local) y configurar las mismas en Vercel (
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase | Supabase → Project Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave **pública** (anon/publishable). La seguridad real la dan las políticas RLS | Ídem |
 | `NEXT_PUBLIC_ADMIN_EMAIL` | (Opcional) correo del botón "Contactar al administrador" en la página de error | — |
+| `CRON_SECRET` | Secreto del cron de keepalive: Vercel lo envía como `Authorization: Bearer …` y `/api/keepalive` rechaza cualquier otra llamada (sin la variable responde 503). Solo servidor | Valor aleatorio propio (Vercel → Environment Variables) |
 
 ⚠️ **Nunca** usar la clave `service_role`/Secret en este proyecto: todo el acceso a datos pasa por la anon key + RLS. `.env*` está en `.gitignore`.
 
@@ -39,9 +40,11 @@ Copiar `.env.example` a `.env.local` (local) y configurar las mismas en Vercel (
 | `playlists` | Playlists del usuario (género, rating "Me gusta" 1–5) | RLS solo dueño |
 | `songs` | Canciones: metadatos + contenido ChordPro (con directiva propia `{strum:}`); `playlist_id` opcional (lista plana); `instruments` (guitar/ukulele/piano, informativo) | RLS solo dueño |
 | `song_audio` | Fuente de audio por canción: YouTube (video id + título) o archivo (ruta en Storage) | RLS solo dueño |
-| `song_sync` | Sincronización: granularidad (línea/palabra) + timestamps JSONB `[{i, t}]` + fin opcional `end_at` | RLS solo dueño |
+| `song_sync` | Sincronización: granularidad (línea/palabra) + timestamps JSONB `[{i, t}]` + huella de la letra `targets` + fin opcional `end_at` | RLS solo dueño |
 
-Storage: bucket privado **`audio`** (15 MB máx., solo `audio/mpeg`), políticas por carpeta `audio/<uid>/…`.
+Storage: bucket privado **`audio`** (15 MB máx., solo `audio/mpeg`), políticas por carpeta `audio/<uid>/…`. **Subida de MP3 deshabilitada** ("Próximamente", ver §8): el bucket solo admite leer y borrar.
+
+RLS: todas las políticas usan `(select auth.uid())` (se evalúa una vez por consulta). Insertar o actualizar audio y sincronización exige que la canción sea del usuario. Límites también en la BD: `stamps` es un arreglo de ≤ 10 000 marcas, `end_at` ≤ 24 h y `file_path` dentro de `<uid>/`.
 
 ### 3.2 Migraciones (ejecutar en orden en el SQL Editor de Supabase)
 
@@ -54,6 +57,7 @@ Storage: bucket privado **`audio`** (15 MB máx., solo `audio/mpeg`), políticas
 7. `supabase/migrations/00000000000006_song_instruments.sql` (columna `songs.instruments`; ejecutar **antes** de desplegar el código que la usa)
 8. `supabase/migrations/00000000000007_drop_playlist_difficulty.sql` (borra `playlists.rating_difficulty`; ejecutar **después** de desplegar el código que ya no la usa)
 9. `supabase/migrations/00000000000008_sync_end.sql` (columna `song_sync.end_at`; ejecutar **antes** de desplegar el código que la usa)
+10. `supabase/migrations/00000000000009_hardening.sql` (RLS con `(select auth.uid())`, audio/sincronización atados a canciones propias, límites en la BD, columna `song_sync.targets` y subida de MP3 bloqueada en Storage; ejecutar **antes** de desplegar el código que guarda `targets`)
 
 ### 3.3 Seed del catálogo de acordes
 
@@ -68,7 +72,7 @@ Luego pegar y ejecutar `supabase/seed_chords_guitar.sql` y `supabase/seed_chords
 ```bash
 npm install          # instala dependencias (lockfile versionado)
 npm run dev          # desarrollo en http://localhost:3000
-npm test             # 51 tests unitarios de lógica crítica (Vitest)
+npm test             # tests unitarios de lógica crítica (Vitest)
 npm run lint         # ESLint (reglas React 19 estrictas)
 npm run format       # Prettier sobre src/ y messages/
 npm run build        # build de producción (incluye type-check)
@@ -81,7 +85,7 @@ Tests cubren: parser de búsqueda de acordes ES/EN, parser/render ChordPro, edic
 
 1. Push a `main` → despliegue automático (proyecto importado desde GitHub, framework autodetectado).
 2. Variables de entorno de la sección 2 configuradas en el proyecto.
-3. **Cron keepalive**: `vercel.json` registra `GET /api/keepalive` diario (`0 8 * * *`); verificar en Settings → Cron Jobs. Esto evita la pausa por inactividad del free tier de Supabase.
+3. **Cron keepalive**: `vercel.json` registra `GET /api/keepalive` diario (`0 8 * * *`); verificar en Settings → Cron Jobs. Esto evita la pausa por inactividad del free tier de Supabase. Requiere `CRON_SECRET` configurado (si falta, el endpoint responde 503 y la BD podría pausarse).
 4. OAuth: la URL de producción debe estar en Google Cloud (JavaScript origins) y en Supabase (Site URL); `http://localhost:3000/**` como redirect adicional para desarrollo. Detalle en `SETUP.md` — Manual 3.
 
 ## 6. Estructura del proyecto
@@ -146,6 +150,7 @@ src/lib/                  Lógica y acceso a datos:
   use-piano-synth.ts      Sintetizador Web Audio (piano, escalas)
   youtube.ts / audio.ts   Validaciones de audio (+tests)
   use-audio-engine.ts     Reloj unificado YouTube IFrame API / <audio>
+  use-autosave.ts         Autoguardado (debounce, en fila, al salir, aviso al cerrar, reintentar)
   *-actions.ts            Server actions (re-validación en servidor)
   supabase(-server).ts    Clientes anon (público) y con sesión (cookies)
   site.ts                 URL pública (VERCEL_PROJECT_PRODUCTION_URL) para metadata y sitemap
@@ -175,7 +180,25 @@ Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del
 
 **Actualizar dependencias**: `npm outdated` → actualizar → `npm audit` → `npm run lint && npm test && npm run build`. Política del proyecto: última versión estable verificada en npm.
 
-**Límites de los free tiers**: Supabase 500 MB de BD + 1 GB de Storage (~60 MP3 de 15 MB) + pausa por inactividad; Vercel Hobby: 1 cron diario, funciones con timeout estándar.
+**Límites de los free tiers**: Supabase 500 MB de BD + 1 GB de Storage (~60 MP3 de 15 MB) + 5 GB/mes de transferencia + pausa por inactividad; Vercel Hobby: 1 cron diario, funciones con timeout estándar.
+
+**MP3 en "Próximamente"**: es lo que más consume del plan gratuito (almacenamiento y transferencia), así que la subida está deshabilitada para todos: `MP3_ENABLED = false` en `src/lib/audio.ts` (UI y server action) y sin políticas de insert/update en el bucket `audio` (migración 9). Las canciones que ya tienen MP3 siguen sonando; pasar a YouTube o borrar la canción elimina el archivo. Para reactivarlo (idealmente junto con cuotas por usuario): poner `MP3_ENABLED = true` y ejecutar:
+
+```sql
+create policy "audio_insert_own" on storage.objects
+  for insert with check (bucket_id = 'audio' and (storage.foldername(name))[1] = (select auth.uid())::text);
+create policy "audio_update_own" on storage.objects
+  for update using (bucket_id = 'audio' and (storage.foldername(name))[1] = (select auth.uid())::text);
+```
+
+**MP3 huérfanos** (archivos sin canción, de antes de que borrar los eliminara): listarlos en el SQL Editor y borrarlos desde **Storage → audio** en el dashboard (no con `delete` sobre `storage.objects`):
+
+```sql
+select o.name, o.created_at
+from storage.objects o
+where o.bucket_id = 'audio'
+  and not exists (select 1 from public.song_audio a where a.file_path = o.name);
+```
 
 **Decisiones registradas**:
 - *Navegación "instrumento primero"* (desviación consciente del handoff, solo en estructura; colores, tokens y componentes visuales se mantienen): `/` elige instrumento; cada instrumento tiene 4 secciones (Básicos · Acordes · Escalas · Canciones) en el header y en una barra inferior en móvil y tablet; una pastilla cambia de instrumento conservando la sección (dentro de una canción o una escala conserva la ruta y cambian los diagramas). Bajo se muestra atenuado como "Próximamente". Las URLs anteriores (`/guitar/strings`, `/guitar/notes`, `/playlists/...`) redirigen a las nuevas.
@@ -186,6 +209,8 @@ Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del
 - *Lista plana de canciones*: las playlists son filtros opcionales; borrar una playlist conserva sus canciones. Las playlists mantienen género y doble calificación.
 - *Canción*: Ver (con **Tocar** como acción principal) y Editar en dos pasos, **Letra → Audio** (la antigua "Calibración", ahora "Sincronizar audio"; `?mode=calibrate` sigue funcionando).
 - *Sin pantalla de carga global* (rendimiento/Lighthouse): el título y el contenido se pintan en el primer render, sin el cambio desde "Afinando tu sesión…". Solo `[instrument]/songs` tiene `loading.tsx` (sesión + BD). Por eso las URLs inexistentes responden 404 real; bajo `/songs`, por el streaming, siguen respondiendo HTTP 200 con la UI correcta (404 visual / redirect a login). Los datos jamás se filtran (los guards corren antes de cualquier query).
+- *Autoguardado* (`lib/use-autosave.ts`, editor y sincronización): debounce, guardados en fila (uno lento nunca pisa a uno más nuevo), lo pendiente se guarda al salir de la pantalla, el navegador avisa al cerrar o recargar con cambios sin guardar y un fallo de red o BD queda en error con **Reintentar**. El editor muestra un contador al acercarse a los 20 000 caracteres. Las server actions de actualizar/borrar confirman que se modificó una fila (si no, error `missing`) y los diálogos de borrar muestran el error sin cerrarse.
+- *Huella de la sincronización*: al guardar, `saveSync` lee la letra de la BD, valida las marcas contra sus objetivos reales (`syncTargets`, mismo orden que `syncPlan`) y guarda el texto de cada objetivo en `song_sync.targets`. Si la letra cambia después, la página reubica las marcas (`reconcileSync`): con la misma cantidad de objetivos (una errata) todo sigue igual; si se agregaron o quitaron, se conservan las del tramo común del inicio y del final y lo del medio queda por marcar, con aviso en karaoke y en Sincronizar. La reubicación no se persiste hasta que se vuelve a guardar la sincronización. Al marcar, el cursor salta al siguiente objetivo libre (re-marcar o completar huecos no pisa lo marcado). Conectar otro audio borra la sincronización anterior (con confirmación si tenía marcas) y el MP3 previo.
 - *Selector rápido del buscador*: con **una opción** (por defecto) los botones escriben la búsqueda ("Dom7") y su estado se deriva del texto. Con **Selección múltiple** (interruptor recordado por navegador en localStorage, `yk-finder-multi`) los botones tienen estado propio: varias notas y varios tipos, que se suman dentro de cada fila y se combinan entre filas ((Do o Re) y (m o m7)); la fila de tipos se muestra siempre y un resumen lista lo elegido con "Limpiar". La selección y la búsqueda escrita/dictada se reemplazan entre sí, para que nunca se contradigan. Al activar, lo elegido pasa a la selección; al desactivar se limpia. `fetchChords` solo acepta valores de las listas del selector (`DB_KEYS`, `QUICK_TYPES`).
 - *Rendimiento del buscador*: la primera página de acordes se consulta en el servidor (catálogo público, anon key) y viaja en el HTML; supabase-js se carga de forma diferida (al buscar/paginar y tras hidratar el menú de cuenta, que lee la sesión con `onAuthStateChange` sin ir a la red). Las tarjetas no se prefetchean al entrar en pantalla (solo al pasar el ratón); los logos por tema no se precargan (solo baja el visible); JetBrains Mono no se precarga.
 - *SEO*: el sitio es indexable; `robots.txt` excluye login, auth, api y playlists; el sitemap incluye básicos, buscador, escalas y detalle de acordes por instrumento (las canciones son de cada usuario). Medir Lighthouse en incógnito: la Vercel Toolbar (sesión de Vercel) inyecta un script que la CSP bloquea a propósito.

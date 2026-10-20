@@ -72,7 +72,8 @@
       "rating": "Ratings go from 1 to 5 stars.",
       "auth": "Your session expired. Please sign in again.",
       "db": "Could not save. Try again.",
-      "id": "Invalid identifier."
+      "id": "Invalid identifier.",
+      "missing": "The playlist no longer exists or you don't have access."
     }
   },
   "loading": {
@@ -147,7 +148,8 @@
       "db": "Could not save. Try again.",
       "id": "Invalid identifier.",
       "content": "The song exceeds the maximum allowed size.",
-      "copyAudio": "The audio file couldn't be copied. Please try again."
+      "copyAudio": "The audio file couldn't be copied. Please try again.",
+      "missing": "The song no longer exists or you don't have access."
     },
     "title": "My songs",
     "count": "{count, plural, =0 {No songs} one {1 song} other {# songs}}",
@@ -188,7 +190,9 @@
     "copySync": "Sync",
     "copySyncDetail": "{count, plural, one {1 mark} other {# marks}} · {granularity, select, word {by word} other {by line}}",
     "copyFileNote": "The MP3 is copied as the new song's own file.",
-    "duplicatedElsewhere": "Duplicated into “{name}”"
+    "duplicatedElsewhere": "Duplicated into “{name}”",
+    "soon": "Coming soon",
+    "copyFileSoon": "Copying MP3 files will be available soon."
   },
   "editor": {
     "textMode": "Text editor",
@@ -232,7 +236,11 @@
       "insert": "Insert into song"
     },
     "legendSection": "section",
-    "legendNote": "note"
+    "legendNote": "note",
+    "saveErrorTooLong": "The song is over 20,000 characters: shorten it to save",
+    "saveErrorMissing": "Couldn't save: the song no longer exists",
+    "retry": "Retry",
+    "charCount": "{count, number} / {max, number} characters"
   },
   "player": {
     "toStart": "Go to start",
@@ -327,7 +335,12 @@
       "auth": "Your session expired. Please sign in again.",
       "db": "Could not save. Try again.",
       "id": "Invalid identifier.",
-      "path": "Invalid file path."
+      "path": "Invalid file path.",
+      "network": "Can't reach the server. Check your connection and try again.",
+      "mp3Disabled": "MP3 uploads will be available soon.",
+      "stamps": "The marks don't match the current lyrics. Reload the page.",
+      "end": "The end must come after the last mark.",
+      "granularity": "Invalid precision."
     },
     "pass": "Round {n}/{total}",
     "review": "Review",
@@ -335,7 +348,14 @@
     "keys": {
       "mark": "Mark the line",
       "review": "Review"
-    }
+    },
+    "soon": "Coming soon",
+    "fileSoonHint": "MP3 uploads will be available soon. For now, use a YouTube video.",
+    "retry": "Retry",
+    "driftNotice": "The lyrics changed since you synced: {count, plural, one {1 new mark to make} other {# new marks to make}}. The rest were kept.",
+    "sourceChangeTitle": "Change the audio?",
+    "sourceChangeMessage": "The {count, plural, one {1 sync mark} other {# sync marks}} will be deleted, because their times belong to the previous recording.",
+    "sourceChangeConfirm": "Change and delete marks"
   },
   "songView": {
     "keyPrefix": "Key:",
@@ -370,7 +390,9 @@
     "syncNow": "Sync audio",
     "pass": "Round {n} of {total}",
     "review": "Review",
-    "reviewHint": "Repeat the current line from the start"
+    "reviewHint": "Repeat the current line from the start",
+    "syncDrift": "The lyrics changed: {count, plural, one {1 line not synced} other {# lines not synced}}",
+    "syncReview": "Review sync"
   },
   "strings": {
     "title": "{instrument, select, ukulele {The ukulele strings} other {The guitar strings}}",

@@ -51,7 +51,7 @@ NEXT_PUBLIC_ADMIN_EMAIL=tu-correo@ejemplo.com   # opcional, para el botón "Cont
 
 ### 1.5 Avísame
 
-Cuando termines, dime "Supabase listo" y yo verifico el keepalive local (`/api/keepalive` debe responder `{"ok":true}`) y continúo con la importación de acordes de la Fase 3.
+Cuando termines, dime "Supabase listo" y yo verifico el keepalive local (con `CRON_SECRET` en `.env.local`, `curl -H "Authorization: Bearer …" http://localhost:3000/api/keepalive` debe responder `{"ok":true}`) y continúo con la importación de acordes de la Fase 3.
 
 > **Nota del free tier**: el proyecto se pausa tras ~7 días sin actividad de base de datos. Una vez desplegado en Vercel, el cron diario lo mantiene despierto solo. Mientras tanto, usar la app en desarrollo ya cuenta como actividad. Si algún día lo encuentras pausado: dashboard → botón **Restore project** (~1 minuto, no se pierden datos).
 
@@ -98,13 +98,14 @@ git push -u origin main
      | `NEXT_PUBLIC_SUPABASE_URL` | `https://TU-PROYECTO.supabase.co` |
      | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | tu clave pública |
      | `NEXT_PUBLIC_ADMIN_EMAIL` | tu correo (opcional) |
+     | `CRON_SECRET` | un valor largo y aleatorio (p. ej. `node -e "console.log(crypto.randomUUID())"`); **sin** `NEXT_PUBLIC_` |
 5. Pulsa **Deploy** y espera ~2 minutos.
 6. Te dará una URL tipo `https://yuthikal-music-xxxx.vercel.app`. **Guárdala** — la necesitas para el Manual 3.
 
 ### 2.4 Verificar el cron de keepalive
 
 1. En el proyecto de Vercel: **Settings** → **Cron Jobs**. Debe aparecer `/api/keepalive` con schedule `0 8 * * *` (viene de `vercel.json`; se registra en el primer deploy).
-2. Prueba manual: abre en el navegador `https://TU-APP.vercel.app/api/keepalive` → debe responder `{"ok":true}`.
+2. Prueba manual: el endpoint solo responde al cron (pide `CRON_SECRET`). Abrirlo en el navegador da `401`, que es lo esperado. Para probarlo: `curl -H "Authorization: Bearer TU_CRON_SECRET" https://TU-APP.vercel.app/api/keepalive` → `{"ok":true}`. También puedes lanzarlo desde **Settings → Cron Jobs → Run**. Sin la variable configurada responde `503` y la BD podría pausarse: créala antes de desplegar.
 3. Con esto, el proyecto de Supabase ya no se pausará por inactividad.
 
 > A partir de aquí, cada `git push` a `main` despliega automáticamente.
