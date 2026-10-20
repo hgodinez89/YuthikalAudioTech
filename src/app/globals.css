@@ -34,6 +34,29 @@
   --lift-shadow: 0 14px 34px rgba(37, 96, 214, 0.14);
   --fab-shadow: 0 8px 22px rgba(37, 96, 214, 0.3);
   --raised: var(--surface);
+  /* Mástil (Básicos y Escalas): en claro, diapasón gris muy claro y cuerdas
+     gris oscuro; en oscuro, la vitrina original. */
+  --stage: var(--surface);
+  --stage-inset: #f8fafc;
+  --neck-board: #f4f6fa;
+  --neck-edge: #d5dce6;
+  --neck-head: #e9edf3;
+  --neck-nut: #94a3b8;
+  --neck-fret: #cbd5e1;
+  --neck-dot: #cbd5e1;
+  --neck-string: #4f5a6d;
+  --neck-string-back: #9aa3b2;
+  --neck-peg: #ffffff;
+  --neck-peg-edge: #94a3b8;
+  --neck-sep: #a3adbb;
+  --neck-label: #56647a;
+  --neck-num: #7a8698;
+  --neck-num-strong: #4b5a6f;
+  --neck-index: #7a8698;
+  --board-fret: #cbd5e1;
+  --board-nut: #94a3b8;
+  --neck-note-fill: #ffffff;
+  --neck-note-text: #0a7489;
   --diagram-grid: #cbd5e1;
   --diagram-nut: #94a3b8;
   --diagram-mark: #64748b;
@@ -67,9 +90,44 @@
   --lift-shadow: 0 20px 50px rgba(46, 107, 240, 0.2);
   --fab-shadow: 0 8px 24px rgba(46, 107, 240, 0.4);
   --raised: linear-gradient(180deg, #12151c, #0e1118);
+  --stage: linear-gradient(180deg, #101017, #0b0d12);
+  --stage-inset: #0c0f15;
+  --neck-board: #171a22;
+  --neck-edge: #242b3a;
+  --neck-head: #12141b;
+  --neck-nut: #5a6474;
+  --neck-fret: #2a3242;
+  --neck-dot: #2a3242;
+  --neck-string: #aeb6c4;
+  --neck-string-back: #4a5568;
+  --neck-peg: #0d0f14;
+  --neck-peg-edge: #5a6474;
+  --neck-sep: #4f5a6d;
+  --neck-label: #8b93a3;
+  --neck-num: #4f5a6d;
+  --neck-num-strong: #8b93a3;
+  --neck-index: #5b6577;
+  --board-fret: #3a4356;
+  --board-nut: #8a94a6;
+  --neck-note-fill: #0d1017;
+  --neck-note-text: #e6f9fc;
   --diagram-grid: #39414f;
   --diagram-nut: #5a6474;
   --diagram-mark: #8b93a3;
+}
+
+/* Tarjetas de notas alteradas (Básicos → Notas): llevan la clase .dark para
+   sus textos, así que su fondo se define solo en <html> y lo heredan. En
+   claro, gris pizarra; en oscuro, negro como las teclas. */
+:root {
+  --altered-card: linear-gradient(180deg, #2a3344, #1e2533);
+  --altered-edge: #334155;
+  --altered-line: #3b4658;
+}
+:root.dark {
+  --altered-card: #090b0f;
+  --altered-edge: #1b2130;
+  --altered-line: #1b2130;
 }
 
 @theme inline {
@@ -89,6 +147,7 @@
   --color-ongrad: var(--ongrad);
   --color-warn: var(--warn);
   --color-directive: var(--directive);
+  --color-stage-inset: var(--stage-inset);
   --shadow-glow: var(--glow);
   --shadow-pop: var(--pop-shadow);
   --shadow-card: var(--card-shadow);
@@ -139,9 +198,9 @@ body {
   );
 }
 
-/* Fondo de las ilustraciones de instrumentos (siempre oscuras). */
+/* Fondo del mástil: tarjeta en claro, vitrina oscura en oscuro. */
 .yk-stage {
-  background: linear-gradient(180deg, #101017, #0b0d12);
+  background: var(--stage);
 }
 
 /* Fila con scroll horizontal: difumina el borde que tiene más contenido

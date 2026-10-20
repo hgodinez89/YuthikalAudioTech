@@ -24,10 +24,10 @@ function readLabels(): LabelMode {
   }
 }
 
-/* Tarjeta oscura (como el mástil de Básicos), desplazable si no cabe. */
+/* Tarjeta del mástil (como en Básicos), desplazable si no cabe. */
 function Showcase({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
-    <div className="dark yk-stage rounded-[20px] border border-edge px-5 py-5">
+    <div className="yk-stage rounded-[20px] border border-edge px-5 py-5 shadow-card">
       <div className="overflow-x-auto [scrollbar-width:thin]">{children}</div>
       {hint && (
         <p className="mt-3 flex items-center gap-2 text-[12.5px] text-sub">
@@ -204,7 +204,7 @@ export function ScaleView({
                   {t("positionFrets", { from: p.from, to: p.to })}
                 </span>
               </div>
-              <div className="dark overflow-x-auto rounded-xl bg-surface-3 px-3 py-3">
+              <div className="overflow-x-auto rounded-xl border border-edge bg-stage-inset px-3 py-3 dark:border-transparent">
                 <Fretboard
                   stringNames={stringNames}
                   from={p.from}

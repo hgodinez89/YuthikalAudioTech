@@ -21,8 +21,8 @@ const R = 11.5;
 const SINGLE_DOTS = [3, 5, 7, 9, 15];
 
 /**
- * Mástil horizontal en SVG (estilo de la ilustración de Básicos, vitrina
- * oscura): 1.ª cuerda arriba, cuerdas al aire a la izquierda de la cejuela.
+ * Mástil horizontal en SVG (estilo de la ilustración de Básicos, con los
+ * colores del tema `--neck-*`): 1.ª cuerda arriba, cuerdas al aire a la izquierda de la cejuela.
  * Dibuja del traste `from` al `to`; si `from` es 0 incluye la cejuela.
  */
 export function Fretboard({
@@ -75,19 +75,19 @@ export function Fretboard({
         width={count * FRET_W}
         height={boardH + 20}
         rx={4}
-        fill="#171a22"
-        stroke="#242b3a"
+        fill="var(--neck-board)"
+        stroke="var(--neck-edge)"
       />
 
       {/* puntos guía */}
       {frets.map((f) =>
         f % 12 === 0 ? (
-          <g key={f} fill="#2a3242">
+          <g key={f} fill="var(--neck-dot)">
             <circle cx={x(f)} cy={midY - STRING_GAP} r={4} />
             <circle cx={x(f)} cy={midY + STRING_GAP} r={4} />
           </g>
         ) : SINGLE_DOTS.includes(f) ? (
-          <circle key={f} cx={x(f)} cy={midY} r={4} fill="#2a3242" />
+          <circle key={f} cx={x(f)} cy={midY} r={4} fill="var(--neck-dot)" />
         ) : null,
       )}
 
@@ -102,7 +102,7 @@ export function Fretboard({
             y1={TOP - 10}
             x2={lx}
             y2={TOP + boardH + 10}
-            stroke={nut ? "#8a94a6" : "#3a4356"}
+            stroke={nut ? "var(--board-nut)" : "var(--board-fret)"}
             strokeWidth={nut ? 5 : 2}
           />
         );
@@ -117,7 +117,11 @@ export function Fretboard({
           textAnchor="middle"
           fontSize={10.5}
           fontWeight={700}
-          fill={SINGLE_DOTS.includes(f) || f % 12 === 0 ? "#8b93a3" : "#4f5a6d"}
+          fill={
+            SINGLE_DOTS.includes(f) || f % 12 === 0
+              ? "var(--neck-num-strong)"
+              : "var(--neck-num)"
+          }
           fontFamily="var(--font-inter), sans-serif"
         >
           {f}
@@ -132,7 +136,7 @@ export function Fretboard({
             y1={y(s)}
             x2={left + count * FRET_W}
             y2={y(s)}
-            stroke="#aeb6c4"
+            stroke="var(--neck-string)"
             strokeWidth={0.9 + (s / Math.max(stringNames.length - 1, 1)) * 1.6}
             opacity={0.85}
           />
@@ -142,7 +146,7 @@ export function Fretboard({
             textAnchor="middle"
             fontSize={11}
             fontWeight={700}
-            fill="#5b6577"
+            fill="var(--neck-index)"
             fontFamily="var(--font-inter), sans-serif"
           >
             {name}
@@ -167,8 +171,8 @@ export function Fretboard({
             cx={x(n.fret)}
             cy={y(n.string)}
             r={R}
-            fill={n.tonic ? "url(#yk-fret-tonic)" : "#0d1017"}
-            stroke={n.tonic ? "none" : "#35d6e8"}
+            fill={n.tonic ? "url(#yk-fret-tonic)" : "var(--neck-note-fill)"}
+            stroke={n.tonic ? "none" : "var(--accent-dot)"}
             strokeWidth={1.6}
           />
           <text
@@ -177,7 +181,7 @@ export function Fretboard({
             textAnchor="middle"
             fontSize={n.label.length > 2 ? 8.5 : 10.5}
             fontWeight={800}
-            fill={n.tonic ? "#04121a" : "#e6f9fc"}
+            fill={n.tonic ? "var(--ongrad)" : "var(--neck-note-text)"}
             fontFamily="var(--font-inter), sans-serif"
           >
             {n.label}

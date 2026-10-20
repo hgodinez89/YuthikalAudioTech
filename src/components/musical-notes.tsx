@@ -84,10 +84,10 @@ export async function MusicalNotes({ instrument }: { instrument: string }) {
               <span className="mt-2 text-[17px] font-bold text-accent">{n.en}</span>
             </article>
           ) : (
-            /* Alterada: siempre oscura, como las teclas negras del piano */
+            /* Alterada: oscura como las teclas negras (pizarra en tema claro) */
             <article
               key={n.sharpEs}
-              className="dark flex min-h-[150px] flex-col justify-center rounded-2xl border border-edge bg-[#090b0f] p-[18px] text-ink transition-colors duration-150 hover:border-accent"
+              className="dark flex min-h-[150px] flex-col justify-center rounded-2xl border border-[var(--altered-edge)] [background:var(--altered-card)] p-[18px] text-ink transition-colors duration-150 hover:border-accent"
             >
               <span className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-mute">
                 {t("altered")}
@@ -102,7 +102,7 @@ export async function MusicalNotes({ instrument }: { instrument: string }) {
                 <div className="-mt-1.5 text-[10px] uppercase tracking-[0.06em] text-mute">
                   {t("sharp")}
                 </div>
-                <div className="h-px bg-edge" />
+                <div className="h-px bg-[var(--altered-line)]" />
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-2xl font-extrabold leading-none">{n.flatEs}</span>
                   <span className="text-[13px] font-bold text-accent">{n.flatEn}</span>
@@ -116,17 +116,18 @@ export async function MusicalNotes({ instrument }: { instrument: string }) {
         )}
       </div>
 
-      {/* OCTAVA DE PIANO — vitrina siempre oscura */}
+      {/* OCTAVA DE PIANO — tarjeta del tema (vitrina oscura en oscuro); las
+          teclas conservan sus colores reales */}
       <div className="mt-[46px]">
         <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-sub">
           {t("pianoTitle")}
         </div>
-        <div className="relative h-[168px] overflow-hidden rounded-[14px] border border-[#1b2130] bg-[#0c0e13] p-3.5">
+        <div className="relative h-[168px] overflow-hidden rounded-[14px] border border-edge bg-surface p-3.5 shadow-card dark:border-[#1b2130] dark:bg-[#0c0e13]">
           <div className="relative flex h-full gap-[5px]">
             {WHITE_KEYS.map((w) => (
               <div
                 key={w.es}
-                className="flex flex-1 flex-col items-center justify-end rounded-b-lg bg-[linear-gradient(180deg,#e9edf3,#cfd6e0)] pb-3 shadow-[inset_0_-3px_0_rgba(0,0,0,0.08)]"
+                className="flex flex-1 flex-col items-center justify-end rounded-b-lg bg-[linear-gradient(180deg,#ffffff,#eef2f7)] pb-3 shadow-[inset_0_0_0_1px_#cbd5e1,inset_0_-3px_0_rgba(0,0,0,0.06)] dark:bg-[linear-gradient(180deg,#e9edf3,#cfd6e0)] dark:shadow-[inset_0_-3px_0_rgba(0,0,0,0.08)]"
               >
                 <span className="text-[15px] font-extrabold text-[#0d1017]">{w.es}</span>
                 <span className="text-[10px] font-bold text-[#5b6577]">{w.en}</span>
@@ -135,7 +136,7 @@ export async function MusicalNotes({ instrument }: { instrument: string }) {
             {BLACK_KEYS.map((b) => (
               <div
                 key={b.label}
-                className="absolute top-0 z-[2] flex h-[62%] w-[8.5%] items-end justify-center rounded-b-md border border-[#05070a] bg-[linear-gradient(180deg,#23272f,#0d0f13)] pb-[7px] shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+                className="absolute top-0 z-[2] flex h-[62%] w-[8.5%] items-end justify-center rounded-b-md border border-[#05070a] bg-[linear-gradient(180deg,#23272f,#0d0f13)] pb-[7px] shadow-[0_3px_6px_rgba(15,23,42,0.25)] dark:shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
                 style={{ left: b.left }}
               >
                 <span className="text-center text-[8.5px] font-bold leading-[1.2] text-[#cfd6e0]">

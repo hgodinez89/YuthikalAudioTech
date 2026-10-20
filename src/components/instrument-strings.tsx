@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { TUNINGS, type TuningString } from "@/lib/instruments";
 
-/** Ilustración del mástil (Guitar Strings.dc.html) — vitrina siempre oscura. */
+/** Ilustración del mástil (Guitar Strings.dc.html); colores del tema (`--neck-*`). */
 function NeckIllustration({ strings }: { strings: TuningString[] }) {
   const W = 908;
   const H = 210;
@@ -27,26 +27,33 @@ function NeckIllustration({ strings }: { strings: TuningString[] }) {
         width={xEnd - x0}
         height={H - 32}
         rx={6}
-        fill="#171a22"
-        stroke="#242b3a"
+        fill="var(--neck-board)"
+        stroke="var(--neck-edge)"
         strokeWidth={1.4}
       />
       {/* clavijero */}
       <path
         d={`M${x0} 20 L40 32 Q20 40 20 105 Q20 170 40 178 L${x0} 190 Z`}
-        fill="#12141b"
-        stroke="#242b3a"
+        fill="var(--neck-head)"
+        stroke="var(--neck-edge)"
         strokeWidth={1.4}
       />
       {/* cejuela */}
-      <rect x={x0 - 4} y={16} width={6} height={H - 32} rx={2} fill="#5a6474" />
+      <rect x={x0 - 4} y={16} width={6} height={H - 32} rx={2} fill="var(--neck-nut)" />
       {/* trastes con sus puntos guía */}
       {[0.2, 0.4, 0.6, 0.8].map((f, i) => {
         const x = x0 + (xEnd - x0) * f;
         return (
           <g key={i}>
-            <line x1={x} y1={22} x2={x} y2={H - 22} stroke="#2a3242" strokeWidth={2} />
-            <circle cx={x} cy={H / 2 + 4} r={3} fill="#2a3242" />
+            <line
+              x1={x}
+              y1={22}
+              x2={x}
+              y2={H - 22}
+              stroke="var(--neck-fret)"
+              strokeWidth={2}
+            />
+            <circle cx={x} cy={H / 2 + 4} r={3} fill="var(--neck-dot)" />
           </g>
         );
       })}
@@ -61,18 +68,25 @@ function NeckIllustration({ strings }: { strings: TuningString[] }) {
               y1={y}
               x2={xEnd}
               y2={y}
-              stroke="#aeb6c4"
+              stroke="var(--neck-string)"
               strokeWidth={sw}
               strokeLinecap="round"
               opacity={0.9}
             />
-            <line x1={x0} y1={y} x2={40} y2={y} stroke="#4a5568" strokeWidth={sw} />
+            <line
+              x1={x0}
+              y1={y}
+              x2={40}
+              y2={y}
+              stroke="var(--neck-string-back)"
+              strokeWidth={sw}
+            />
             <circle
               cx={34}
               cy={y}
               r={5}
-              fill="#0d0f14"
-              stroke="#5a6474"
+              fill="var(--neck-peg)"
+              stroke="var(--neck-peg-edge)"
               strokeWidth={1.6}
             />
             <text
@@ -81,20 +95,20 @@ function NeckIllustration({ strings }: { strings: TuningString[] }) {
               fontSize={16}
               fontFamily="var(--font-inter), sans-serif"
             >
-              <tspan fill="#35d6e8" fontWeight={800}>
+              <tspan fill="var(--accent)" fontWeight={800}>
                 {s.noteEs}
               </tspan>
-              <tspan fill="#4f5a6d" fontWeight={600}>
+              <tspan fill="var(--neck-sep)" fontWeight={600}>
                 {"  ·  "}
               </tspan>
-              <tspan fill="#8b93a3" fontWeight={600} fontSize={13}>
+              <tspan fill="var(--neck-label)" fontWeight={600} fontSize={13}>
                 {s.noteEn}
               </tspan>
             </text>
             <text
               x={x0 + 8}
               y={y - 6}
-              fill="#5b6577"
+              fill="var(--neck-index)"
               fontSize={10}
               fontWeight={700}
               fontFamily="var(--font-inter), sans-serif"
@@ -142,7 +156,7 @@ export async function InstrumentStrings({
         {t("intro", { instrument })}
       </p>
 
-      <div className="dark yk-stage mb-8 rounded-[20px] border border-edge px-6 py-[26px]">
+      <div className="yk-stage mb-8 rounded-[20px] border border-edge px-6 py-[26px] shadow-card">
         <NeckIllustration strings={strings} />
       </div>
 
