@@ -137,12 +137,13 @@ export function AudioSourcePanel({
                 title={disabled ? t("fileSoonHint") : undefined}
                 className={
                   tab === key
-                    ? "yk-gradient flex-1 cursor-pointer rounded-lg py-[7px]"
-                    : "inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg py-[7px] text-sub disabled:cursor-not-allowed disabled:text-disabled"
+                    ? "yk-gradient flex-1 cursor-pointer whitespace-nowrap rounded-lg px-2 py-[7px]"
+                    : "inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-[7px] text-sub disabled:cursor-not-allowed disabled:text-disabled"
                 }
               >
                 {key === "youtube" ? "YouTube" : t("fileTab")}
-                {disabled && <Badge>{t("soon")}</Badge>}
+                {/* Etiqueta corta: el aviso completo va en el title y en la pestaña. */}
+                {disabled && <Badge>{t("soonShort")}</Badge>}
               </button>
             );
           })}

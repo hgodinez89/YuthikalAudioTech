@@ -278,7 +278,7 @@
   },
   "calibration": {
     "sourceTitle": "Fuente de audio",
-    "fileTab": "Archivo",
+    "fileTab": "Audio",
     "urlPlaceholder": "Pega la URL de YouTube…",
     "connect": "Conectar",
     "connected": "CONECTADO",
@@ -352,7 +352,7 @@
       "mark": "Marcar la línea",
       "review": "Repasar"
     },
-    "soon": "Próximamente",
+    "soonShort": "Pronto",
     "fileSoonHint": "La subida de archivos MP3 estará disponible próximamente. Por ahora usa un video de YouTube.",
     "retry": "Reintentar",
     "driftNotice": "La letra cambió desde que sincronizaste: {count, plural, one {1 marca nueva por hacer} other {# marcas nuevas por hacer}}. Las demás se conservaron.",

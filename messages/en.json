@@ -278,7 +278,7 @@
   },
   "calibration": {
     "sourceTitle": "Audio source",
-    "fileTab": "File",
+    "fileTab": "Audio",
     "urlPlaceholder": "Paste the YouTube URL…",
     "connect": "Connect",
     "connected": "CONNECTED",
@@ -352,7 +352,7 @@
       "mark": "Mark the line",
       "review": "Review"
     },
-    "soon": "Coming soon",
+    "soonShort": "Soon",
     "fileSoonHint": "MP3 uploads will be available soon. For now, use a YouTube video.",
     "retry": "Retry",
     "driftNotice": "The lyrics changed since you synced: {count, plural, one {1 new mark to make} other {# new marks to make}}. The rest were kept.",
