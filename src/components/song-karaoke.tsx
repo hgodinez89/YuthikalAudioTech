@@ -498,7 +498,9 @@ export function SongKaraoke({
   const nextData = nextChord ? chords[nextChord] : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-page text-ink dark:bg-[radial-gradient(120%_90%_at_50%_-10%,#0a1220_0%,#05070a_55%)]">
+    // Siempre oscuro (pantalla hero del diseño), aunque el sitio esté en claro:
+    // .dark aplica los tokens oscuros a todo el karaoke, video y menús incluidos.
+    <div className="dark fixed inset-0 z-50 flex flex-col overflow-hidden bg-[radial-gradient(120%_90%_at_50%_-10%,#0a1220_0%,#05070a_55%)] text-ink [color-scheme:dark]">
       {/* Video de YouTube flotante (con MP3 o sin audio no hay video). Cerrado,
           sigue montado fuera de pantalla: el audio no se corta. */}
       {hasVideo && (
