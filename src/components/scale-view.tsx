@@ -27,11 +27,11 @@ function readLabels(): LabelMode {
 /* Tarjeta oscura (como el mástil de Básicos), desplazable si no cabe. */
 function Showcase({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
-    <div className="dark rounded-[20px] border border-[#1b2130] bg-[linear-gradient(180deg,#101017,#0b0d12)] px-5 py-5">
+    <div className="dark yk-stage rounded-[20px] border border-edge px-5 py-5">
       <div className="overflow-x-auto [scrollbar-width:thin]">{children}</div>
       {hint && (
-        <p className="mt-3 flex items-center gap-2 text-[12.5px] text-[#8b93a3]">
-          <Volume2 size={14} strokeWidth={2} className="text-[#35d6e8]" />
+        <p className="mt-3 flex items-center gap-2 text-[12.5px] text-sub">
+          <Volume2 size={14} strokeWidth={2} className="text-accent" />
           {hint}
         </p>
       )}
@@ -204,7 +204,7 @@ export function ScaleView({
                   {t("positionFrets", { from: p.from, to: p.to })}
                 </span>
               </div>
-              <div className="dark overflow-x-auto rounded-xl bg-[#0b0d12] px-3 py-3">
+              <div className="dark overflow-x-auto rounded-xl bg-surface-3 px-3 py-3">
                 <Fretboard
                   stringNames={stringNames}
                   from={p.from}

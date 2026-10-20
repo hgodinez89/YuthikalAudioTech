@@ -14,7 +14,7 @@ export const COMMON_NAMESPACES = [
   "auth",
   "instruments",
   "loading",
-  "errorDb",
+  "errorPage",
   "notFound",
 ];
 

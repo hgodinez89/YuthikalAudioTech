@@ -20,7 +20,7 @@ export function ChordCard({ chord, href }: { chord: ChordCardData; href: string 
     <Link
       href={href}
       prefetch={false}
-      className="relative flex flex-col items-center rounded-2xl border border-edge bg-surface px-3 pb-3.5 pt-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-[border-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-accent hover:shadow-[0_10px_26px_rgba(15,165,190,0.14)] dark:shadow-none"
+      className="relative flex flex-col items-center rounded-2xl border border-edge bg-surface px-3 pb-3.5 pt-4 shadow-card transition-[border-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-accent hover:shadow-lift"
     >
       {hasBarre && (
         <span className="absolute right-2.5 top-2.5 rounded-full border border-accent/40 px-[7px] py-[3px] text-[9.5px] font-bold uppercase tracking-[0.06em] text-accent">

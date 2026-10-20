@@ -2,7 +2,7 @@
 
 import { Gauge, Keyboard, MonitorPlay, Volume2, VolumeX } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { Menu, MenuItem, Popover } from "./menu";
 import { formatTime } from "@/lib/audio";
 
@@ -15,7 +15,7 @@ export const SMALL_BUTTON =
 
 /* Panel flotante encima del botón. */
 const PANEL =
-  "absolute bottom-12 z-[71] rounded-[12px] border border-edge-2 bg-surface p-1.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)]";
+  "absolute bottom-12 z-[71] rounded-[12px] border border-edge-2 bg-surface p-1.5 shadow-pop";
 
 /** Velocidad de reproducción: botón con el valor actual y menú de opciones. */
 export function SpeedControl({
@@ -126,12 +126,11 @@ export function VideoToggle({ open, onToggle }: { open: boolean; onToggle: () =>
   );
 }
 
-/** Botón con la lista de atajos de teclado (oculto en celular). */
+/** Botón con la lista de atajos de teclado (también en tablet o celular con teclado o pedal). */
 export function ShortcutsButton({ items }: { items: { keys: string; label: string }[] }) {
   const t = useTranslations("player");
   return (
     <Popover
-      rootClassName="relative hidden sm:block"
       trigger={{
         "aria-label": t("shortcuts"),
         title: t("shortcuts"),
@@ -184,9 +183,38 @@ export function ProgressWave({
   bars?: number;
   className?: string;
 }) {
+  const t = useTranslations("player");
   const [hover, setHover] = useState<number | null>(null);
   const heights = waveBars(bars);
   const progress = duration ? current / duration : 0;
+
+  /* Teclado (patrón slider): flechas ±5 s, Re Pág/Av Pág ±10 s, Inicio y Fin. */
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!duration) return;
+    const step =
+      e.key === "ArrowRight" || e.key === "ArrowUp"
+        ? 5
+        : e.key === "ArrowLeft" || e.key === "ArrowDown"
+          ? -5
+          : e.key === "PageUp"
+            ? 10
+            : e.key === "PageDown"
+              ? -10
+              : null;
+    const target =
+      e.key === "Home"
+        ? 0
+        : e.key === "End"
+          ? duration
+          : step !== null
+            ? current + step
+            : null;
+    if (target === null) return;
+    // Que no lo repitan los atajos globales del reproductor.
+    e.preventDefault();
+    e.stopPropagation();
+    onSeek(Math.min(duration, Math.max(0, target)));
+  };
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
@@ -194,6 +222,15 @@ export function ProgressWave({
         {formatTime(current)}
       </span>
       <div
+        role="slider"
+        tabIndex={duration ? 0 : -1}
+        aria-label={t("seek")}
+        aria-valuemin={0}
+        aria-valuemax={Math.round(duration)}
+        aria-valuenow={Math.round(current)}
+        aria-valuetext={`${formatTime(current)} / ${formatTime(duration)}`}
+        aria-disabled={!duration || undefined}
+        onKeyDown={onKeyDown}
         onClick={(e) => {
           if (!duration) return;
           const rect = e.currentTarget.getBoundingClientRect();
@@ -204,7 +241,7 @@ export function ProgressWave({
           setHover(Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)));
         }}
         onMouseLeave={() => setHover(null)}
-        className="relative flex h-[34px] flex-1 cursor-pointer items-center gap-[2.5px]"
+        className="relative flex h-[34px] flex-1 cursor-pointer items-center gap-[2.5px] rounded-md"
       >
         {heights.map((h, i) => (
           <span
@@ -226,7 +263,7 @@ export function ProgressWave({
               style={{ left: `${hover * 100}%` }}
             />
             <span
-              className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded-md border border-edge-2 bg-surface px-2 py-0.5 text-[11.5px] font-semibold tabular-nums text-ink shadow-[0_6px_18px_rgba(0,0,0,0.35)]"
+              className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded-md border border-edge-2 bg-surface px-2 py-0.5 text-[11.5px] font-semibold tabular-nums text-ink shadow-pop"
               style={{ left: `${hover * 100}%` }}
             >
               {formatTime(hover * duration)}

@@ -15,6 +15,7 @@ import {
 import { reconcileSync, type SongAudioRow, type SongSyncRow } from "@/lib/audio";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
 import { loadChordData } from "@/lib/chord-data";
+import { dbError } from "@/lib/db-error";
 import { isUuid } from "@/lib/ids";
 import type { Instrument } from "@/lib/instruments";
 import { keyLabel, type SongRow } from "@/lib/songs";
@@ -26,11 +27,13 @@ type Step = "lyrics" | "audio";
 const getSong = cache(async (songId: string) => {
   if (!isUuid(songId)) return null;
   const supabase = await supabaseWithSession();
-  const { data } = await supabase
+  const { data, error, status } = await supabase
     .from("songs")
     .select("id,playlist_id,name,description,key_note,instruments,content,created_at")
     .eq("id", songId)
     .maybeSingle<SongRow>();
+  // Sin fila (no existe o es ajena, por RLS) → 404; un fallo de la base no es un 404.
+  if (error) throw dbError(error, status);
   return data;
 });
 
@@ -107,6 +110,9 @@ export default async function SongPage({
       : null,
   ]);
   if (!song) notFound();
+  for (const res of [audioRes, syncRes, playlistsRes]) {
+    if (res?.error) throw dbError(res.error, res.status);
+  }
 
   const t = await getTranslations({ locale, namespace: "songView" });
 
@@ -129,7 +135,7 @@ export default async function SongPage({
 
   const emptyState = (
     <div className="flex flex-col items-center rounded-[18px] border border-dashed border-edge-2 bg-surface-3 px-5 py-[60px] text-center">
-      <h3 className="mb-2 text-lg font-bold">{t("emptyTitle")}</h3>
+      <h2 className="mb-2 text-lg font-bold">{t("emptyTitle")}</h2>
       <p className="mb-[22px] max-w-[380px] text-sm text-tert">{t("emptyDesc")}</p>
       <Link href={`${songUrl}?mode=edit`} className={buttonClass("primary")}>
         <Pencil size={15} strokeWidth={2.2} />
@@ -217,7 +223,7 @@ export default async function SongPage({
             {parsed.sections.length > 0 && (
               <Link
                 href={`${songUrl}?mode=karaoke`}
-                className={`${buttonClass("primary", "lg")} shadow-[0_8px_30px_rgba(46,107,240,0.32)]`}
+                className={`${buttonClass("primary", "lg")} shadow-fab`}
               >
                 <Play size={17} fill="currentColor" strokeWidth={0} />
                 {t("play")}

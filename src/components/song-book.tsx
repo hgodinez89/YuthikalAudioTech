@@ -39,6 +39,7 @@ import {
   type BookLayout,
 } from "@/lib/book";
 import type { SheetSection } from "@/lib/chordpro";
+import { smoothBehavior } from "@/lib/motion";
 import { readPref, writePref } from "@/lib/use-stored-flag";
 
 /* Modo libro solo donde hay espacio para páginas a lo alto. */
@@ -250,7 +251,7 @@ function BookView({
   useEffect(() => {
     columnsRef.current?.scrollTo({
       left: start * stride,
-      behavior: smooth.current ? "smooth" : "auto",
+      behavior: smooth.current ? smoothBehavior() : "auto",
     });
     smooth.current = true;
     writeSession(pageKey(songId), String(start));
@@ -454,7 +455,7 @@ function BookView({
               <div
                 key={i}
                 aria-hidden
-                className="absolute top-0 -z-10 rounded-2xl border border-edge bg-surface dark:bg-[linear-gradient(180deg,#12151c,#0e1118)]"
+                className="absolute top-0 -z-10 rounded-2xl border border-edge yk-raised"
                 style={{ left: i * stride, width: layout.cardWidth, height: size.height }}
               >
                 <span className="absolute inset-x-0 bottom-3 text-center text-[11px] tabular-nums text-mute">
@@ -471,7 +472,7 @@ function BookView({
           onClick={() => turn(-1)}
           disabled={atStart}
           aria-label={t("previous")}
-          className="absolute left-1 top-1/2 grid size-12 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-edge-2 bg-surface/80 text-sub opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur transition-opacity hover:text-ink group-hover:opacity-100 disabled:hidden [@media(hover:none)]:opacity-100"
+          className="absolute left-1 top-1/2 grid size-12 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-edge-2 bg-surface/80 text-sub opacity-0 shadow-pop backdrop-blur transition-opacity hover:text-ink group-hover:opacity-100 disabled:hidden [@media(hover:none)]:opacity-100"
         >
           <ChevronLeft size={24} strokeWidth={2.2} />
         </button>
@@ -480,7 +481,7 @@ function BookView({
           onClick={() => turn(1)}
           disabled={atEnd}
           aria-label={t("next")}
-          className="absolute right-1 top-1/2 grid size-12 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-edge-2 bg-surface/80 text-sub opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur transition-opacity hover:text-ink group-hover:opacity-100 disabled:hidden [@media(hover:none)]:opacity-100"
+          className="absolute right-1 top-1/2 grid size-12 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-edge-2 bg-surface/80 text-sub opacity-0 shadow-pop backdrop-blur transition-opacity hover:text-ink group-hover:opacity-100 disabled:hidden [@media(hover:none)]:opacity-100"
         >
           <ChevronRight size={24} strokeWidth={2.2} />
         </button>

@@ -35,8 +35,8 @@ export function LanguageSwitcher() {
           lang={code}
           className={
             locale === code
-              ? "yk-gradient rounded-full px-[11px] py-1"
-              : "cursor-pointer rounded-full px-[11px] py-1 text-sub"
+              ? "yk-gradient yk-hit-y relative rounded-full px-[11px] py-1 [--hit:10px]"
+              : "yk-hit-y relative cursor-pointer rounded-full px-[11px] py-1 text-sub [--hit:10px]"
           }
         >
           {code.toUpperCase()}

@@ -83,7 +83,7 @@ export function CalibrationTransport({
             onClick={engine.toggle}
             disabled={disabled}
             aria-label={engine.playing ? t("pause") : t("play")}
-            className="yk-gradient mx-1 grid size-[46px] shrink-0 cursor-pointer place-items-center rounded-full shadow-[0_4px_18px_rgba(46,107,240,0.35)] disabled:opacity-50"
+            className="yk-gradient mx-1 grid size-[46px] shrink-0 cursor-pointer place-items-center rounded-full shadow-fab disabled:opacity-50"
           >
             {engine.playing ? (
               <Pause size={18} fill="currentColor" strokeWidth={0} />

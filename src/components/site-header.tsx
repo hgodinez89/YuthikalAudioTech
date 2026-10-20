@@ -41,7 +41,7 @@ function InstrumentSwitcher({ instrument }: { instrument: Instrument }) {
           </>
         ),
       }}
-      panelClassName="absolute left-0 top-[46px] z-40 w-[240px] overflow-hidden rounded-[14px] border border-edge-2 bg-surface p-1.5 shadow-[0_18px_44px_rgba(0,0,0,0.6)]"
+      panelClassName="absolute left-0 top-[46px] z-40 w-[240px] overflow-hidden rounded-[14px] border border-edge-2 bg-surface p-1.5 shadow-pop"
     >
       {INSTRUMENTS.map((key) => (
         <MenuItem

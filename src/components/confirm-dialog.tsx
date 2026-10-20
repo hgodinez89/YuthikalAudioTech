@@ -44,7 +44,7 @@ export function ConfirmDialog({
       describedBy={messageId}
       role="alertdialog"
     >
-      <div className="w-full max-w-[420px] rounded-[20px] border border-edge-2 bg-surface px-7 pb-6 pt-8 text-center shadow-[0_30px_70px_rgba(0,0,0,0.6)]">
+      <div className="w-full max-w-[420px] rounded-[20px] border border-edge-2 bg-surface px-7 pb-6 pt-8 text-center shadow-pop">
         <div className="mx-auto mb-5 grid size-[52px] place-items-center rounded-full border border-warn/30 bg-warn/10 text-warn">
           <TriangleAlert size={24} strokeWidth={2.2} />
         </div>

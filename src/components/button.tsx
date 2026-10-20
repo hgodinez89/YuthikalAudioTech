@@ -70,7 +70,7 @@ export function chipClass({
     : tone === "gradient"
       ? "yk-gradient border border-transparent font-bold"
       : "border border-accent bg-accent/15 font-bold text-accent";
-  return `inline-flex shrink-0 cursor-pointer items-center gap-1.5 ${base} ${state}`;
+  return `yk-hit-y relative inline-flex shrink-0 cursor-pointer items-center gap-1.5 ${base} ${state}`;
 }
 
 /** Insignia pequeña en mayúsculas ("Próximamente", "Actual"…). */

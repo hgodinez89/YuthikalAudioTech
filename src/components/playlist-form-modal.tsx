@@ -13,7 +13,7 @@ import {
 } from "@/lib/playlists";
 
 export const FIELD_CLASS =
-  "w-full rounded-[11px] border border-edge bg-surface-2 px-3.5 text-[14.5px] text-ink outline-none transition-shadow focus:border-accent focus:shadow-[0_0_0_3px_rgba(53,214,232,0.14)]";
+  "w-full rounded-[11px] border border-edge bg-surface-2 px-3.5 text-[14.5px] text-ink outline-none transition-shadow focus:border-accent focus:shadow-focus";
 
 /**
  * Formulario de playlist (crear y editar). El padre ejecuta la server
@@ -85,6 +85,7 @@ export function PlaylistFormModal({
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder={t("form.namePlaceholder")}
               maxLength={100}
+              aria-describedby={error ? `${id}-error` : undefined}
               className={`${FIELD_CLASS} h-11`}
             />
           </div>
@@ -149,7 +150,11 @@ export function PlaylistFormModal({
             onChange={(v) => setForm({ ...form, ratingLike: v })}
           />
           {error && (
-            <p role="alert" className="text-[13px] font-semibold text-warn">
+            <p
+              id={`${id}-error`}
+              role="alert"
+              className="text-[13px] font-semibold text-warn"
+            >
               {error}
             </p>
           )}

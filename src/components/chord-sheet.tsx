@@ -2,7 +2,14 @@
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, type MouseEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { ChordVisual } from "./chord-visual";
 import {
   isInstrumental,
@@ -11,6 +18,7 @@ import {
   type SheetSection,
   wordGroups,
 } from "@/lib/chordpro";
+import { smoothBehavior } from "@/lib/motion";
 import { useAtBottom } from "@/lib/use-at-bottom";
 
 export type SheetChordData = {
@@ -24,6 +32,16 @@ export type SheetChordData = {
 };
 
 export type ChordDataMap = Record<string, SheetChordData | undefined>;
+
+type ChordPopover = {
+  name: string;
+  /** Centro horizontal y bordes del acorde (coordenadas de la ventana). */
+  x: number;
+  top: number;
+  bottom: number;
+  /** Abierto al tocar o hacer clic: no se cierra al sacar el mouse. */
+  pinned: boolean;
+};
 
 /* Tamaño base de la letra (text-lg); el resto de medidas son relativas (em). */
 const BASE_FONT_PX = 18;
@@ -64,27 +82,82 @@ export function ChordSheet({
   zoom?: number;
 }) {
   const t = useTranslations("songView");
-  const [popover, setPopover] = useState<{ name: string; x: number; y: number } | null>(
-    null,
-  );
+  const [popover, setPopover] = useState<ChordPopover | null>(null);
   const [bottomRef, atBottom] = useAtBottom();
+  const popoverId = useId();
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const legendChords = Object.values(chords).filter(
     (c): c is SheetChordData => c !== undefined,
   );
   const popoverChord = popover ? chords[popover.name] : undefined;
 
-  /* Popover de diagrama al pasar el mouse sobre un acorde conocido. */
-  const chordHover = (chord: string | null) => ({
-    onMouseEnter:
-      chord && chords[chord]
-        ? (e: MouseEvent<HTMLSpanElement>) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            setPopover({ name: chord, x: r.left + r.width / 2, y: r.top });
-          }
-        : undefined,
-    onMouseLeave: chord ? () => setPopover(null) : undefined,
-  });
+  /* Popover del diagrama: al pasar el mouse, con el foco o al tocar (en
+     táctil queda fijo hasta tocar afuera, Escape o desplazarse). */
+  const openAt = (name: string, el: HTMLElement, pinned: boolean) => {
+    const r = el.getBoundingClientRect();
+    setPopover({ name, x: r.left + r.width / 2, top: r.top, bottom: r.bottom, pinned });
+  };
+  const chordName = (chord: string | null, className: string, children: ReactNode) =>
+    chord && chords[chord] ? (
+      <button
+        type="button"
+        data-chord-trigger
+        aria-describedby={popover?.name === chord ? popoverId : undefined}
+        onMouseEnter={(e) => !popover?.pinned && openAt(chord, e.currentTarget, false)}
+        onMouseLeave={() => setPopover((p) => (p?.pinned ? p : null))}
+        onFocus={(e) => openAt(chord, e.currentTarget, false)}
+        onBlur={() => setPopover(null)}
+        onClick={(e) =>
+          popover?.name === chord && popover.pinned
+            ? setPopover(null)
+            : openAt(chord, e.currentTarget, true)
+        }
+        className={`${className} cursor-pointer rounded-sm text-left`}
+      >
+        {children}
+      </button>
+    ) : (
+      <span className={className}>{children}</span>
+    );
+
+  const open = popover !== null;
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setPopover(null);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    const onPointer = (e: PointerEvent) => {
+      if (!(e.target as Element).closest?.("[data-chord-trigger]")) close();
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    window.addEventListener("scroll", close, { capture: true, passive: true });
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+      window.removeEventListener("scroll", close, { capture: true });
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  /* Dentro de la pantalla: arriba del acorde, o abajo si no cabe; nunca
+     cortado por los lados. */
+  useLayoutEffect(() => {
+    const el = popoverRef.current;
+    if (!el || !popover) return;
+    const margin = 8;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const left = Math.min(
+      Math.max(popover.x - w / 2, margin),
+      window.innerWidth - w - margin,
+    );
+    const above = popover.top - h - 12;
+    el.style.left = `${left}px`;
+    el.style.top = `${above >= margin ? above : popover.bottom + 12}px`;
+    el.style.visibility = "visible";
+  }, [popover]);
 
   return (
     <>
@@ -137,12 +210,12 @@ export function ChordSheet({
                   ) : segment.repeat ? (
                     <RepeatBadge key={gi} times={segment.repeat} />
                   ) : (
-                    <span
-                      key={gi}
-                      {...chordHover(segment.chord)}
-                      className="font-extrabold tracking-[0.01em] text-accent"
-                    >
-                      {segment.chord}
+                    <span key={gi}>
+                      {chordName(
+                        segment.chord,
+                        "font-extrabold tracking-[0.01em] text-accent",
+                        segment.chord,
+                      )}
                     </span>
                   ),
                 )}
@@ -159,12 +232,11 @@ export function ChordSheet({
                   <span key={wi} className="inline-flex items-end">
                     {group.map((piece, pi) => (
                       <span key={pi} className="inline-flex flex-col whitespace-pre">
-                        <span
-                          {...chordHover(piece.chord)}
-                          className="min-h-[1.571em] text-[0.778em] font-extrabold leading-relaxed tracking-[0.01em] text-accent"
-                        >
-                          {piece.chord ?? ""}
-                        </span>
+                        {chordName(
+                          piece.chord,
+                          "min-h-[1.571em] text-[0.778em] font-extrabold leading-relaxed tracking-[0.01em] text-accent",
+                          piece.chord ?? "",
+                        )}
                         {/* acorde al final sin palabra: espacio duro para que la
                             columna mida una línea y el acorde no se hunda */}
                         <span>{piece.text || " "}</span>
@@ -221,12 +293,12 @@ export function ChordSheet({
       {/* POPOVER DE ACORDE */}
       {popover && popoverChord && (
         <div
-          className="pointer-events-none fixed z-[60] flex -translate-x-1/2 flex-col items-center rounded-[14px] border border-edge-2 bg-surface px-3.5 pb-2.5 pt-3 shadow-[0_12px_34px_rgba(0,0,0,0.6)]"
-          style={{
-            left: popover.x,
-            top: popover.y,
-            transform: "translate(-50%, calc(-100% - 12px))",
-          }}
+          ref={popoverRef}
+          id={popoverId}
+          role="tooltip"
+          // Se ubica al medirlo (useLayoutEffect): invisible hasta entonces.
+          style={{ visibility: "hidden" }}
+          className="pointer-events-none fixed left-0 top-0 z-[60] flex flex-col items-center rounded-[14px] border border-edge-2 bg-surface px-3.5 pb-2.5 pt-3 shadow-pop"
         >
           <div className="pb-1.5">
             <ChordVisual chord={popoverChord} />
@@ -244,11 +316,11 @@ export function ChordSheet({
           onClick={() =>
             window.scrollTo({
               top: atBottom ? 0 : document.documentElement.scrollHeight,
-              behavior: "smooth",
+              behavior: smoothBehavior(),
             })
           }
           aria-label={atBottom ? t("fabUp") : t("fabDown")}
-          className="yk-gradient fixed bottom-6 right-6 z-50 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-[0_8px_24px_rgba(46,107,240,0.4)]"
+          className="yk-gradient fixed bottom-6 right-6 z-50 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-fab"
         >
           {atBottom ? (
             <ChevronUp size={22} strokeWidth={2.4} />

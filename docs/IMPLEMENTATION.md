@@ -143,7 +143,8 @@ src/components/           UI (fieles al handoff):
   song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets).
                           Piezas: `chordpro-highlight`, `visual-editor`, `strum-builder`,
                           `paste-chords-modal` ("Pegar cifrado"), `song-meta-drawer`
-                          (datos de la canción) y `delete-song-dialog`.
+                          (datos de la canción). Borrar la canción vuelve a la
+                          lista con el aviso «Deshacer» (`lib/use-delete-song.ts`).
                           Lado a lado (lg+), el botón entre paneles vincula el scroll
                           de ChordPro y vista previa (por defecto sí, recordado en
                           localStorage): cada sección es un ancla (`startLine` en el
@@ -153,11 +154,19 @@ src/components/           UI (fieles al handoff):
   song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte. Al retomar a medias, el audio arranca (pausado) en el inicio de la última línea marcada; las marcas pendientes se guardan al salir. Con todas las líneas marcadas, ESPACIO marca un fin opcional; la X lo descarta y el audio suena completo. "Sin fin" no se guarda: al volver a entrar sin fin marcado, la sincronización se muestra completa (la bandera permite agregar uno después). En modo palabra, los trozos que separa un acorde (`Re[D]demp[G]tion`) se muestran pegados según `spaceAfter`, aunque cada uno sea su propia marca
   song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll. Con audio, la intro queda fuera: play, "Al inicio" y los saltos empiezan 3 s antes de la primera línea sincronizada, y la barra cuenta 0:00 desde ahí. Con fin marcado, la barra termina en él y el audio se apaga con un fundido de 2 s y se pausa
   confirm-dialog          Confirmación destructiva estándar (no hay diálogos nativos)
+  toast                   Avisos de la sección de canciones (en su layout) con «Deshacer»
+                          y acciones diferidas (`defer`)
+  error-screen            Pantalla de error: `db` (la base no respondió) o `generic`
+  fade-row                Fila de chips con scroll horizontal y borde difuminado
+  skip-link               «Saltar al contenido» (primer Tab, hacia `#main`)
   instrument-toggles      Instrumentos de una canción: selector múltiple e iconos
 src/lib/                  Lógica y acceso a datos:
   chordpro.ts             Parser/edición ChordPro (+tests)
   chord-search.ts         Parser de búsqueda ES/EN, slugs y selector rápido (+tests)
   chord-query.ts          Página del buscador de acordes (servidor y cliente)
+  db-error.ts             Error de consulta con digest de "base inaccesible" (+tests)
+  motion.ts               Scroll suave salvo movimiento reducido
+  use-delete-song.ts      Borrar canción con «Deshacer» (acción diferida del aviso)
   chord-import.ts         Cifrado "acordes encima de la letra" → ChordPro (+tests)
   instruments.ts          Instrumentos activos/próximos, afinaciones, ids y rutas (+tests)
   piano.ts                Acordes de piano calculados: voicings, inversiones, dedos (+tests)
@@ -251,4 +260,8 @@ where o.bucket_id = 'audio'
 - *Tabla `profiles` omitida*: nombre/avatar salen de la sesión de Google; idioma/tema se persisten en el navegador.
 - *CSP*: `script-src` incluye `'unsafe-inline'` (requisito de hidratación de Next sin nonces) y `https://www.youtube.com` (IFrame API); `connect-src` limitado a Supabase; `frame-ancestors 'none'`. `Cross-Origin-Opener-Policy: same-origin` (el login de Google es por redirección, no popup).
 - *Icono en la pantalla de inicio*: iOS no usa `icon.svg`; sin `apple-icon.png` (180×180, opaco y sin esquinas) genera una letra con el título. El manifest usa `display: "browser"`: en iOS una app standalone guarda cookies aparte y el login con Google por redirección perdería la sesión.
-- *Contraste AA*: `--sub`, `--tert`, `--mute` y `--accent` (claro) y `--mute` (oscuro) se ajustaron respecto al handoff para alcanzar ≥ 4,5:1.
+- *Contraste AA*: `--sub`, `--tert`, `--mute`, `--accent` y `--warn` (claro) y `--mute` (oscuro) se ajustaron respecto al handoff para alcanzar ≥ 4,5:1; en claro `--tert` y `--mute` son distintos.
+- *Tokens de efectos*: brillos, sombras y foco tienen variante clara y oscura en `globals.css` (`--glow`, `--chord-glow`, `--focus-ring`, `--pop-shadow`, `--card-shadow`, `--lift-shadow`, `--fab-shadow`, `--raised`, `--directive`) y se usan como utilidades (`shadow-pop`, `shadow-card`, `shadow-lift`, `shadow-fab`, `shadow-glow`, `shadow-focus`, `text-directive`) o clases (`yk-raised`, `yk-halo`, `yk-gradient-soft`, `yk-stage`). En los componentes no quedan colores escritos a mano, salvo las ilustraciones de instrumentos (mástil, cuerdas, teclas, siempre oscuras), los colores de dedos del piano y el botón de Google (colores de su marca).
+- *Deshacer en vez de confirmar*: borrar una canción no pide confirmación; desaparece al instante y el borrado real ocurre a los 6 s (o al cerrar el aviso, o al salir de la sección de canciones). Si se cierra la pestaña antes, la canción **no** se borra (el lado seguro). Mover a otra playlist también se deshace. Borrar una playlist sí se confirma (conserva sus canciones).
+- *Errores*: un fallo puntual del buscador o del selector de acordes se muestra en su lugar con «Reintentar» (el selector dice «Cargando» mientras busca). En el servidor, las consultas que fallan lanzan `dbError` (`lib/db-error.ts`): si la base no respondió (sin código de PostgREST, PGRST000–003 o caída del gateway) el error lleva un digest `db-unavailable-…` y la página explica que la base está inaccesible; cualquier otro fallo muestra un error genérico. Una canción o acorde que no existe es 404, pero un fallo de la base no (en el catálogo, un 404 quedaría en caché). `[locale]/error.tsx` usa `retry()` (vuelve a pedir los datos); canciones tiene su propio `error.tsx` (conserva la barra del instrumento) y `global-error.tsx` cubre fallos del layout del idioma (descarga sus textos solo si se muestra). Si falla el canje del código de Google, el login lo indica (`?error`).
+- *Accesibilidad*: un solo `<main id="main">` por pantalla (la portada deja su pie fuera) con «Saltar al contenido»; anillo `:focus-visible` global y halo en los campos; bloque `prefers-reduced-motion` y `smoothBehavior()` (`lib/motion.ts`) para el scroll suave en JS; áreas táctiles de 44 px en pantallas táctiles sin agrandar el diseño (`.yk-hit` / `.yk-hit-y`); segmentados con `aria-pressed` o `radio`; la onda de progreso es un `slider` (flechas ±5 s, Re Pág/Av Pág ±10 s, Inicio, Fin); el video flotante cerrado queda `inert`; estrellas con texto equivalente (y como radios al calificar); los acordes con diagrama son botones (el popover abre al pasar el mouse, con el foco o al tocar, cierra con Escape o al tocar afuera y no se sale de la pantalla). En karaoke, Escape sale y hay una sola salida; los atajos están en el reproductor también en tablet y celular.

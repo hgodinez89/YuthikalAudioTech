@@ -98,7 +98,7 @@ export function UserMenu() {
           </>
         ),
       }}
-      panelClassName="absolute right-0 top-[46px] z-40 w-[250px] overflow-hidden rounded-[14px] border border-edge-2 bg-surface shadow-[0_18px_44px_rgba(0,0,0,0.6)]"
+      panelClassName="absolute right-0 top-[46px] z-40 w-[250px] overflow-hidden rounded-[14px] border border-edge-2 bg-surface shadow-pop"
     >
       {(close) => (
         <>

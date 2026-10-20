@@ -9,13 +9,20 @@
     "switchInstrument": "Cambiar instrumento",
     "settings": "Ajustes",
     "language": "Idioma",
-    "theme": "Tema"
+    "theme": "Tema",
+    "themes": {
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Sistema"
+    },
+    "themeNext": "Tema: {current} · cambiar a {next}"
   },
   "nav": {
     "chords": "Acordes",
     "scales": "Escalas",
     "songs": "Canciones",
-    "basics": "Básicos"
+    "basics": "Básicos",
+    "skipToContent": "Saltar al contenido"
   },
   "auth": {
     "signIn": "Iniciar con Google",
@@ -25,7 +32,9 @@
     "lockNote": "El registro solo está disponible con Google",
     "account": "Cuenta",
     "signOut": "Cerrar sesión",
-    "redirecting": "Abriendo Google…"
+    "redirecting": "Abriendo Google…",
+    "signInError": "No se pudo conectar con Google. Revisa tu conexión e intenta de nuevo.",
+    "signInFailed": "No se pudo completar el inicio de sesión. Intenta de nuevo."
   },
   "playlists": {
     "title": "Mis playlists",
@@ -38,6 +47,7 @@
       "deleting": "Eliminando…"
     },
     "like": "Me gusta",
+    "stars": "{count, plural, one {1 estrella} other {# estrellas}} de 5",
     "close": "Cerrar",
     "cancel": "Cancelar",
     "create": "Crear playlist",
@@ -81,12 +91,20 @@
     "eyebrow": "Yuthikal AudioTech",
     "message": "Afinando tu sesión…"
   },
-  "errorDb": {
-    "badge": "Algo salió mal",
-    "title": "No pudimos cargar esta página",
-    "description": "Intenta de nuevo. Si el problema continúa, la base de datos podría estar temporalmente inaccesible por inactividad; tus playlists y canciones están a salvo.",
+  "errorPage": {
+    "generic": {
+      "badge": "Algo salió mal",
+      "title": "No pudimos cargar esta página",
+      "description": "Ocurrió un error inesperado. Intenta de nuevo; si continúa, vuelve al inicio y prueba más tarde."
+    },
+    "db": {
+      "badge": "Base de datos inaccesible",
+      "title": "La base de datos no responde",
+      "description": "Puede estar en pausa por inactividad o en mantenimiento. Intenta de nuevo en unos segundos: tus playlists y canciones están a salvo. Si continúa, contacta al administrador."
+    },
     "retry": "Reintentar",
     "contact": "Contactar al administrador",
+    "home": "Volver al inicio",
     "errorCode": "Código de error"
   },
   "notFound": {
@@ -116,6 +134,7 @@
     "saving": "Guardando…",
     "edit": "Editar",
     "statusSynced": "Sincronizada",
+    "statusRaw": "Sin calibrar",
     "sourceFile": "Archivo MP3",
     "emptyTitle": "Aún no tienes canciones",
     "emptyDesc": "Crea una canción y pega su cifrado o escribe la letra con sus acordes.",
@@ -156,6 +175,7 @@
     "count": "{count, plural, =0 {Sin canciones} one {1 canción} other {# canciones}}",
     "all": "Todas",
     "searchPlaceholder": "Buscar canción…",
+    "searchLabel": "Buscar en mis canciones",
     "sort": {
       "label": "Ordenar por",
       "recent": "Fecha",
@@ -193,7 +213,16 @@
     "copyFileNote": "El MP3 se copia como un archivo propio de la nueva canción.",
     "duplicatedElsewhere": "Duplicada en «{name}»",
     "soon": "Próximamente",
-    "copyFileSoon": "Copiar archivos MP3 estará disponible próximamente."
+    "copyFileSoon": "Copiar archivos MP3 estará disponible próximamente.",
+    "toast": {
+      "deleted": "«{name}» eliminada",
+      "moved": "«{name}» movida a «{playlist}»",
+      "movedNone": "«{name}» quedó sin playlist",
+      "duplicated": "Copia creada",
+      "undo": "Deshacer",
+      "dismiss": "Cerrar aviso",
+      "error": "No se pudo completar. Revisa tu conexión e intenta de nuevo."
+    }
   },
   "editor": {
     "textMode": "Editor de texto",
@@ -215,6 +244,8 @@
     "pickerTitle": "Elegir acorde",
     "pickerPlaceholder": "Buscar acorde…",
     "pickerEmpty": "Sin resultados.",
+    "pickerLoading": "Cargando acordes…",
+    "pickerError": "No se pudieron cargar los acordes.",
     "removeChord": "Quitar {chord}",
     "strumTitle": "Patrón de rasgueo",
     "strumEmpty": "Agrega ↓ ↑ – con los botones",
@@ -224,10 +255,6 @@
     "saveChanges": "Guardar cambios",
     "savingChanges": "Guardando…",
     "deleteSong": "Eliminar canción",
-    "deleteTitle": "¿Eliminar esta canción?",
-    "deleteMessage": "<b>\"{name}\"</b> se eliminará de forma permanente, incluida su letra y acordes. Esta acción no se puede deshacer.",
-    "deleteConfirm": "Sí, eliminar",
-    "deleting": "Eliminando…",
     "paste": {
       "button": "Pegar cifrado",
       "title": "Pegar cifrado",
@@ -246,6 +273,7 @@
   },
   "player": {
     "toStart": "Ir al inicio",
+    "seek": "Posición en la canción",
     "back10": "Retroceder 10 s",
     "forward10": "Adelantar 10 s",
     "speed": "Velocidad",
@@ -443,6 +471,7 @@
     "eyebrow": "Referencia · {instrument}",
     "title": "Buscador de acordes",
     "searchPlaceholder": "Busca un acorde… ej. La menor, C#7, Si bemol",
+    "searchLabel": "Buscar acorde",
     "clearSearch": "Limpiar búsqueda",
     "micLabel": "Búsqueda por voz",
     "micTitle": "Buscar por voz",
@@ -462,6 +491,8 @@
     "empty": "Sin resultados para \"{query}\"",
     "emptyHint": "Prueba con otra notación, p. ej. \"Am\" o \"La menor\".",
     "loadingMore": "Cargando más acordes…",
+    "loadError": "No se pudieron cargar los acordes. Revisa tu conexión e intenta de nuevo.",
+    "retry": "Reintentar",
     "barre": "cejilla",
     "fabDown": "Ir abajo",
     "fabUp": "Ir arriba",

@@ -176,8 +176,9 @@ export function FloatingVideo({
   return (
     <div
       ref={cardRef}
-      aria-hidden={!open}
-      className={`fixed ${overlay ? "z-[60]" : "z-40"} w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge-2 bg-surface shadow-[0_18px_44px_rgba(0,0,0,0.55)] sm:w-[min(var(--video-w),calc(100vw-32px),calc((100dvh-var(--video-top)-var(--video-bottom)-32px)*16/9))] ${
+      // Cerrado sigue montado (el audio no se corta), pero inerte: sin foco ni lector.
+      inert={!open}
+      className={`fixed ${overlay ? "z-[60]" : "z-40"} w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge-2 bg-surface shadow-pop sm:w-[min(var(--video-w),calc(100vw-32px),calc((100dvh-var(--video-top)-var(--video-bottom)-32px)*16/9))] ${
         open
           ? CORNER_CLASS[placement]
           : "pointer-events-none -left-[9999px] top-0 opacity-0"
@@ -213,7 +214,7 @@ export function FloatingVideo({
             onClick={toggleSize}
             aria-label={isSmall ? t("videoLarger") : t("videoSmaller")}
             title={isSmall ? t("videoLarger") : t("videoSmaller")}
-            className="hidden size-6 cursor-pointer place-items-center rounded-md text-sub hover:bg-edge hover:text-ink sm:grid"
+            className="hidden yk-hit relative size-6 cursor-pointer place-items-center rounded-md text-sub [--hit:10px] hover:bg-edge hover:text-ink sm:grid"
           >
             {isSmall ? (
               <Maximize2 size={13} strokeWidth={2.2} />
@@ -226,7 +227,7 @@ export function FloatingVideo({
             onClick={onClose}
             aria-label={t("videoClose")}
             title={t("videoClose")}
-            className="grid size-6 cursor-pointer place-items-center rounded-md text-sub hover:bg-edge hover:text-ink"
+            className="grid yk-hit relative size-6 cursor-pointer place-items-center rounded-md text-sub [--hit:10px] hover:bg-edge hover:text-ink"
           >
             <X size={14} strokeWidth={2.2} />
           </button>

@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useId } from "react";
+
 /* Estrella del prototipo: rellena en cian, vacía con trazo gris. */
 export function Star({ filled, size = 15 }: { filled: boolean; size?: number }) {
   return (
@@ -19,8 +22,9 @@ export function Star({ filled, size = 15 }: { filled: boolean; size?: number }) 
 }
 
 export function StarsRow({ value, size }: { value: number; size?: number }) {
+  const t = useTranslations("playlists");
   return (
-    <span className="flex gap-[3px]">
+    <span role="img" aria-label={t("stars", { count: value })} className="flex gap-[3px]">
       {[1, 2, 3, 4, 5].map((i) => (
         <Star key={i} filled={i <= value} size={size} />
       ))}
@@ -37,17 +41,39 @@ export function StarsInput({
   onChange: (v: number) => void;
   label: string;
 }) {
+  const t = useTranslations("playlists");
+  const labelId = useId();
   return (
     <div>
-      <span className="mb-[9px] block text-[12.5px] font-semibold text-sub">{label}</span>
-      <div className="flex gap-[5px]">
+      <span id={labelId} className="mb-[9px] block text-[12.5px] font-semibold text-sub">
+        {label}
+      </span>
+      {/* Radios: flechas para cambiar la calificación (patrón radiogroup). */}
+      <div role="radiogroup" aria-labelledby={labelId} className="flex gap-[5px]">
         {[1, 2, 3, 4, 5].map((i) => (
           <button
             key={i}
             type="button"
+            role="radio"
+            aria-checked={i === value}
+            tabIndex={i === value ? 0 : -1}
             onClick={() => onChange(i)}
-            aria-label={`${label}: ${i}`}
-            className="cursor-pointer leading-none"
+            onKeyDown={(e) => {
+              const step =
+                e.key === "ArrowRight" || e.key === "ArrowUp"
+                  ? 1
+                  : e.key === "ArrowLeft" || e.key === "ArrowDown"
+                    ? -1
+                    : 0;
+              if (!step) return;
+              e.preventDefault();
+              const nextValue = Math.min(5, Math.max(1, value + step));
+              onChange(nextValue);
+              const group = e.currentTarget.parentElement;
+              (group?.children[nextValue - 1] as HTMLElement | undefined)?.focus();
+            }}
+            aria-label={t("stars", { count: i })}
+            className="yk-hit relative cursor-pointer rounded-md leading-none [--hit:9px]"
           >
             <Star filled={i <= value} size={26} />
           </button>

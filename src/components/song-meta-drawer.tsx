@@ -80,7 +80,7 @@ export function SongMetaDrawer({
           e.preventDefault();
           submit();
         }}
-        className="h-full w-[420px] max-w-[92vw] overflow-y-auto border-l border-edge-2 bg-surface shadow-[-20px_0_60px_rgba(0,0,0,0.5)]"
+        className="h-full w-[420px] max-w-[92vw] overflow-y-auto border-l border-edge-2 bg-surface shadow-pop"
       >
         <ModalHeader
           id={`${id}-title`}
@@ -100,6 +100,7 @@ export function SongMetaDrawer({
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               maxLength={150}
+              aria-describedby={error ? `${id}-error` : undefined}
               className={`${FIELD_CLASS} h-11`}
             />
           </div>
@@ -131,7 +132,7 @@ export function SongMetaDrawer({
                 title={
                   detection ? tSongs("form.autoDetectHint") : tSongs("form.noChords")
                 }
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-[12.5px] font-semibold text-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:text-disabled disabled:hover:bg-transparent"
+                className="yk-hit-y relative inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-[12.5px] [--hit:9px] font-semibold text-accent hover:bg-accent/10 disabled:cursor-not-allowed disabled:text-disabled disabled:hover:bg-transparent"
               >
                 <WandSparkles size={14} strokeWidth={2} />
                 {tSongs("form.autoDetect")}
@@ -198,7 +199,11 @@ export function SongMetaDrawer({
             </select>
           </div>
           {error && (
-            <p role="alert" className="text-[13px] font-semibold text-warn">
+            <p
+              id={`${id}-error`}
+              role="alert"
+              className="text-[13px] font-semibold text-warn"
+            >
               {error}
             </p>
           )}

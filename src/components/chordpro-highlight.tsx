@@ -8,7 +8,7 @@ export function highlightLine(line: string, key: number): ReactNode {
   // [[Sección]]: encabezado (azul de directivas, en negrita)
   if (sectionHeaderLabel(line)) {
     return (
-      <span key={key} className="font-bold text-[#5b8cff]">
+      <span key={key} className="font-bold text-directive">
         {line}
         {"\n"}
       </span>
@@ -52,7 +52,7 @@ export function highlightLine(line: string, key: number): ReactNode {
   }
   if (/^\s*\{[^}]*\}\s*$/.test(line)) {
     return (
-      <span key={key} className="text-[#5b8cff]">
+      <span key={key} className="text-directive">
         {line}
         {"\n"}
       </span>

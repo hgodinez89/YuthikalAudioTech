@@ -10,7 +10,7 @@ export default async function RootNotFound() {
   return (
     <html lang={defaultLocale}>
       <body className="flex min-h-screen items-center justify-center bg-page px-6 text-ink">
-        <div className="max-w-[420px] text-center">
+        <main className="max-w-[420px] text-center">
           <div className="mb-4 text-[64px] font-extrabold leading-none text-edge-2">
             404
           </div>
@@ -19,7 +19,7 @@ export default async function RootNotFound() {
           <a href={`/${defaultLocale}`} className={buttonClass("primary", "lg")}>
             {t("back")}
           </a>
-        </div>
+        </main>
       </body>
     </html>
   );

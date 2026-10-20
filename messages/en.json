@@ -9,9 +9,16 @@
     "switchInstrument": "Switch instrument",
     "settings": "Settings",
     "language": "Language",
-    "theme": "Theme"
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "themeNext": "Theme: {current} · switch to {next}"
   },
   "nav": {
+    "skipToContent": "Skip to content",
     "chords": "Chords",
     "scales": "Scales",
     "songs": "Songs",
@@ -25,7 +32,9 @@
     "lockNote": "Sign-up is only available with Google",
     "account": "Account",
     "signOut": "Sign out",
-    "redirecting": "Opening Google…"
+    "redirecting": "Opening Google…",
+    "signInError": "Couldn't connect to Google. Check your connection and try again.",
+    "signInFailed": "Couldn't complete the sign-in. Please try again."
   },
   "playlists": {
     "title": "My playlists",
@@ -37,6 +46,7 @@
       "confirm": "Yes, delete",
       "deleting": "Deleting…"
     },
+    "stars": "{count, plural, one {1 star} other {# stars}} out of 5",
     "like": "Liked",
     "close": "Close",
     "cancel": "Cancel",
@@ -81,12 +91,20 @@
     "eyebrow": "Yuthikal AudioTech",
     "message": "Tuning your session…"
   },
-  "errorDb": {
-    "badge": "Something went wrong",
-    "title": "We couldn't load this page",
-    "description": "Try again. If the problem continues, the database might be temporarily unavailable due to inactivity; your playlists and songs are safe.",
+  "errorPage": {
+    "generic": {
+      "badge": "Something went wrong",
+      "title": "We couldn't load this page",
+      "description": "An unexpected error occurred. Try again; if it continues, go back home and try later."
+    },
+    "db": {
+      "badge": "Database unavailable",
+      "title": "The database isn't responding",
+      "description": "It may be paused due to inactivity or under maintenance. Try again in a few seconds: your playlists and songs are safe. If it continues, contact the administrator."
+    },
     "retry": "Retry",
     "contact": "Contact administrator",
+    "home": "Back to home",
     "errorCode": "Error code"
   },
   "notFound": {
@@ -115,6 +133,7 @@
     "save": "Save",
     "saving": "Saving…",
     "edit": "Edit",
+    "statusRaw": "Not synced",
     "statusSynced": "Synced",
     "sourceFile": "MP3 file",
     "emptyTitle": "You have no songs yet",
@@ -156,6 +175,7 @@
     "count": "{count, plural, =0 {No songs} one {1 song} other {# songs}}",
     "all": "All",
     "searchPlaceholder": "Search songs…",
+    "searchLabel": "Search my songs",
     "sort": {
       "label": "Sort by",
       "recent": "Date",
@@ -193,7 +213,16 @@
     "copyFileNote": "The MP3 is copied as the new song's own file.",
     "duplicatedElsewhere": "Duplicated into “{name}”",
     "soon": "Coming soon",
-    "copyFileSoon": "Copying MP3 files will be available soon."
+    "copyFileSoon": "Copying MP3 files will be available soon.",
+    "toast": {
+      "deleted": "“{name}” deleted",
+      "moved": "“{name}” moved to “{playlist}”",
+      "movedNone": "“{name}” is no longer in a playlist",
+      "duplicated": "Copy created",
+      "undo": "Undo",
+      "dismiss": "Dismiss",
+      "error": "Couldn't complete that. Check your connection and try again."
+    }
   },
   "editor": {
     "textMode": "Text editor",
@@ -214,6 +243,8 @@
     "visualEmpty": "No lyrics yet. Write them first in the text editor.",
     "pickerTitle": "Pick a chord",
     "pickerPlaceholder": "Search chord…",
+    "pickerLoading": "Loading chords…",
+    "pickerError": "Couldn't load the chords.",
     "pickerEmpty": "No results.",
     "removeChord": "Remove {chord}",
     "strumTitle": "Strumming pattern",
@@ -224,10 +255,6 @@
     "saveChanges": "Save changes",
     "savingChanges": "Saving…",
     "deleteSong": "Delete song",
-    "deleteTitle": "Delete this song?",
-    "deleteMessage": "<b>\"{name}\"</b> will be permanently deleted, including its lyrics and chords. This action cannot be undone.",
-    "deleteConfirm": "Yes, delete",
-    "deleting": "Deleting…",
     "paste": {
       "button": "Paste chord sheet",
       "title": "Paste chord sheet",
@@ -246,6 +273,7 @@
   },
   "player": {
     "toStart": "Go to start",
+    "seek": "Position in the song",
     "back10": "Back 10 s",
     "forward10": "Forward 10 s",
     "speed": "Speed",
@@ -443,6 +471,7 @@
     "eyebrow": "Reference · {instrument}",
     "title": "Chord finder",
     "searchPlaceholder": "Search a chord… e.g. A minor, C#7, Bb",
+    "searchLabel": "Search chords",
     "clearSearch": "Clear search",
     "micLabel": "Voice search",
     "micTitle": "Search by voice",
@@ -461,6 +490,8 @@
     "showing": "Showing <b>{shown}</b> of {total} chords",
     "empty": "No results for \"{query}\"",
     "emptyHint": "Try another notation, e.g. \"Am\" or \"A minor\".",
+    "loadError": "Couldn't load the chords. Check your connection and try again.",
+    "retry": "Retry",
     "loadingMore": "Loading more chords…",
     "barre": "barre",
     "fabDown": "Go to bottom",

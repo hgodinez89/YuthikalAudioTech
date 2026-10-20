@@ -14,5 +14,8 @@ export async function GET(request: Request) {
     if (!error) return NextResponse.redirect(`${origin}${next}`);
   }
 
-  return NextResponse.redirect(`${origin}/login`);
+  // El login muestra el error y conserva a dónde volver.
+  return NextResponse.redirect(
+    `${origin}/login?error=1&next=${encodeURIComponent(next)}`,
+  );
 }

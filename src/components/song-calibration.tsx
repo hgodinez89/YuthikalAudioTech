@@ -19,6 +19,7 @@ import {
   type SongSyncRow,
 } from "@/lib/audio";
 import { saveSync } from "@/lib/audio-actions";
+import { smoothBehavior } from "@/lib/motion";
 import type { SongRow } from "@/lib/songs";
 import { calibrationRows, type CalibrationRow } from "@/lib/sync-lines";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
@@ -144,7 +145,7 @@ const CalibrationLineView = memo(function CalibrationLineView({
           onClick={() => onRemark(row)}
           title={t("remark")}
           aria-label={t("remark")}
-          className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
+          className="yk-hit relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
         >
           <RotateCcw size={16} strokeWidth={2} />
         </button>
@@ -253,10 +254,9 @@ export function SongCalibration({
     const tooLow = rect.top > top + zone * 0.65 || rect.bottom > bottom - 8;
     const tooHigh = rect.top < top;
     if (!tooLow && !tooHigh) return;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({
       top: window.scrollY + rect.top - (top + zone * 0.3),
-      behavior: initial || reduceMotion ? "auto" : "smooth",
+      behavior: initial ? "auto" : smoothBehavior(),
     });
   }, [cursor]);
 
@@ -423,17 +423,26 @@ export function SongCalibration({
         {/* GRANULARIDAD */}
         <div className="overflow-hidden rounded-2xl border border-edge bg-surface">
           <div className="border-b border-edge px-4 py-3.5">
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-tert">
+            <span
+              id="granularity-title"
+              className="text-xs font-bold uppercase tracking-[0.14em] text-tert"
+            >
               {t("granularityTitle")}
             </span>
           </div>
-          <div className="flex flex-col gap-2.5 p-4">
+          <div
+            role="radiogroup"
+            aria-labelledby="granularity-title"
+            className="flex flex-col gap-2.5 p-4"
+          >
             {(["line", "word"] as const).map((value) => {
               const active = granularity === value;
               return (
                 <button
                   key={value}
                   type="button"
+                  role="radio"
+                  aria-checked={active}
                   onClick={() => requestGranularity(value)}
                   className={`flex w-full cursor-pointer items-start gap-[11px] rounded-xl border p-3 text-left ${
                     active
@@ -464,12 +473,12 @@ export function SongCalibration({
       </aside>
 
       {/* HOJA DE CALIBRACIÓN */}
-      <main>
+      <div>
         <button
           type="button"
           onClick={mark}
           disabled={!engine.ready || (allMarked && !endPending)}
-          className="mb-2.5 flex w-full cursor-pointer items-center justify-center gap-3.5 rounded-2xl border-[1.5px] border-accent/40 bg-[linear-gradient(135deg,rgba(46,107,240,0.16),rgba(53,214,232,0.16))] p-[22px] transition-colors hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="mb-2.5 flex w-full cursor-pointer items-center justify-center gap-3.5 rounded-2xl border-[1.5px] border-accent/40 yk-gradient-soft p-[22px] transition-colors hover:border-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="grid size-[42px] shrink-0 place-items-center rounded-xl bg-page/40 text-accent">
             {allMarked ? (
@@ -617,7 +626,7 @@ export function SongCalibration({
                   onClick={() => setEndSkipped(true)}
                   title={t("endSkip")}
                   aria-label={t("endSkip")}
-                  className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-warn"
+                  className="yk-hit relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-warn"
                 >
                   <X size={16} strokeWidth={2} />
                 </button>
@@ -628,7 +637,7 @@ export function SongCalibration({
                   onClick={addEnd}
                   title={t("endAdd")}
                   aria-label={t("endAdd")}
-                  className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
+                  className="yk-hit relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
                 >
                   <Flag size={16} strokeWidth={2} />
                 </button>
@@ -640,7 +649,7 @@ export function SongCalibration({
                     onClick={remarkEnd}
                     title={t("endRemark")}
                     aria-label={t("endRemark")}
-                    className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
+                    className="yk-hit relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
                   >
                     <RotateCcw size={16} strokeWidth={2} />
                   </button>
@@ -649,7 +658,7 @@ export function SongCalibration({
                     onClick={removeEnd}
                     title={t("endRemove")}
                     aria-label={t("endRemove")}
-                    className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-warn"
+                    className="yk-hit relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-warn"
                   >
                     <X size={16} strokeWidth={2} />
                   </button>
@@ -661,7 +670,7 @@ export function SongCalibration({
             <p className="px-4 py-8 text-center text-sm text-tert">{t("noContent")}</p>
           )}
         </div>
-      </main>
+      </div>
 
       {/* TRANSPORTE */}
       <CalibrationTransport

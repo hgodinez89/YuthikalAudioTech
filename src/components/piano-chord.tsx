@@ -31,7 +31,7 @@ function ListenButton({ onClick, label }: { onClick: () => void; label: string }
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-accent/40 bg-accent/10 px-3 py-1.5 text-[12.5px] font-semibold text-accent hover:bg-accent/20"
+      className="yk-hit-y relative inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-accent/40 bg-accent/10 px-3 py-1.5 text-[12.5px] font-semibold text-accent hover:bg-accent/20"
     >
       <Play size={13} fill="currentColor" strokeWidth={0} />
       {label}

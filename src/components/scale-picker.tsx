@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { chipClass } from "./button";
+import { FadeRow } from "./fade-row";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DB_KEYS, ROOT_SHORT_ES } from "@/lib/chords";
 import type { Instrument } from "@/lib/instruments";
@@ -31,26 +32,25 @@ export async function ScalePicker({
 
   return (
     <div className="flex flex-col gap-3">
-      <nav
-        aria-label={t("pickNote")}
-        className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5 [scrollbar-width:none] sm:flex-wrap"
-      >
-        {DB_KEYS.map((key) => (
-          <Link
-            key={key}
-            href={href(key, current.id)}
-            aria-current={key === current.key ? "page" : undefined}
-            className={chip(key === current.key)}
-          >
-            {locale === "es" ? ROOT_SHORT_ES[key] : key}
-          </Link>
-        ))}
+      <nav aria-label={t("pickNote")}>
+        <FadeRow className="-mx-5 -my-1.5 flex gap-1.5 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:flex-wrap">
+          {DB_KEYS.map((key) => (
+            <Link
+              key={key}
+              href={href(key, current.id)}
+              aria-current={key === current.key ? "page" : undefined}
+              className={chip(key === current.key)}
+            >
+              {locale === "es" ? ROOT_SHORT_ES[key] : key}
+            </Link>
+          ))}
+        </FadeRow>
       </nav>
       <nav aria-label={t("pickScale")} className="flex flex-col gap-2">
         {SCALE_CATEGORIES.map((category) => (
-          <div
+          <FadeRow
             key={category}
-            className="-mx-5 flex items-center gap-1.5 overflow-x-auto px-5 pb-0.5 [scrollbar-width:none] sm:flex-wrap"
+            className="-mx-5 -my-1.5 flex items-center gap-1.5 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:flex-wrap"
           >
             <span className="w-[150px] shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] text-mute">
               {t(`category.${category}`)}
@@ -65,7 +65,7 @@ export async function ScalePicker({
                 {t(`label.${id}`)}
               </Link>
             ))}
-          </div>
+          </FadeRow>
         ))}
       </nav>
     </div>

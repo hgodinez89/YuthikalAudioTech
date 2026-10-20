@@ -72,7 +72,7 @@ export function VisualEditor({
                     <button
                       type="button"
                       onClick={() => onStrum(header, section.strum)}
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-edge bg-surface-2 px-[11px] py-1 text-xs text-sub hover:border-accent"
+                      className="yk-hit-y relative inline-flex cursor-pointer items-center gap-2 rounded-lg border border-edge bg-surface-2 px-[11px] py-1 text-xs [--hit:10px] text-sub hover:border-accent"
                     >
                       <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-mute">
                         {tSongView("strum")}

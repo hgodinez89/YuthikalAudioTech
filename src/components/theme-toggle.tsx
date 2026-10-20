@@ -28,9 +28,13 @@ export function ThemeToggle() {
     <button
       type="button"
       aria-label={t("toggleTheme")}
-      title={mounted ? `${current} → ${next}` : undefined}
+      title={
+        mounted
+          ? t("themeNext", { current: t(`themes.${current}`), next: t(`themes.${next}`) })
+          : undefined
+      }
       onClick={() => setTheme(next)}
-      className="grid size-[38px] cursor-pointer place-items-center rounded-[10px] border border-edge bg-surface-3 text-sub"
+      className="yk-hit relative grid size-[38px] cursor-pointer [--hit:3px] place-items-center rounded-[10px] border border-edge bg-surface-3 text-sub"
     >
       {!mounted || current === "system" ? (
         <Monitor size={18} strokeWidth={2} />

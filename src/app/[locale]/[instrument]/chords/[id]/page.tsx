@@ -14,6 +14,7 @@ import {
   type ChordRow,
 } from "@/lib/chords";
 import { PianoChordHero, PianoInversions } from "@/components/piano-chord";
+import { dbError } from "@/lib/db-error";
 import { catalogInstrument, chordDbId, isFretted, isInstrument } from "@/lib/instruments";
 import {
   pianoChord,
@@ -34,12 +35,14 @@ export function generateStaticParams() {
    en metadata garantiza un 404 real antes de que inicie el streaming. */
 const getChord = cache(async (instrument: string, slug: string) => {
   if (!isInstrument(instrument)) return null;
-  const { data } = await supabaseServer()
+  const { data, error, status } = await supabaseServer()
     .from("chords")
     .select("*")
     .eq("id", chordDbId(instrument, slug))
     .eq("instrument", catalogInstrument(instrument))
     .maybeSingle<ChordRow>();
+  // Un fallo no es un 404 (que además quedaría en caché): se lanza.
+  if (error) throw dbError(error, status);
   // Piano: solo los tipos que tienen voicing de teclado.
   if (data && !isFretted(instrument) && !pianoChord(data.key, data.suffix)) return null;
   return data;
@@ -82,10 +85,10 @@ export default async function ChordDetailPage({
   const tPiano = await getTranslations("piano");
   const piano = isInstrument(instrument) && !isFretted(instrument);
 
-  const [chord, { data: positions }] = await Promise.all([
+  const [chord, { data: positions, error: positionsError, status }] = await Promise.all([
     getChord(instrument, id),
     piano
-      ? Promise.resolve({ data: [] as ChordPositionRow[] })
+      ? Promise.resolve({ data: [] as ChordPositionRow[], error: null, status: 200 })
       : supabaseServer()
           .from("chord_positions")
           .select("position,base_fret,frets,fingers,barres,capo")
@@ -94,6 +97,7 @@ export default async function ChordDetailPage({
           .returns<ChordPositionRow[]>(),
   ]);
 
+  if (positionsError) throw dbError(positionsError, status);
   if (!chord || (!piano && !positions?.length)) notFound();
 
   const suffix = printableSuffix(chord.suffix);
@@ -113,7 +117,7 @@ export default async function ChordDetailPage({
       {/* CABECERA */}
       <div className="flex flex-wrap items-start gap-7 border-b border-edge pb-[30px]">
         {/* Diagrama destacado */}
-        <div className="relative flex flex-col items-center rounded-[20px] border border-edge-2 bg-surface px-[26px] pb-[18px] pt-[22px] shadow-[0_20px_50px_rgba(46,107,240,0.14)] dark:bg-[linear-gradient(180deg,#12151c,#0e1118)]">
+        <div className="relative flex flex-col items-center rounded-[20px] yk-raised border border-edge-2 px-[26px] pb-[18px] pt-[22px] shadow-lift">
           {pianoData ? (
             <>
               <span className="mb-3 self-start rounded-full border border-accent/35 px-[9px] py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-accent">

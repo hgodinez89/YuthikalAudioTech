@@ -73,7 +73,7 @@ export async function MusicalNotes({ instrument }: { instrument: string }) {
           n.kind === "natural" ? (
             <article
               key={n.es}
-              className="flex min-h-[150px] flex-col items-center justify-center rounded-2xl border border-edge-2 bg-surface p-5 text-center transition-colors duration-150 hover:border-accent dark:border-[#262d3b] dark:bg-[#14171f]"
+              className="flex min-h-[150px] flex-col items-center justify-center rounded-2xl border border-edge-2 bg-surface p-5 text-center transition-colors duration-150 hover:border-accent"
             >
               <span className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-mute">
                 {t("natural")}
@@ -87,9 +87,9 @@ export async function MusicalNotes({ instrument }: { instrument: string }) {
             /* Alterada: siempre oscura, como las teclas negras del piano */
             <article
               key={n.sharpEs}
-              className="dark flex min-h-[150px] flex-col justify-center rounded-2xl border border-[#1b2130] bg-[#090b0f] p-[18px] text-[#e7ecf3] transition-colors duration-150 hover:border-accent"
+              className="dark flex min-h-[150px] flex-col justify-center rounded-2xl border border-edge bg-[#090b0f] p-[18px] text-ink transition-colors duration-150 hover:border-accent"
             >
-              <span className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#4f5a6d]">
+              <span className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-mute">
                 {t("altered")}
               </span>
               <div className="flex flex-col gap-2.5">
@@ -102,7 +102,7 @@ export async function MusicalNotes({ instrument }: { instrument: string }) {
                 <div className="-mt-1.5 text-[10px] uppercase tracking-[0.06em] text-mute">
                   {t("sharp")}
                 </div>
-                <div className="h-px bg-[#1b2130]" />
+                <div className="h-px bg-edge" />
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-2xl font-extrabold leading-none">{n.flatEs}</span>
                   <span className="text-[13px] font-bold text-accent">{n.flatEn}</span>

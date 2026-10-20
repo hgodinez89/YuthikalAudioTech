@@ -1,5 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import { SectionMessages } from "@/components/section-messages";
+import { ToastProvider } from "@/components/toast";
 
 /* Textos de cliente de esta sección (además de los comunes). */
 export default async function Layout({
@@ -13,7 +14,8 @@ export default async function Layout({
   setRequestLocale(locale);
   return (
     <SectionMessages locale={locale} section="songs">
-      {children}
+      {/* Avisos con «Deshacer»: siguen visibles al pasar del editor a la lista. */}
+      <ToastProvider>{children}</ToastProvider>
     </SectionMessages>
   );
 }

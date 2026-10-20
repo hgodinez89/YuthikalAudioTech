@@ -21,8 +21,10 @@ export default async function InstrumentLayout({
   setRequestLocale(locale);
 
   return (
-    <div className="pb-[76px] md:pb-0">
-      {children}
+    <div className="flex-1 pb-[76px] md:pb-0">
+      <main id="main" tabIndex={-1} className="outline-none">
+        {children}
+      </main>
       <InstrumentNav instrument={instrument} />
     </div>
   );

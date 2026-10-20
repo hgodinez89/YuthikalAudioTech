@@ -10,7 +10,11 @@ export default function NotFound() {
   const t = useTranslations("notFound");
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center px-6 py-10">
+    <main
+      id="main"
+      tabIndex={-1}
+      className="flex min-h-[70vh] flex-1 items-center justify-center px-6 py-10 outline-none"
+    >
       <div className="max-w-[420px] text-center">
         <div className="mb-4 text-[64px] font-extrabold leading-none tracking-[-0.03em] text-edge-2">
           404
@@ -24,6 +28,6 @@ export default function NotFound() {
           {t("back")}
         </Link>
       </div>
-    </div>
+    </main>
   );
 }

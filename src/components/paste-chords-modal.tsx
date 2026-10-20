@@ -26,7 +26,7 @@ export function PasteChordsModal({
 
   return (
     <Modal onClose={onClose} labelledBy={titleId}>
-      <div className="flex max-h-[92vh] w-full max-w-[960px] flex-col overflow-hidden rounded-[20px] border border-edge-2 bg-surface shadow-[0_30px_70px_rgba(0,0,0,0.6)]">
+      <div className="flex max-h-[92vh] w-full max-w-[960px] flex-col overflow-hidden rounded-[20px] border border-edge-2 bg-surface shadow-pop">
         <ModalHeader
           id={titleId}
           title={t("paste.title")}
@@ -42,7 +42,7 @@ export function PasteChordsModal({
             placeholder={t("paste.placeholder")}
             spellCheck={false}
             aria-label={t("paste.title")}
-            className="min-h-[300px] resize-none whitespace-pre rounded-2xl border border-edge bg-surface-3 px-4 py-3.5 font-mono text-[13px] leading-[1.7] text-ink outline-none focus:border-accent dark:bg-[#0b0d12]"
+            className="min-h-[300px] resize-none whitespace-pre rounded-2xl border border-edge bg-surface-3 px-4 py-3.5 font-mono text-[13px] leading-[1.7] text-ink outline-none focus:border-accent"
           />
           <div className="min-h-[300px] overflow-auto rounded-2xl border border-edge px-5 py-4">
             <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tert">

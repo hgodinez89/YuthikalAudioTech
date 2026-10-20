@@ -39,27 +39,41 @@ export function LoginCard({
   embedded = false,
   title,
   subtitle,
+  failed: initialFailed = false,
 }: {
   next?: string;
   embedded?: boolean;
   title?: string;
   subtitle?: string;
+  /** El intento anterior falló (vuelta del callback con ?error). */
+  failed?: boolean;
 }) {
   const t = useTranslations("auth");
   const [pending, setPending] = useState(false);
+  /* Fallo al abrir Google (red) o al volver de él (canje del código). */
+  const [failed, setFailed] = useState<"network" | "callback" | null>(
+    initialFailed ? "callback" : null,
+  );
 
   /* supabase-js se descarga recién al pulsar (fuera del bundle de la página). */
   const signIn = async () => {
     setPending(true);
-    const { supabaseBrowser } = await import("@/lib/supabase");
-    const { error } = await supabaseBrowser().auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-      },
-    });
-    // Si todo va bien, el navegador ya está yendo a Google.
-    if (error) setPending(false);
+    setFailed(null);
+    try {
+      const { supabaseBrowser } = await import("@/lib/supabase");
+      const { error } = await supabaseBrowser().auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      });
+      // Si todo va bien, el navegador ya está yendo a Google.
+      if (!error) return;
+    } catch {
+      /* sin red: el import o la petición fallan */
+    }
+    setPending(false);
+    setFailed("network");
   };
 
   return (
@@ -69,9 +83,9 @@ export function LoginCard({
       }`}
     >
       {/* glow radial azul tras la card (solo oscuro) */}
-      <div className="pointer-events-none absolute -top-[10%] left-1/2 hidden h-[420px] w-[720px] -translate-x-1/2 bg-[radial-gradient(50%_50%_at_50%_50%,rgba(46,107,240,0.18),transparent_70%)] dark:block" />
+      <div className="pointer-events-none absolute -top-[10%] left-1/2 hidden h-[420px] w-[720px] -translate-x-1/2 yk-halo dark:block" />
 
-      <div className="relative w-full max-w-[420px] rounded-3xl border border-edge bg-surface px-9 pb-[34px] pt-11 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:border-[#1f2636] dark:bg-[linear-gradient(180deg,#12151c,#0e1118)] dark:shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+      <div className="relative w-full max-w-[420px] rounded-3xl yk-raised border border-edge px-9 pb-[34px] pt-11 text-center shadow-card dark:shadow-pop">
         <div className="mx-auto mb-[26px] flex justify-center">
           <BrandLogo height={62} />
         </div>
@@ -87,11 +101,16 @@ export function LoginCard({
           onClick={() => void signIn()}
           disabled={pending}
           aria-busy={pending || undefined}
-          className="flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 rounded-[13px] bg-white text-[15px] font-semibold text-[#1f2328] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-colors hover:bg-[#f2f4f7] disabled:cursor-wait disabled:opacity-80"
+          className="flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 rounded-[13px] bg-white text-[15px] font-semibold text-[#1f2328] border border-edge-2 shadow-card dark:border-transparent transition-colors hover:bg-[#f2f4f7] disabled:cursor-wait disabled:opacity-80"
         >
           <GoogleLogo />
           {pending ? t("redirecting") : t("googleButton")}
         </button>
+        {failed && (
+          <p role="alert" className="mt-3 text-[13px] font-semibold text-warn">
+            {t(failed === "network" ? "signInError" : "signInFailed")}
+          </p>
+        )}
 
         <div className="mt-[22px] flex items-center justify-center gap-2 text-mute">
           <Lock size={14} strokeWidth={2} />

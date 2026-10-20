@@ -6,6 +6,7 @@ import {
   ChevronUp,
   Info,
   Mic,
+  RotateCcw,
   Search,
   TriangleAlert,
   X,
@@ -14,6 +15,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { chipClass } from "./button";
 import { ChordCard } from "./chord-card";
+import { FadeRow } from "./fade-row";
 import {
   fetchChords,
   QUICK_TYPES,
@@ -25,6 +27,7 @@ import {
 import { chordSlug, composeChordQuery, parseChordQuery } from "@/lib/chord-search";
 import { DB_KEYS, NOTE_LABELS, ROOT_SHORT_ES, type ChordCategory } from "@/lib/chords";
 import type { Instrument } from "@/lib/instruments";
+import { smoothBehavior } from "@/lib/motion";
 import { useAtBottom } from "@/lib/use-at-bottom";
 import { useStoredFlag } from "@/lib/use-stored-flag";
 
@@ -134,7 +137,10 @@ export function ChordFinder({
   const [rows, setRows] = useState<ChordRow[]>(initial.rows);
   const [total, setTotal] = useState(initial.total);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  /* Un fallo puntual se muestra en su lugar con «Reintentar» (la pantalla de
+     base de datos caída es solo para cuando la página no puede cargar). */
+  const [failed, setFailed] = useState<"search" | "more" | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [listening, setListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [bottomRef, atBottom] = useAtBottom();
@@ -153,8 +159,6 @@ export function ChordFinder({
   const voiceDisabled = status === "unsupported";
   const voiceReady = status === "ok";
 
-  if (error) throw error; // → error boundary (BD pausada / sin conexión)
-
   const picking = picks.keys.length > 0 || picks.suffixes.length > 0;
 
   /* Cada cambio de búsqueda/selección/agrupación (con debounce). Sin filtros y
@@ -164,6 +168,7 @@ export function ChordFinder({
     const isInitial = !query && !picking && grouping === "cat";
     const timer = setTimeout(
       () => {
+        setFailed(null);
         if (!isInitial) setLoading(true);
         (isInitial
           ? Promise.resolve(initial)
@@ -175,13 +180,17 @@ export function ChordFinder({
             setTotal(res.total);
             setLoading(false);
           })
-          .catch((e: Error) => requestId.current === id && setError(e));
+          .catch(() => {
+            if (requestId.current !== id) return;
+            setLoading(false);
+            setFailed("search");
+          });
       },
       // varios botones seguidos se agrupan en una sola consulta
       query ? 300 : picking ? 150 : 0,
     );
     return () => clearTimeout(timer);
-  }, [instrument, initial, query, grouping, picks, picking]);
+  }, [instrument, initial, query, grouping, picks, picking, attempt]);
 
   const hasMore = rows.length < total;
 
@@ -192,20 +201,20 @@ export function ChordFinder({
         if (requestId.current !== id) return;
         setRows((prev) => [...prev, ...res.rows]);
       })
-      .catch((e: Error) => requestId.current === id && setError(e));
+      .catch(() => requestId.current === id && setFailed("more"));
   }, [instrument, query, grouping, rows.length, picks]);
 
   /* Scroll infinito: el loader del fondo dispara la siguiente página. */
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el || !hasMore || loading) return;
+    if (!el || !hasMore || loading || failed) return;
     const observer = new IntersectionObserver(
       (entries) => entries[0].isIntersecting && loadMore(),
       { rootMargin: "200px" },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore, loading, loadMore]);
+  }, [hasMore, loading, failed, loadMore]);
 
   const search = (text: string) => {
     setQuery(text);
@@ -287,8 +296,20 @@ export function ChordFinder({
   const typeLabel = (suffix: string) =>
     suffix === "major" || suffix === "minor" ? t(`types.${suffix}`) : suffix;
 
-  const groups = groupRows(rows, grouping);
-  const showEmpty = !loading && rows.length === 0 && (query.length > 0 || picking);
+  // Si falló la búsqueda, no se muestran los resultados de la anterior.
+  const groups = failed === "search" ? [] : groupRows(rows, grouping);
+  const showEmpty =
+    !loading && !failed && rows.length === 0 && (query.length > 0 || picking);
+  const retryButton = (onClick: () => void) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[11px] border border-edge-2 bg-surface-2 px-4 text-[13px] font-semibold text-ink hover:border-accent/50"
+    >
+      <RotateCcw size={14} strokeWidth={2.2} />
+      {t("retry")}
+    </button>
+  );
 
   return (
     <div className="mx-auto max-w-[1120px] px-5 pb-20 pt-7">
@@ -321,17 +342,17 @@ export function ChordFinder({
               }`}
             >
               <span
-                className={`absolute top-1/2 size-3.5 -translate-y-1/2 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.35)] transition-[left] ${
+                className={`absolute top-1/2 size-3.5 -translate-y-1/2 rounded-full bg-white shadow-sm transition-[left] ${
                   multi ? "left-[19px]" : "left-[2px]"
                 }`}
               />
             </span>
           </button>
         </div>
-        <div
+        <FadeRow
           role="group"
           aria-label={t("pickNote")}
-          className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5 [scrollbar-width:none] sm:flex-wrap"
+          className="-mx-5 -my-1.5 flex gap-1.5 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:flex-wrap"
         >
           {DB_KEYS.map((key) => (
             <button
@@ -345,12 +366,12 @@ export function ChordFinder({
               {noteLabel(key)}
             </button>
           ))}
-        </div>
+        </FadeRow>
         {(multi || activeKey) && (
-          <div
+          <FadeRow
             role="group"
             aria-label={t("pickType")}
-            className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5 [scrollbar-width:none] sm:flex-wrap"
+            className="-mx-5 -my-1.5 flex gap-1.5 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:flex-wrap"
           >
             {QUICK_TYPES.map((suffix) => (
               <button
@@ -364,7 +385,7 @@ export function ChordFinder({
                 {typeLabel(suffix)}
               </button>
             ))}
-          </div>
+          </FadeRow>
         )}
         {/* RESUMEN DE LA SELECCIÓN MÚLTIPLE (en móvil las filas se desplazan
             y parte de lo elegido puede quedar fuera de vista) */}
@@ -397,7 +418,7 @@ export function ChordFinder({
             <button
               type="button"
               onClick={() => setPicks(NO_PICKS)}
-              className="inline-flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 font-semibold text-accent hover:bg-accent/10"
+              className="yk-hit relative inline-flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 font-semibold text-accent hover:bg-accent/10 [--hit:11px]"
             >
               <X size={13} strokeWidth={2.4} />
               {t("clearPicks")}
@@ -414,18 +435,22 @@ export function ChordFinder({
             strokeWidth={2}
             className="pointer-events-none absolute left-4 text-tert"
           />
+          <label htmlFor="chord-search" className="sr-only">
+            {t("searchLabel")}
+          </label>
           <input
+            id="chord-search"
             value={query}
             onChange={(e) => search(e.target.value)}
             placeholder={t("searchPlaceholder")}
-            className="h-[54px] w-full rounded-[14px] border border-edge bg-surface-2 px-[46px] text-base text-ink outline-none transition-shadow focus:border-accent focus:shadow-[0_0_0_3px_rgba(53,214,232,0.14)] dark:bg-surface-2"
+            className="h-[54px] w-full rounded-[14px] border border-edge bg-surface-2 px-[46px] text-base text-ink outline-none transition-shadow focus:border-accent focus:shadow-focus dark:bg-surface-2"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
               aria-label={t("clearSearch")}
-              className="absolute right-3 grid size-[26px] cursor-pointer place-items-center rounded-full bg-edge text-sub"
+              className="yk-hit absolute right-3 grid size-[26px] cursor-pointer place-items-center rounded-full bg-edge text-sub [--hit:9px]"
             >
               <X size={15} strokeWidth={2.4} />
             </button>
@@ -447,7 +472,7 @@ export function ChordFinder({
                 voiceDisabled
                   ? "relative grid size-[54px] cursor-not-allowed place-items-center rounded-[14px] border border-edge bg-surface-3 text-disabled"
                   : listening
-                    ? "yk-gradient relative grid size-[54px] cursor-pointer place-items-center rounded-[14px] shadow-[0_0_22px_rgba(53,214,232,0.5)]"
+                    ? "yk-gradient relative grid size-[54px] cursor-pointer place-items-center rounded-[14px] shadow-glow"
                     : "relative grid size-[54px] cursor-pointer place-items-center rounded-[14px] border border-edge-2 bg-surface-2 text-accent"
               }
             >
@@ -499,6 +524,7 @@ export function ChordFinder({
               key={mode}
               type="button"
               onClick={() => setGrouping(mode)}
+              aria-pressed={grouping === mode}
               className={
                 grouping === mode
                   ? "yk-gradient cursor-pointer whitespace-nowrap rounded-[9px] px-[15px] py-[7px]"
@@ -509,12 +535,14 @@ export function ChordFinder({
             </button>
           ))}
         </div>
-        <div className="text-[13px] text-sub">
-          {t.rich("showing", {
-            shown: rows.length,
-            total,
-            b: (chunks) => <span className="font-semibold text-ink">{chunks}</span>,
-          })}
+        {/* Anunciado al cambiar la búsqueda (lectores de pantalla). */}
+        <div role="status" className="text-[13px] text-sub">
+          {failed !== "search" &&
+            t.rich("showing", {
+              shown: rows.length,
+              total,
+              b: (chunks) => <span className="font-semibold text-ink">{chunks}</span>,
+            })}
         </div>
       </div>
 
@@ -557,8 +585,21 @@ export function ChordFinder({
         </div>
       )}
 
+      {/* FALLO PUNTUAL: en su lugar, con «Reintentar» */}
+      {failed && (
+        <div
+          role="alert"
+          className="flex flex-col items-center gap-3 rounded-2xl border border-warn/30 bg-warn/5 px-5 py-6 text-center"
+        >
+          <p className="text-[13.5px] font-semibold text-warn">{t("loadError")}</p>
+          {retryButton(() =>
+            failed === "search" ? setAttempt((n) => n + 1) : setFailed(null),
+          )}
+        </div>
+      )}
+
       {/* LOADER DE SCROLL INFINITO */}
-      {(hasMore || loading) && !showEmpty && (
+      {(hasMore || loading) && !showEmpty && !failed && (
         <div
           ref={sentinelRef}
           className="flex flex-col items-center gap-3 pb-2 pt-[46px] text-mute"
@@ -588,11 +629,11 @@ export function ChordFinder({
         onClick={() =>
           window.scrollTo({
             top: atBottom ? 0 : document.documentElement.scrollHeight,
-            behavior: "smooth",
+            behavior: smoothBehavior(),
           })
         }
         aria-label={atBottom ? t("fabUp") : t("fabDown")}
-        className="yk-gradient fixed bottom-[92px] right-5 z-50 md:bottom-6 sm:right-6 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-[0_8px_24px_rgba(46,107,240,0.4)]"
+        className="yk-gradient fixed bottom-[92px] right-5 z-50 md:bottom-6 sm:right-6 grid size-[52px] cursor-pointer place-items-center rounded-full shadow-fab"
       >
         {atBottom ? (
           <ChevronUp size={22} strokeWidth={2.4} />

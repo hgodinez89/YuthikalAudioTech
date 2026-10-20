@@ -17,16 +17,18 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { Button, chipClass } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DuplicateSongModal } from "./duplicate-song-modal";
+import { FadeRow } from "./fade-row";
 import { SongInstruments } from "./song-instruments";
 import { MoveSongModal } from "./move-song-modal";
 import { NewSongModal } from "./new-song-modal";
 import { FIELD_CLASS, PlaylistFormModal } from "./playlist-form-modal";
 import { SongMenu } from "./song-menu";
 import { StarsRow } from "./stars";
+import { useToast } from "./toast";
 import type { Instrument } from "@/lib/instruments";
 import { createPlaylist, deletePlaylist, updatePlaylist } from "@/lib/playlist-actions";
 import type { PlaylistInput, PlaylistRow, PlaylistWithCount } from "@/lib/playlists";
-import { deleteSong, moveSongToPlaylist } from "@/lib/song-actions";
+import { moveSongToPlaylist } from "@/lib/song-actions";
 import {
   DEFAULT_DIR,
   SONG_SORTS,
@@ -36,6 +38,7 @@ import {
   type SongSort,
   type SortDir,
 } from "@/lib/songs";
+import { useDeleteSong } from "@/lib/use-delete-song";
 import { useStoredValue } from "@/lib/use-stored-flag";
 
 const EMPTY_PLAYLIST: PlaylistInput = {
@@ -118,7 +121,6 @@ export function SongsView({
 }) {
   const t = useTranslations("songs");
   const tPlaylists = useTranslations("playlists");
-  const tEditor = useTranslations("editor");
   const router = useRouter();
   const locale = useLocale();
   const [search, setSearch] = useState("");
@@ -129,29 +131,48 @@ export function SongsView({
     parseSort,
     JSON.stringify,
   );
-  const [songToDelete, setSongToDelete] = useState<SongListRow | null>(null);
+  const toast = useToast();
+  const deleteLater = useDeleteSong();
   const [songToMove, setSongToMove] = useState<SongListRow | null>(null);
   const [songToDuplicate, setSongToDuplicate] = useState<SongListRow | null>(null);
   /* La copia recién creada se resalta unos segundos; si quedó en otra
-     playlist que la filtrada, un aviso dice dónde está. */
+     playlist que la filtrada, el aviso dice dónde está. */
   const [highlightId, setHighlightId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const onDuplicated = (newId: string, playlistId: string | null) => {
     setSongToDuplicate(null);
     router.refresh();
     setHighlightId(newId);
     setTimeout(() => setHighlightId((id) => (id === newId ? null : id)), 4000);
-    if (activeListId && playlistId !== activeListId) {
-      const where =
-        playlists.find((p) => p.id === playlistId)?.name ?? t("form.noPlaylist");
-      setNotice(t("duplicatedElsewhere", { name: where }));
-      setTimeout(() => setNotice(null), 5000);
-    }
+    const where =
+      activeListId && playlistId !== activeListId
+        ? (playlists.find((p) => p.id === playlistId)?.name ?? t("form.noPlaylist"))
+        : null;
+    toast.show({
+      message: where ? t("duplicatedElsewhere", { name: where }) : t("toast.duplicated"),
+    });
+  };
+
+  /* Aviso de "mover" con «Deshacer»: la devuelve a su playlist anterior. */
+  const announceMove = (song: SongListRow, to: string | null, toName: string) => {
+    const from = song.playlist_id;
+    toast.show({
+      message: to
+        ? t("toast.moved", { name: song.name, playlist: toName })
+        : t("toast.movedNone", { name: song.name }),
+      undo: () => {
+        void moveSongToPlaylist(song.id, from)
+          .then((result) => {
+            if (!result.ok) {
+              toast.show({ message: t(`errors.${result.error}`), tone: "error" });
+            }
+            router.refresh();
+          })
+          .catch(() => toast.show({ message: t("toast.error"), tone: "error" }));
+      },
+    });
   };
   const [createForSong, setCreateForSong] = useState<SongListRow | null>(null);
-  const [deletingSong, startDeleteSong] = useTransition();
-  const [deleteSongError, setDeleteSongError] = useState<string | null>(null);
   const [deleteListError, setDeleteListError] = useState<string | null>(null);
   const [newSongOpen, setNewSongOpen] = useState(false);
   const [newListOpen, setNewListOpen] = useState(false);
@@ -177,9 +198,11 @@ export function SongsView({
   const sortBy = activeList && sort.by === "playlist" ? "name" : sort.by;
   const sortDir = sortBy === sort.by ? sort.dir : DEFAULT_DIR.name;
 
+  // Las que se están borrando (con «Deshacer» pendiente) ya no se muestran.
+  const listed = songs.filter((s) => !toast.hidden.has(s.id));
   const needle = search.trim().toLowerCase();
   const visible = sortSongs(
-    needle ? songs.filter((s) => s.name.toLowerCase().includes(needle)) : songs,
+    needle ? listed.filter((s) => s.name.toLowerCase().includes(needle)) : listed,
     { by: sortBy, dir: sortDir, instrument, playlistNames: playlistName, locale },
   );
 
@@ -207,21 +230,8 @@ export function SongsView({
     const moved = await moveSongToPlaylist(createForSong.id, created.id);
     if (!moved.ok) return "db";
     router.refresh();
+    announceMove(createForSong, created.id, input.name.trim());
     return null;
-  };
-
-  const removeSong = () => {
-    if (!songToDelete) return;
-    startDeleteSong(async () => {
-      setDeleteSongError(null);
-      const result = await deleteSong(songToDelete.id).catch(() => null);
-      if (!result?.ok) {
-        setDeleteSongError(t(`errors.${result?.error ?? "db"}`));
-        return;
-      }
-      setSongToDelete(null);
-      router.refresh();
-    });
   };
 
   const removeList = () => {
@@ -246,7 +256,7 @@ export function SongsView({
           <h1 className="mb-1 text-[30px] font-extrabold tracking-[-0.02em]">
             {t("title")}
           </h1>
-          <p className="text-[14px] text-tert">{t("count", { count: songs.length })}</p>
+          <p className="text-[14px] text-tert">{t("count", { count: listed.length })}</p>
         </div>
         <Button variant="primary" onClick={() => setNewSongOpen(true)}>
           <Plus size={16} strokeWidth={2.4} />
@@ -255,10 +265,10 @@ export function SongsView({
       </div>
 
       {/* PLAYLISTS COMO FILTROS */}
-      <div
+      <FadeRow
         role="group"
         aria-label={tPlaylists("title")}
-        className="-mx-5 mb-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
+        className="-mx-5 -mt-1.5 mb-[18px] flex gap-2 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
       >
         <Link
           href={base}
@@ -286,7 +296,7 @@ export function SongsView({
           <Plus size={14} strokeWidth={2.4} />
           {tPlaylists("newPlaylist")}
         </button>
-      </div>
+      </FadeRow>
 
       {/* CABECERA DE LA PLAYLIST SELECCIONADA */}
       {activeList && (
@@ -326,7 +336,7 @@ export function SongsView({
       )}
 
       {/* BÚSQUEDA Y ORDEN */}
-      {songs.length > 0 && (
+      {listed.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
           <div className="relative flex min-w-[220px] flex-1 items-center">
             <Search
@@ -334,15 +344,19 @@ export function SongsView({
               strokeWidth={2}
               className="pointer-events-none absolute left-3.5 text-tert"
             />
+            <label htmlFor="song-search" className="sr-only">
+              {t("searchLabel")}
+            </label>
             <input
+              id="song-search"
+              type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("searchPlaceholder")}
-              aria-label={t("searchPlaceholder")}
               className={`${FIELD_CLASS} h-11 pl-10`}
             />
           </div>
-          {songs.length > 1 && (
+          {listed.length > 1 && (
             <div className="flex gap-2">
               <select
                 value={sortBy}
@@ -392,7 +406,7 @@ export function SongsView({
                 key={song.id}
                 className={`relative flex items-center gap-3 rounded-[14px] border bg-surface py-3 pl-[18px] pr-3 transition-[border-color,box-shadow] duration-300 ${
                   song.id === highlightId
-                    ? "border-accent shadow-[0_0_0_3px_rgba(53,214,232,0.18)]"
+                    ? "border-accent shadow-focus"
                     : "border-edge hover:border-edge-2"
                 }`}
               >
@@ -421,11 +435,19 @@ export function SongsView({
                         {song.source === "youtube" ? "YouTube" : t("sourceFile")}
                       </span>
                     )}
-                    {song.synced && (
-                      <span className="inline-flex items-center gap-1.5 font-semibold text-accent">
+                    {/* Estado de la sincronización (insignias del diseño) */}
+                    {song.synced ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-[3px] text-[11.5px] font-semibold text-accent">
                         <span className="inline-block size-1.5 rounded-full bg-accent" />
                         {t("statusSynced")}
                       </span>
+                    ) : (
+                      song.source && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-edge-2 bg-surface-2 px-2.5 py-[3px] text-[11.5px] font-semibold text-tert">
+                          <span className="inline-block size-1.5 rounded-full bg-mute" />
+                          {t("statusRaw")}
+                        </span>
+                      )
                     )}
                   </div>
                 </div>
@@ -436,13 +458,13 @@ export function SongsView({
                     songUrl={url}
                     onMove={() => setSongToMove(song)}
                     onDuplicate={() => setSongToDuplicate(song)}
-                    onDelete={() => setSongToDelete(song)}
+                    onDelete={() => deleteLater(song)}
                   />
                   <Link
                     href={url("karaoke")}
                     aria-label={t("play")}
                     title={t("play")}
-                    className="yk-gradient grid size-11 place-items-center rounded-xl shadow-[0_4px_16px_rgba(46,107,240,0.3)]"
+                    className="yk-gradient grid size-11 place-items-center rounded-xl shadow-fab"
                   >
                     <Play
                       size={19}
@@ -464,24 +486,14 @@ export function SongsView({
         /* ESTADO VACÍO */
         <div className="flex flex-col items-center rounded-[18px] border border-dashed border-edge-2 bg-surface-3 px-5 py-[60px] text-center">
           <EmptyArt />
-          <h3 className="mb-2 text-lg font-bold">
+          <h2 className="mb-2 text-lg font-bold">
             {activeList ? t("emptyListTitle") : t("emptyTitle")}
-          </h3>
+          </h2>
           <p className="mb-[22px] max-w-[360px] text-sm text-tert">{t("emptyDesc")}</p>
           <Button variant="primary" onClick={() => setNewSongOpen(true)}>
             <Plus size={16} strokeWidth={2.4} />
             {t("newSong")}
           </Button>
-        </div>
-      )}
-
-      {/* Aviso: la copia quedó en otra playlist */}
-      {notice && (
-        <div
-          role="status"
-          className="fixed bottom-[92px] left-1/2 z-50 -translate-x-1/2 rounded-[12px] border border-accent/40 bg-surface px-4 py-2.5 text-[13.5px] font-semibold shadow-[0_18px_44px_rgba(0,0,0,0.5)] md:bottom-8"
-        >
-          {notice}
         </div>
       )}
 
@@ -499,6 +511,7 @@ export function SongsView({
           song={songToMove}
           playlists={playlists}
           onClose={() => setSongToMove(null)}
+          onMoved={(to, toName) => announceMove(songToMove, to, toName)}
           onCreateNew={() => {
             setCreateForSong(songToMove);
             setSongToMove(null);
@@ -549,27 +562,6 @@ export function SongsView({
           onSubmit={editList}
         />
       )}
-      <ConfirmDialog
-        open={songToDelete !== null}
-        title={tEditor("deleteTitle")}
-        message={
-          songToDelete &&
-          tEditor.rich("deleteMessage", {
-            name: songToDelete.name,
-            b: (chunks) => <span className="font-bold text-ink">{chunks}</span>,
-          })
-        }
-        cancelLabel={t("cancel")}
-        confirmLabel={deletingSong ? tEditor("deleting") : tEditor("deleteConfirm")}
-        confirmIcon={<Trash2 size={15} strokeWidth={2.2} />}
-        pending={deletingSong}
-        error={deleteSongError}
-        onCancel={() => {
-          setDeleteSongError(null);
-          setSongToDelete(null);
-        }}
-        onConfirm={removeSong}
-      />
       <ConfirmDialog
         open={deleteListOpen && activeList !== null}
         title={tPlaylists("deleteModal.title")}

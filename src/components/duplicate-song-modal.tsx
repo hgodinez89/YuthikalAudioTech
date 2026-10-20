@@ -148,6 +148,7 @@ export function DuplicateSongModal({
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               maxLength={150}
+              aria-describedby={error ? "dup-error" : undefined}
               className={`${FIELD_CLASS} h-11`}
             />
           </div>
@@ -264,7 +265,11 @@ export function DuplicateSongModal({
           </div>
 
           {error && (
-            <p role="alert" className="text-[13px] font-semibold text-warn">
+            <p
+              id="dup-error"
+              role="alert"
+              className="text-[13px] font-semibold text-warn"
+            >
               {error}
             </p>
           )}

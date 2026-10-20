@@ -15,11 +15,11 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useDeferredValue, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "./button";
 import { ChordPicker } from "./chord-picker";
 import { ChordSheet } from "./chord-sheet";
 import { highlightLine } from "./chordpro-highlight";
-import { DeleteSongDialog } from "./delete-song-dialog";
 import { PasteChordsModal } from "./paste-chords-modal";
 import { SongMetaDrawer, type PlaylistOption } from "./song-meta-drawer";
 import { StrumBuilder } from "./strum-builder";
@@ -35,6 +35,7 @@ import type { Instrument } from "@/lib/instruments";
 import { updateSongContent } from "@/lib/song-actions";
 import { MAX_CONTENT_LENGTH, type SongRow } from "@/lib/songs";
 import { useAutosave, type SaveState } from "@/lib/use-autosave";
+import { useDeleteSong } from "@/lib/use-delete-song";
 import { useLinkedScroll } from "@/lib/use-linked-scroll";
 import { useSectionTitle } from "@/lib/use-section-title";
 import { useStoredFlag } from "@/lib/use-stored-flag";
@@ -57,7 +58,8 @@ export function SongEditor({
   const [content, setContent] = useState(song.content);
   const [subMode, setSubMode] = useState<"text" | "visual">("text");
   const [metaOpen, setMetaOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const router = useRouter();
+  const deleteLater = useDeleteSong();
   const [pasteOpen, setPasteOpen] = useState(false);
   const [picker, setPicker] = useState<PickerTarget | null>(null);
   const [strumTarget, setStrumTarget] = useState<{
@@ -213,7 +215,7 @@ export function SongEditor({
           lado a lado, el botón del centro vincula ambos scrolls */}
       {subMode === "text" && (
         <div className="relative grid items-stretch gap-4 lg:h-[calc(100dvh-160px)] lg:min-h-[480px] lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)] lg:gap-x-12">
-          <div className="flex h-[65dvh] min-h-[380px] flex-col overflow-hidden rounded-2xl border border-edge bg-surface-3 lg:h-auto lg:min-h-0 dark:bg-[#0b0d12]">
+          <div className="flex h-[65dvh] min-h-[380px] flex-col overflow-hidden rounded-2xl border border-edge bg-surface-3 lg:h-auto lg:min-h-0">
             <div className="flex shrink-0 items-center justify-between border-b border-edge px-4 py-3">
               <span className="text-xs font-bold uppercase tracking-[0.14em] text-tert">
                 ChordPro
@@ -224,13 +226,13 @@ export function SongEditor({
                   {t("legendChord")}]
                 </span>
                 <span className="inline-flex items-center gap-[5px]">
-                  <span className="size-[9px] rounded-[2px] bg-[#5b8cff]" />
+                  <span className="size-[9px] rounded-[2px] bg-directive" />
                   {"{"}
                   {t("legendDirective")}
                   {"}"}
                 </span>
                 <span className="inline-flex items-center gap-[5px] font-bold">
-                  <span className="size-[9px] rounded-[2px] bg-[#5b8cff]" />
+                  <span className="size-[9px] rounded-[2px] bg-directive" />
                   [[{t("legendSection")}]]
                 </span>
                 <span className="inline-flex items-center gap-[5px] italic">
@@ -307,7 +309,7 @@ export function SongEditor({
               title={t(scrollLinked ? "scrollLinkedHint" : "scrollUnlinkedHint")}
               className={`pointer-events-auto grid size-8 shrink-0 cursor-pointer place-items-center rounded-full border transition-[color,background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none ${
                 scrollLinked
-                  ? "border-accent/50 bg-accent/15 text-accent shadow-[0_0_14px_rgba(53,214,232,0.3)] hover:border-accent"
+                  ? "border-accent/50 bg-accent/15 text-accent shadow-glow hover:border-accent"
                   : "border-edge-2 bg-surface-2 text-mute hover:border-accent hover:text-accent"
               }`}
             >
@@ -369,8 +371,10 @@ export function SongEditor({
           playlists={playlists}
           onClose={() => setMetaOpen(false)}
           onDelete={() => {
+            // Con «Deshacer» en la lista: lo pendiente se guarda al salir.
             setMetaOpen(false);
-            setDeleteOpen(true);
+            deleteLater(song);
+            router.push(`/${instrument}/songs`);
           }}
         />
       )}
@@ -388,16 +392,6 @@ export function SongEditor({
           }}
         />
       )}
-
-      {/* CONFIRMAR ELIMINAR CANCIÓN */}
-      <DeleteSongDialog
-        open={deleteOpen}
-        song={song}
-        instrument={instrument}
-        onCancel={() => setDeleteOpen(false)}
-        // Ya no hay nada que guardar: la canción se borra.
-        onDeleted={autosave.discard}
-      />
     </div>
   );
 }

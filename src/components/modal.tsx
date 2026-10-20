@@ -101,7 +101,7 @@ export function Modal({
 
 /** Panel estándar centrado (tarjeta con borde, sombra y scroll propio). */
 export const MODAL_PANEL =
-  "max-h-[90vh] w-full overflow-y-auto rounded-[20px] border border-edge-2 bg-surface shadow-[0_30px_70px_rgba(0,0,0,0.6)]";
+  "max-h-[90vh] w-full overflow-y-auto rounded-[20px] border border-edge-2 bg-surface shadow-pop";
 
 /** Cabecera de modal: título (con id para `labelledBy`), subtítulo y cerrar. */
 export function ModalHeader({
@@ -133,7 +133,7 @@ export function ModalHeader({
         type="button"
         onClick={onClose}
         aria-label={closeLabel}
-        className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-[9px] border border-edge bg-surface-2 text-sub hover:text-ink"
+        className="yk-hit relative grid size-8 shrink-0 cursor-pointer place-items-center rounded-[9px] border border-edge bg-surface-2 text-sub hover:text-ink"
       >
         <X size={16} strokeWidth={2.2} />
       </button>

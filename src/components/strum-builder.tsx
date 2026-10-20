@@ -25,10 +25,10 @@ export function StrumBuilder({
 
   return (
     <Modal onClose={onClose} labelledBy={titleId} backdrop="light">
-      <div className="w-[320px] max-w-full rounded-2xl border border-edge-2 bg-surface p-5 shadow-[0_24px_60px_rgba(0,0,0,0.6)]">
-        <h3 id={titleId} className="mb-3 text-[15px] font-extrabold">
+      <div className="w-[320px] max-w-full rounded-2xl border border-edge-2 bg-surface p-5 shadow-pop">
+        <h2 id={titleId} className="mb-3 text-[15px] font-extrabold">
           {t("strumTitle")}
-        </h3>
+        </h2>
         <div
           aria-live="polite"
           className="mb-4 flex min-h-11 items-center justify-center gap-1.5 rounded-[10px] border border-edge bg-surface-2 px-3 py-2 text-lg tracking-[0.1em] text-accent"

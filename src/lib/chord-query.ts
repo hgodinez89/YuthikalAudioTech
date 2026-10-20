@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ChordCardData } from "@/components/chord-card";
 import { escapeLike, parseChordQuery } from "./chord-search";
+import { dbError } from "./db-error";
 import { DB_KEYS, type ChordCategory } from "./chords";
 import { catalogInstrument, isFretted, type Instrument } from "./instruments";
 import { PIANO_SUFFIXES, pianoRootKeys } from "./piano";
@@ -76,8 +77,8 @@ export async function fetchChords(
       ? qb.order("category_order").order("note_order").order("name_en")
       : qb.order("note_order").order("category_order").order("name_en");
 
-  const { data, count, error } = await qb.range(offset, offset + PAGE_SIZE - 1);
-  if (error) throw new Error(error.message);
+  const { data, count, error, status } = await qb.range(offset, offset + PAGE_SIZE - 1);
+  if (error) throw dbError(error, status);
 
   const rows: ChordRow[] = (data ?? []).map((r) => ({
     id: r.id as string,

@@ -38,7 +38,7 @@ export function SongMenu({
           "grid size-[38px] cursor-pointer place-items-center rounded-[10px] text-sub hover:bg-edge hover:text-ink",
         children: <Ellipsis size={19} strokeWidth={2} />,
       }}
-      panelClassName="absolute right-0 top-[42px] z-40 w-[210px] overflow-hidden rounded-[12px] border border-edge-2 bg-surface p-1.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)]"
+      panelClassName="absolute right-0 top-[42px] z-40 w-[210px] overflow-hidden rounded-[12px] border border-edge-2 bg-surface p-1.5 shadow-pop"
     >
       <MenuItem href={songUrl("edit")} icon={<Pencil {...icon} />}>
         {t("edit")}

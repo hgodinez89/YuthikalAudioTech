@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Trash2 } from "lucide-react";
+import { RotateCcw, Search, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 import { ChordVisual } from "./chord-visual";
@@ -40,11 +40,12 @@ async function searchChords(
     qb = qb.ilike("search_text", `%${escapeLike(parsed.text)}%`);
   }
 
-  const { data } = await qb
+  const { data, error } = await qb
     .order("category_order")
     .order("note_order")
     .order("name_en")
     .limit(12);
+  if (error) throw new Error(error.message);
 
   return (data ?? []).map((row) => ({
     name_en: row.name_en as string,
@@ -81,14 +82,22 @@ export function ChordPicker({
   const inputId = useId();
   const [query, setQuery] = useState("");
   const [chords, setChords] = useState<PickerChord[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  /* Reintentar vuelve a lanzar la misma búsqueda. */
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(
       () => {
-        searchChords(instrument, query).then((results) => {
-          if (!cancelled) setChords(results);
-        });
+        setStatus("loading");
+        searchChords(instrument, query)
+          .then((results) => {
+            if (cancelled) return;
+            setChords(results);
+            setStatus("ready");
+          })
+          .catch(() => !cancelled && setStatus("error"));
       },
       query ? 250 : 0,
     );
@@ -96,7 +105,7 @@ export function ChordPicker({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [instrument, query]);
+  }, [instrument, query, attempt]);
 
   // Mantener el popover dentro del viewport (ancho fijo de 300px).
   const left = Math.min(Math.max(x - 150, 12), window.innerWidth - 312);
@@ -105,7 +114,7 @@ export function ChordPicker({
   return (
     <Modal onClose={onClose} label={t("pickerTitle")} variant="anchored" backdrop="light">
       <div
-        className="absolute w-[300px] overflow-hidden rounded-2xl border border-edge-2 bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+        className="absolute w-[300px] overflow-hidden rounded-2xl border border-edge-2 bg-surface shadow-pop"
         style={{ left, top }}
       >
         <div className="border-b border-edge px-3.5 py-3">
@@ -161,10 +170,28 @@ export function ChordPicker({
               </span>
             </button>
           ))}
-          {chords.length === 0 && (
-            <p className="px-2.5 py-4 text-center text-[12.5px] text-tert">
-              {t("pickerEmpty")}
+          {status === "error" ? (
+            <div role="alert" className="px-2.5 py-4 text-center text-[12.5px]">
+              <p className="mb-2.5 font-semibold text-warn">{t("pickerError")}</p>
+              <button
+                type="button"
+                onClick={() => setAttempt((n) => n + 1)}
+                className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[10px] border border-edge-2 px-3.5 font-semibold text-ink hover:border-accent/50"
+              >
+                <RotateCcw size={13} strokeWidth={2.2} />
+                {t("retry")}
+              </button>
+            </div>
+          ) : status === "loading" && chords.length === 0 ? (
+            <p role="status" className="px-2.5 py-4 text-center text-[12.5px] text-tert">
+              {t("pickerLoading")}
             </p>
+          ) : (
+            chords.length === 0 && (
+              <p className="px-2.5 py-4 text-center text-[12.5px] text-tert">
+                {t("pickerEmpty")}
+              </p>
+            )
           )}
         </div>
       </div>

@@ -142,7 +142,7 @@ export async function InstrumentStrings({
         {t("intro", { instrument })}
       </p>
 
-      <div className="dark mb-8 rounded-[20px] border border-[#1b2130] bg-[linear-gradient(180deg,#101017,#0b0d12)] px-6 py-[26px]">
+      <div className="dark yk-stage mb-8 rounded-[20px] border border-edge px-6 py-[26px]">
         <NeckIllustration strings={strings} />
       </div>
 

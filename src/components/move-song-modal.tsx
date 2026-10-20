@@ -15,11 +15,14 @@ export function MoveSongModal({
   song,
   playlists,
   onClose,
+  onMoved,
   onCreateNew,
 }: {
   song: SongListRow;
   playlists: PlaylistWithCount[];
   onClose: () => void;
+  /** Tras mover: destino (null = sin playlist) y su nombre, para el aviso. */
+  onMoved: (playlistId: string | null, name: string) => void;
   onCreateNew: () => void;
 }) {
   const t = useTranslations("songs");
@@ -40,6 +43,7 @@ export function MoveSongModal({
       }
       onClose();
       router.refresh();
+      onMoved(target || null, options.find((o) => o.id === target)?.name ?? "");
     });
   };
 
@@ -50,7 +54,7 @@ export function MoveSongModal({
 
   return (
     <Modal onClose={onClose} labelledBy={titleId}>
-      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-hidden rounded-[20px] border border-edge-2 bg-surface shadow-[0_30px_70px_rgba(0,0,0,0.6)]">
+      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-hidden rounded-[20px] border border-edge-2 bg-surface shadow-pop">
         <ModalHeader
           id={titleId}
           title={t("move.title", { name: song.name })}

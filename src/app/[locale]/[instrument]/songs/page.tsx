@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LoginCard } from "@/components/login-card";
 import { SongsView } from "@/components/songs-view";
+import { dbError } from "@/lib/db-error";
 import { isUuid } from "@/lib/ids";
 import type { Instrument } from "@/lib/instruments";
 import type { PlaylistRow } from "@/lib/playlists";
@@ -74,8 +75,8 @@ export default async function SongsPage({
       .returns<(PlaylistRow & { songs: { count: number }[] })[]>(),
     songsQuery.returns<SongWithMeta[]>(),
   ]);
-  if (playlistsRes.error) throw new Error(playlistsRes.error.message);
-  if (songsRes.error) throw new Error(songsRes.error.message);
+  if (playlistsRes.error) throw dbError(playlistsRes.error, playlistsRes.status);
+  if (songsRes.error) throw dbError(songsRes.error, songsRes.status);
 
   const playlists = playlistsRes.data ?? [];
   const activeList = playlists.find((p) => p.id === listId) ?? null;

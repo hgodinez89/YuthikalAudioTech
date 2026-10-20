@@ -38,6 +38,7 @@ export function AudioSourcePanel({
   const t = useTranslations("calibration");
   const router = useRouter();
   const urlId = useId();
+  const soonId = useId();
   const [tab, setTab] = useState<"youtube" | "file">(audio?.source ?? "youtube");
   /* Subida de MP3 en "Próximamente": la pestaña solo se abre si ya hay un MP3. */
   const fileTabEnabled = MP3_ENABLED || audio?.source === "file";
@@ -131,14 +132,16 @@ export function AudioSourcePanel({
               <button
                 key={key}
                 type="button"
-                onClick={() => setTab(key)}
-                disabled={disabled}
+                // aria-disabled (no disabled): sigue alcanzable con Tab y su aviso se lee.
+                onClick={() => !disabled && setTab(key)}
+                aria-disabled={disabled || undefined}
+                aria-describedby={disabled ? soonId : undefined}
                 aria-pressed={tab === key}
                 title={disabled ? t("fileSoonHint") : undefined}
                 className={
                   tab === key
                     ? "yk-gradient flex-1 cursor-pointer whitespace-nowrap rounded-lg px-2 py-[7px]"
-                    : "inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-[7px] text-sub disabled:cursor-not-allowed disabled:text-disabled"
+                    : "inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-[7px] text-sub aria-disabled:cursor-not-allowed aria-disabled:text-disabled"
                 }
               >
                 {key === "youtube" ? "YouTube" : t("fileTab")}
@@ -147,6 +150,11 @@ export function AudioSourcePanel({
               </button>
             );
           })}
+          {!fileTabEnabled && (
+            <span id={soonId} className="sr-only">
+              {t("fileSoonHint")}
+            </span>
+          )}
         </div>
 
         {tab === "youtube" && (
@@ -168,7 +176,7 @@ export function AudioSourcePanel({
                 type="button"
                 onClick={requestYouTube}
                 disabled={connecting || !urlInput.trim()}
-                className="yk-gradient absolute right-1.5 cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-bold disabled:opacity-50"
+                className="yk-gradient yk-hit-y absolute right-1.5 cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-bold [--hit:8px] disabled:opacity-50"
               >
                 {connecting ? t("connecting") : t("connect")}
               </button>
@@ -183,7 +191,12 @@ export function AudioSourcePanel({
                   />
                   <div className="absolute inset-0 grid place-items-center">
                     <span className="grid size-[26px] place-items-center rounded-full bg-page/70">
-                      <Play size={12} fill="#fff" strokeWidth={0} className="ml-px" />
+                      <Play
+                        size={12}
+                        fill="currentColor"
+                        strokeWidth={0}
+                        className="ml-px text-white"
+                      />
                     </span>
                   </div>
                 </div>

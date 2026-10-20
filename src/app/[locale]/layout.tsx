@@ -5,6 +5,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteHeader } from "@/components/site-header";
+import { SkipLink } from "@/components/skip-link";
 import { clientMessages } from "@/i18n/client-messages";
 import { routing } from "@/i18n/routing";
 import { SITE_URL } from "@/lib/site";
@@ -65,8 +66,11 @@ export default async function LocaleLayout({
           {/* Idioma explícito: en rutas dinámicas con streaming el de
               setRequestLocale no siempre llega a los componentes hijos. */}
           <NextIntlClientProvider locale={locale} messages={messages}>
+            <SkipLink />
             <SiteHeader />
-            <main className="flex-1">{children}</main>
+            {/* Cada pantalla pone su único <main id="main"> (la portada deja
+                su pie fuera de él). */}
+            <div className="flex flex-1 flex-col">{children}</div>
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

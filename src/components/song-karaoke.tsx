@@ -1,9 +1,9 @@
 "use client";
 
-import { History, Info, LogOut, Pause, Play, SkipBack, X } from "lucide-react";
+import { History, Info, Pause, Play, SkipBack, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { ChordVisual } from "./chord-visual";
 import type { ChordDataMap } from "./chord-sheet";
 import { FloatingVideo, type VideoInsets } from "./floating-video";
@@ -24,6 +24,7 @@ import {
   type SongSyncRow,
 } from "@/lib/audio";
 import { isInstrumental, wordGroups } from "@/lib/chordpro";
+import { smoothBehavior } from "@/lib/motion";
 import type { SongRow } from "@/lib/songs";
 import { karaokeLines, type KaraokeLine } from "@/lib/sync-lines";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
@@ -114,9 +115,7 @@ const KaraokeLineView = memo(function KaraokeLineView({
                 className="font-extrabold tracking-[0.01em] text-accent"
                 style={{
                   fontSize: isCurrent ? 30 : 21,
-                  textShadow: isCurrent
-                    ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
-                    : "none",
+                  textShadow: isCurrent ? "var(--chord-glow)" : "none",
                 }}
               >
                 {seg.chord}
@@ -141,9 +140,7 @@ const KaraokeLineView = memo(function KaraokeLineView({
                     style={{
                       fontSize: isCurrent ? 17 : 13,
                       minHeight: isCurrent ? 26 : 20,
-                      textShadow: isCurrent
-                        ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
-                        : "none",
+                      textShadow: isCurrent ? "var(--chord-glow)" : "none",
                     }}
                   >
                     {piece.chord ?? ""}
@@ -168,7 +165,7 @@ const KaraokeLineView = memo(function KaraokeLineView({
       {isCurrent && (
         <div className="mx-auto mt-3 h-[3px] w-[180px] overflow-hidden rounded-[3px] bg-edge">
           <div
-            className="h-full rounded-[3px] bg-[linear-gradient(90deg,var(--grad-from),var(--grad-to))] shadow-[0_0_12px_rgba(53,214,232,0.7)]"
+            className="h-full rounded-[3px] bg-[linear-gradient(90deg,var(--grad-from),var(--grad-to))] shadow-glow"
             style={{ width: `${Math.round(progress * 100)}%` }}
           />
         </div>
@@ -342,7 +339,7 @@ export function SongKaraoke({
     prevIndexRef.current = currentIndex;
     container.scrollTo({
       top: node.offsetTop - container.clientHeight / 2 + node.clientHeight / 2,
-      behavior: smooth ? "smooth" : "auto",
+      behavior: smooth ? smoothBehavior() : "auto",
     });
   }, [currentIndex]);
 
@@ -460,8 +457,11 @@ export function SongKaraoke({
   const toggleVideo = () => setVideoOpen(!videoOpen);
 
   const transportDisabled = variant === "sync" && !engine.ready;
+  const router = useRouter();
 
   usePlayerShortcuts({
+    // Los menús abiertos (velocidad, atajos) atrapan su propio Escape.
+    Escape: () => router.push(exitHref),
     " ": togglePlay,
     k: togglePlay,
     ArrowLeft: () => skip(-5),
@@ -491,6 +491,7 @@ export function SongKaraoke({
     ...(variant === "sync" ? [{ keys: "M", label: tp("keys.mute") }] : []),
     { keys: "R", label: tp("keys.repeatLine") },
     ...(hasVideo ? [{ keys: "V", label: tp("keys.video") }] : []),
+    { keys: "Esc", label: t("exit") },
   ];
 
   const nowData = nowChord ? chords[nowChord] : undefined;
@@ -518,7 +519,7 @@ export function SongKaraoke({
               <span className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-accent">
                 {t("now")}
               </span>
-              <div className="rounded-xl border border-edge-2 bg-surface p-2 shadow-[0_0_24px_rgba(53,214,232,0.28)]">
+              <div className="rounded-xl border border-edge-2 bg-surface p-2 shadow-glow">
                 <ChordVisual chord={nowData} scale={0.8} />
               </div>
               <span className="mt-1 text-sm font-extrabold">{nowChord}</span>
@@ -537,10 +538,12 @@ export function SongKaraoke({
           )}
         </div>
 
+        {/* Única salida (también con Escape) */}
         <Link
           href={exitHref}
           aria-label={t("exit")}
-          className="grid size-10 shrink-0 place-items-center rounded-[11px] border border-edge bg-surface-3 text-sub hover:text-ink"
+          title={`${t("exit")} (Esc)`}
+          className="grid size-11 shrink-0 place-items-center rounded-[11px] border border-edge bg-surface-3 text-sub hover:text-ink"
         >
           <X size={19} strokeWidth={2} />
         </Link>
@@ -663,7 +666,7 @@ export function SongKaraoke({
             onClick={togglePlay}
             disabled={transportDisabled}
             aria-label={playing ? t("pause") : t("play")}
-            className="yk-gradient grid size-[68px] shrink-0 cursor-pointer place-items-center rounded-full shadow-[0_0_30px_rgba(53,214,232,0.45)] disabled:opacity-50 sm:size-[74px]"
+            className="yk-gradient grid size-[68px] shrink-0 cursor-pointer place-items-center rounded-full shadow-glow disabled:opacity-50 sm:size-[74px]"
           >
             {playing ? (
               <Pause size={30} fill="currentColor" strokeWidth={0} />
@@ -698,14 +701,6 @@ export function SongKaraoke({
           >
             +{SKIP_SECONDS}
           </button>
-          <Link
-            href={exitHref}
-            aria-label={t("exit")}
-            title={t("exit")}
-            className="grid size-[46px] place-items-center text-sub hover:text-ink"
-          >
-            <LogOut size={22} strokeWidth={2} />
-          </Link>
         </div>
 
         {/* Fila secundaria */}

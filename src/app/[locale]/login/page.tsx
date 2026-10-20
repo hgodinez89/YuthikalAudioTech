@@ -20,14 +20,22 @@ export default async function LoginPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const [{ locale }, { next: rawNext }] = await Promise.all([params, searchParams]);
+  const [{ locale }, { next: rawNext, error }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   setRequestLocale(locale);
   const next = safeNextPath(rawNext);
   const supabase = await supabaseWithSession();
   // `next` ya trae el idioma (/es/…): se redirige tal cual.
   if (await sessionUserId(supabase)) redirect(next);
 
-  return <LoginCard next={next} />;
+  // ?error: el canje del código de Google falló (volver a intentar).
+  return (
+    <main id="main" tabIndex={-1} className="flex-1 outline-none">
+      <LoginCard next={next} failed={error !== undefined} />
+    </main>
+  );
 }
