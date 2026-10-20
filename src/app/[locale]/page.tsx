@@ -1,22 +1,28 @@
 import { ArrowRight, CirclePlay, FileText, Search } from "lucide-react";
-import { cookies } from "next/headers";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BrandLogo } from "@/components/brand-logo";
 import { InstrumentIcon } from "@/components/instrument-icons";
-import {
-  COMING_SOON,
-  INSTRUMENT_COOKIE,
-  INSTRUMENTS,
-  isInstrument,
-} from "@/lib/instruments";
+import { Link } from "@/i18n/navigation";
+import { COMING_SOON, INSTRUMENTS } from "@/lib/instruments";
+import { localeAlternates } from "@/lib/site";
 
-export default async function LandingPage() {
-  // Quien ya eligió instrumento vuelve directo a él.
-  const remembered = (await cookies()).get(INSTRUMENT_COOKIE)?.value;
-  if (isInstrument(remembered)) redirect(`/${remembered}/chords`);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  return { alternates: localeAlternates((await params).locale, "") };
+}
 
+/* Estática: quien ya eligió instrumento llega directo a él (lo redirige el
+   proxy con la cookie del último instrumento, sin volver dinámica la página). */
+export default async function LandingPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  setRequestLocale((await params).locale);
   const t = await getTranslations("landing");
   const tInstruments = await getTranslations("instruments");
 

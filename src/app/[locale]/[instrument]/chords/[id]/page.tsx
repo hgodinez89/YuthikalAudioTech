@@ -1,9 +1,9 @@
 import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { cache } from "react";
+import { notFound } from "next/navigation";
+import { Link } from "@/i18n/navigation";
 import { ChordDiagram } from "@/components/chord-diagram";
 import {
   printableSuffix,
@@ -21,7 +21,14 @@ import {
   pianoInversions,
   pianoNoteNames,
 } from "@/lib/piano";
+import { localeAlternates } from "@/lib/site";
 import { supabaseServer } from "@/lib/supabase";
+
+/* Cada acorde se genera estático la primera vez que alguien lo visita y queda
+   en caché (el catálogo no cambia entre despliegues). */
+export function generateStaticParams() {
+  return [];
+}
 
 /* Cacheado por request: lo comparten generateMetadata y la página. Resolverlo
    en metadata garantiza un 404 real antes de que inicie el streaming. */
@@ -41,14 +48,15 @@ const getChord = cache(async (instrument: string, slug: string) => {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ instrument: string; id: string }>;
+  params: Promise<{ locale: string; instrument: string; id: string }>;
 }): Promise<Metadata> {
-  const { instrument, id } = await params;
+  const { locale, instrument, id } = await params;
   const chord = await getChord(instrument, id);
   if (!chord) notFound();
-  const tInstruments = await getTranslations("instruments");
+  const tInstruments = await getTranslations({ locale, namespace: "instruments" });
   return {
     title: `${chord.name_en} · ${chord.name_es} (${tInstruments(`${instrument}.name`)}) — Yuthikal AudioTech`,
+    alternates: localeAlternates(locale, `/${instrument}/chords/${id}`),
   };
 }
 
@@ -65,13 +73,13 @@ function ChordName({ root, suffix }: { root: string; suffix: string }) {
 export default async function ChordDetailPage({
   params,
 }: {
-  params: Promise<{ instrument: string; id: string }>;
+  params: Promise<{ locale: string; instrument: string; id: string }>;
 }) {
-  const { instrument, id } = await params;
+  const { locale, instrument, id } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations("chordDetail");
   const tFinder = await getTranslations("finder");
   const tPiano = await getTranslations("piano");
-  const locale = await getLocale();
   const piano = isInstrument(instrument) && !isFretted(instrument);
 
   const [chord, { data: positions }] = await Promise.all([

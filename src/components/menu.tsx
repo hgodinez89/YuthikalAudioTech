@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   createContext,
   useContext,
@@ -12,6 +11,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { Link } from "@/i18n/navigation";
 
 /**
  * Cierra un panel flotante con Escape o al tocar fuera de `root` (el

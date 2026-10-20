@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { isUuid } from "./ids";
-import { supabaseWithSession } from "./supabase-server";
+import { sessionUserId, supabaseWithSession } from "./supabase-server";
 import { validatePlaylist, type PlaylistInput } from "./playlists";
 
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
 /* Las playlists son filtros de la lista de canciones de cada instrumento. */
-const revalidateSongs = () => revalidatePath("/[instrument]/songs", "page");
+const revalidateSongs = () => revalidatePath("/[locale]/[instrument]/songs", "page");
 
 export async function createPlaylist(input: PlaylistInput): Promise<ActionResult> {
   // Re-validación en servidor: nunca confiar solo en el cliente.
@@ -16,15 +16,13 @@ export async function createPlaylist(input: PlaylistInput): Promise<ActionResult
   if (invalid) return { ok: false, error: invalid };
 
   const supabase = await supabaseWithSession();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "auth" };
+  const userId = await sessionUserId(supabase);
+  if (!userId) return { ok: false, error: "auth" };
 
   const { data, error } = await supabase
     .from("playlists")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       name: input.name.trim(),
       description: input.description.trim(),
       genre: input.genre,

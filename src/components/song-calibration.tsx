@@ -1,9 +1,8 @@
 "use client";
 
 import { Check, Flag, History, Music, RotateCcw, TriangleAlert, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AudioSourcePanel } from "./audio-source-panel";
 import { CalibrationTransport, RATES, SKIP_SECONDS } from "./calibration-transport";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -34,6 +33,126 @@ const HEADER_HEIGHT = 72;
 
 type LineRow = Extract<CalibrationRow, { kind: "line" }>;
 
+/**
+ * Una fila de la hoja de sincronización. Memorizada: el reloj del audio cambia
+ * varias veces por segundo pero las filas solo se redibujan al marcar.
+ */
+const CalibrationLineView = memo(function CalibrationLineView({
+  row,
+  granularity,
+  stamps,
+  cursor,
+  onRemark,
+}: {
+  row: LineRow;
+  granularity: "line" | "word";
+  stamps: Map<number, number>;
+  cursor: number;
+  onRemark: (row: LineRow) => void;
+}) {
+  const t = useTranslations("calibration");
+  const isCurrent =
+    cursor >= row.firstTarget && cursor < row.firstTarget + row.targetCount;
+  let markedInRow = 0;
+  for (let i = 0; i < row.targetCount; i++)
+    if (stamps.has(row.firstTarget + i)) markedInRow++;
+  const done = markedInRow === row.targetCount;
+  const firstStamp = stamps.get(row.firstTarget);
+
+  return (
+    <div
+      data-current={isCurrent || undefined}
+      className={`my-0.5 flex items-center gap-3 rounded-[10px] border-l-[3px] px-3.5 py-[11px] ${
+        isCurrent ? "border-l-accent bg-accent/[0.08]" : "border-l-transparent"
+      }`}
+    >
+      <div className="flex w-[74px] shrink-0 items-center gap-[7px]">
+        {done ? (
+          <span className="inline-flex items-center gap-[5px]">
+            <Check size={15} strokeWidth={2.6} className="text-accent" />
+            {firstStamp !== undefined && (
+              <span className="text-[11.5px] font-semibold tabular-nums text-accent">
+                {formatStamp(firstStamp)}
+              </span>
+            )}
+          </span>
+        ) : isCurrent ? (
+          <span className="rounded-full border border-accent/40 px-2 py-[3px] text-[11px] font-bold uppercase tracking-[0.08em] text-accent">
+            {t("now")}
+          </span>
+        ) : (
+          <span className="ml-1 size-[9px] rounded-full border-[1.5px] border-edge-2" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        {granularity === "line" ? (
+          <span
+            className={
+              isCurrent
+                ? "text-[17px] font-bold text-ink"
+                : done
+                  ? "text-mute"
+                  : "text-sub"
+            }
+          >
+            {row.words
+              .map((w) => (w.spaceAfter ? `${w.text} ` : w.text))
+              .join("")
+              .trimEnd()}
+          </span>
+        ) : (
+          // Flujo inline con espacios reales: los trozos de una misma
+          // palabra quedan pegados y no se separan al hacer salto de línea.
+          <span className="leading-relaxed">
+            {row.words.map((word, wi) => {
+              const targetIndex = row.firstTarget + wi;
+              const wordDone = stamps.has(targetIndex);
+              const wordCurrent = targetIndex === cursor;
+              return (
+                <Fragment key={wi}>
+                  <span
+                    className={
+                      wordCurrent
+                        ? "rounded bg-accent/20 px-1 font-bold text-ink"
+                        : wordDone
+                          ? "text-mute underline decoration-accent/50 underline-offset-4"
+                          : "text-sub"
+                    }
+                  >
+                    {word.text}
+                  </span>
+                  {word.spaceAfter && " "}
+                </Fragment>
+              );
+            })}
+          </span>
+        )}
+        {row.pass && (
+          <span className="ml-2 rounded-md border border-accent/35 bg-accent/10 px-1.5 py-px text-[11px] font-bold tabular-nums text-accent">
+            {t("pass", { n: row.pass.n, total: row.pass.total })}
+          </span>
+        )}
+        {granularity === "word" && row.targetCount > 1 && (
+          <span className="ml-2 text-[11px] tabular-nums text-tert">
+            {markedInRow}/{row.targetCount}
+          </span>
+        )}
+      </div>
+      {(done || markedInRow > 0) && (
+        <button
+          type="button"
+          onClick={() => onRemark(row)}
+          title={t("remark")}
+          aria-label={t("remark")}
+          className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
+        >
+          <RotateCcw size={16} strokeWidth={2} />
+        </button>
+      )}
+    </div>
+  );
+});
+
 export function SongCalibration({
   song,
   audio,
@@ -47,7 +166,6 @@ export function SongCalibration({
   syncMissing?: number;
 }) {
   const t = useTranslations("calibration");
-  const router = useRouter();
   const sectionTitle = useSectionTitle();
 
   const [granularity, setGranularity] = useState<"line" | "word">(
@@ -159,11 +277,9 @@ export function SongCalibration({
     value: syncValue,
     dirty: touched,
     delay: 800,
-    save: async (value) => {
-      const result = await saveSync(song.id, value.granularity, value.list, value.endAt);
-      if (result.ok) router.refresh();
-      return result;
-    },
+    // Sin router.refresh(): el estado local ya es la verdad, y al navegar a
+    // otra pantalla la página se vuelve a pedir al servidor.
+    save: (value) => saveSync(song.id, value.granularity, value.list, value.endAt),
   });
 
   /* Todas las líneas marcadas: la siguiente marca (opcional) es el fin. */
@@ -243,6 +359,8 @@ export function SongCalibration({
 
   /* Re-marcar: borra las marcas de la fila y la vuelve a escuchar desde un
      poco antes de la marca anterior, para no tener que buscarla a mano. */
+  const remarkRef = useRef<(row: LineRow) => void>(() => {});
+  const onRemark = useCallback((row: LineRow) => remarkRef.current(row), []);
   const remarkLine = (row: LineRow) => {
     setTouched(true);
     const next = new Map(stamps);
@@ -251,6 +369,10 @@ export function SongCalibration({
     setCursor(row.firstTarget);
     if (engine.ready) review(next, row.firstTarget);
   };
+
+  useEffect(() => {
+    remarkRef.current = remarkLine;
+  });
 
   const applyReset = () => {
     setTouched(true);
@@ -271,16 +393,6 @@ export function SongCalibration({
     }
     setGranularity(value);
     setCursor(0);
-  };
-
-  /* Progreso para la fila actual en modo palabra. */
-  const cursorInRow = (row: LineRow) =>
-    cursor >= row.firstTarget && cursor < row.firstTarget + row.targetCount;
-  const rowDone = (row: LineRow) => {
-    for (let i = 0; i < row.targetCount; i++) {
-      if (!stamps.has(row.firstTarget + i)) return false;
-    }
-    return true;
   };
 
   const markNumber = Math.min(cursor + 1, totalTargets);
@@ -457,105 +569,15 @@ export function SongCalibration({
                 </div>
               );
             }
-            const done = rowDone(row);
-            const isCurrent = cursorInRow(row);
-            const firstStamp = stamps.get(row.firstTarget);
-            const markedInRow = Array.from(
-              { length: row.targetCount },
-              (_, i) => row.firstTarget + i,
-            ).filter((i) => stamps.has(i)).length;
-
             return (
-              <div
+              <CalibrationLineView
                 key={ri}
-                data-current={isCurrent || undefined}
-                className={`my-0.5 flex items-center gap-3 rounded-[10px] border-l-[3px] px-3.5 py-[11px] ${
-                  isCurrent ? "border-l-accent bg-accent/[0.08]" : "border-l-transparent"
-                }`}
-              >
-                <div className="flex w-[74px] shrink-0 items-center gap-[7px]">
-                  {done ? (
-                    <span className="inline-flex items-center gap-[5px]">
-                      <Check size={15} strokeWidth={2.6} className="text-accent" />
-                      {firstStamp !== undefined && (
-                        <span className="text-[11.5px] font-semibold tabular-nums text-accent">
-                          {formatStamp(firstStamp)}
-                        </span>
-                      )}
-                    </span>
-                  ) : isCurrent ? (
-                    <span className="rounded-full border border-accent/40 px-2 py-[3px] text-[11px] font-bold uppercase tracking-[0.08em] text-accent">
-                      {t("now")}
-                    </span>
-                  ) : (
-                    <span className="ml-1 size-[9px] rounded-full border-[1.5px] border-edge-2" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  {granularity === "line" ? (
-                    <span
-                      className={
-                        isCurrent
-                          ? "text-[17px] font-bold text-ink"
-                          : done
-                            ? "text-mute"
-                            : "text-sub"
-                      }
-                    >
-                      {row.words
-                        .map((w) => (w.spaceAfter ? `${w.text} ` : w.text))
-                        .join("")
-                        .trimEnd()}
-                    </span>
-                  ) : (
-                    // Flujo inline con espacios reales: los trozos de una misma
-                    // palabra quedan pegados y no se separan al hacer salto de línea.
-                    <span className="leading-relaxed">
-                      {row.words.map((word, wi) => {
-                        const targetIndex = row.firstTarget + wi;
-                        const wordDone = stamps.has(targetIndex);
-                        const wordCurrent = targetIndex === cursor;
-                        return (
-                          <Fragment key={wi}>
-                            <span
-                              className={
-                                wordCurrent
-                                  ? "rounded bg-accent/20 px-1 font-bold text-ink"
-                                  : wordDone
-                                    ? "text-mute underline decoration-accent/50 underline-offset-4"
-                                    : "text-sub"
-                              }
-                            >
-                              {word.text}
-                            </span>
-                            {word.spaceAfter && " "}
-                          </Fragment>
-                        );
-                      })}
-                    </span>
-                  )}
-                  {row.pass && (
-                    <span className="ml-2 rounded-md border border-accent/35 bg-accent/10 px-1.5 py-px text-[11px] font-bold tabular-nums text-accent">
-                      {t("pass", { n: row.pass.n, total: row.pass.total })}
-                    </span>
-                  )}
-                  {granularity === "word" && row.targetCount > 1 && (
-                    <span className="ml-2 text-[11px] tabular-nums text-tert">
-                      {markedInRow}/{row.targetCount}
-                    </span>
-                  )}
-                </div>
-                {(done || markedInRow > 0) && (
-                  <button
-                    type="button"
-                    onClick={() => remarkLine(row)}
-                    title={t("remark")}
-                    className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-mute hover:bg-edge hover:text-accent"
-                  >
-                    <RotateCcw size={16} strokeWidth={2} />
-                  </button>
-                )}
-              </div>
+                row={row}
+                granularity={granularity}
+                stamps={stamps}
+                cursor={cursor}
+                onRemark={onRemark}
+              />
             );
           })}
           {/* Fin opcional: aparece al marcar todas las líneas */}

@@ -59,6 +59,7 @@ RLS: todas las políticas usan `(select auth.uid())` (se evalúa una vez por con
 9. `supabase/migrations/00000000000008_sync_end.sql` (columna `song_sync.end_at`; ejecutar **antes** de desplegar el código que la usa)
 10. `supabase/migrations/00000000000009_hardening.sql` (RLS con `(select auth.uid())`, audio/sincronización atados a canciones propias, límites en la BD, columna `song_sync.targets` y subida de MP3 bloqueada en Storage; ejecutar **antes** de desplegar el código que guarda `targets`)
 11. `supabase/migrations/00000000000010_drop_unused.sql` (borra `chords.popularity`, `chord_positions.popularity` y `keepalive.last_seen_at`, sin uso; ejecutar **después** de desplegar el código que ya no las lee)
+12. `supabase/migrations/00000000000011_list_perf.sql` (columna generada `song_sync.stamp_count` e índice trigram sobre `chords.search_text`; ejecutar **antes** de desplegar el código que lee `stamp_count`)
 
 ### 3.3 Seed del catálogo de acordes
 
@@ -92,18 +93,24 @@ Tests cubren: parser de búsqueda de acordes ES/EN, parser/render ChordPro, edic
 ## 6. Estructura del proyecto
 
 ```
-messages/                 Textos ES/EN (next-intl; ES por defecto)
-public/brand/             Logos por tema (crop = oscuro, claro = claro) e iconos del manifest
+messages/                 Textos ES/EN (next-intl; ES por defecto). Al navegador solo viajan
+                          los namespaces de cliente de cada sección (`src/i18n/client-messages.ts`)
+public/brand/             Iconos del manifest (el logo es SVG en `components/brand-logo.tsx`)
 scripts/                  generate-chords-sql.mjs (seeds del catálogo por instrumento)
 supabase/migrations/      SQL de esquema + RLS (ver §3.2)
 supabase/seed_chords_*.sql Datos del catálogo por instrumento (generados)
 src/app/                  Rutas (App Router)
   api/keepalive/          Ping del cron
   auth/callback/          Canje del código OAuth (valida redirects internos)
-  page.tsx                Landing: elección de instrumento (redirige al último usado)
-  robots.ts / sitemap.ts  robots.txt y sitemap (secciones públicas, escalas y acordes)
+  robots.ts / sitemap.ts  robots.txt y sitemap (secciones públicas en ambos idiomas, con hreflang)
   manifest.ts, apple-icon.png  Acceso directo en la pantalla de inicio (Android/iOS)
-  [instrument]/           guitar | ukulele | piano (otro → 404); layout con barra inferior
+  layout.tsx, not-found   Raíz mínima (solo para la 404 de rutas sin idioma)
+  [locale]/               es | en: layout raíz real (html lang, tema, header), 404, error y
+                          catch-all [...rest] → 404 con el layout del idioma
+  [locale]/page.tsx       Landing estática: elección de instrumento
+  [locale]/[instrument]/  guitar | ukulele | piano (otro → 404); layout con barra inferior.
+                          Cada sección (chords, scales, basics, songs) tiene un layout que
+                          agrega sus textos de cliente
     chords/[id]           Buscador (1.ª página desde el servidor; selector nota + tipo)
                           y detalle por slug
     scales/[slug]         Escalas: selector nota + tipo, mástil/teclado, posiciones y
@@ -112,7 +119,7 @@ src/app/                  Rutas (App Router)
                           canción con ?mode=view|edit|karaoke y &step=lyrics|audio
                           (única ruta con loading.tsx)
     basics/               Cuerdas (o teclado en piano) + notas musicales
-  login/                  Login con Google; ?next= regresa a la página de origen
+  [locale]/login/         Login con Google; ?next= (con idioma) regresa a la página de origen
 src/components/           UI (fieles al handoff):
   chord-diagram           Diagrama SVG (spec del handoff; frets/barres/baseFret de chords-db)
   site-header             Logo, pastilla de instrumento, secciones y menú de cuenta
@@ -170,8 +177,11 @@ src/lib/                  Lógica y acceso a datos:
   *-actions.ts            Server actions (re-validación en servidor)
   supabase(-server).ts    Clientes anon (público) y con sesión (cookies)
   site.ts                 URL pública (VERCEL_PROJECT_PRODUCTION_URL) para metadata y sitemap
-src/proxy.ts              Refresco de sesión de Supabase + cookie del último instrumento
-src/i18n/                 Configuración next-intl por cookie (sin rutas por idioma)
+src/proxy.ts              Rutas sin idioma → /es o /en (cookie `yk-locale`); "/" → último
+                          instrumento; sesión de Supabase (getClaims) solo en canciones y login;
+                          recuerda idioma e instrumento
+src/i18n/                 next-intl con el idioma en la URL: `routing.ts`, `navigation.ts`
+                          (Link/useRouter/usePathname/redirect con idioma), `request.ts`
 ```
 
 ## 7. Dependencias
@@ -224,14 +234,17 @@ where o.bucket_id = 'audio'
 - *Orden de "Mis canciones"*: en el cliente sobre la lista ya cargada (Fecha, Nombre, Instrumento, Playlist; asc/desc) y recordado por navegador en localStorage (`yk-song-sort`). "Instrumento" pone primero las preparadas para el instrumento actual, luego las de otros y al final las sin definir; las canciones sin playlist van siempre al final. Con una playlist filtrada, "Playlist" se oculta y se ordena por nombre.
 - *Lista plana de canciones*: las playlists son filtros opcionales; borrar una playlist conserva sus canciones. Las playlists mantienen género y doble calificación.
 - *Canción*: Ver (con **Tocar** como acción principal) y Editar en dos pasos, **Letra → Audio** (la antigua "Calibración", ahora "Sincronizar audio"; `?mode=calibrate` sigue funcionando).
-- *Sin pantalla de carga global* (rendimiento/Lighthouse): el título y el contenido se pintan en el primer render, sin el cambio desde "Afinando tu sesión…". Solo `[instrument]/songs` tiene `loading.tsx` (sesión + BD). Por eso las URLs inexistentes responden 404 real; bajo `/songs`, por el streaming, siguen respondiendo HTTP 200 con la UI correcta (404 visual / redirect a login). Los datos jamás se filtran (los guards corren antes de cualquier query).
+- *Sin pantalla de carga global* (rendimiento/Lighthouse): el título y el contenido se pintan en el primer render, sin el cambio desde "Afinando tu sesión…". Solo `[locale]/[instrument]/songs` tiene `loading.tsx` (sesión + BD). Por eso las URLs inexistentes responden 404 real; bajo `/songs`, por el streaming, siguen respondiendo HTTP 200 con la UI correcta (404 visual / redirect a login). Los datos jamás se filtran (los guards corren antes de cualquier query).
 - *Autoguardado* (`lib/use-autosave.ts`, editor y sincronización): debounce, guardados en fila (uno lento nunca pisa a uno más nuevo), lo pendiente se guarda al salir de la pantalla, el navegador avisa al cerrar o recargar con cambios sin guardar y un fallo de red o BD queda en error con **Reintentar**. El editor muestra un contador al acercarse a los 20 000 caracteres. Las server actions de actualizar/borrar confirman que se modificó una fila (si no, error `missing`) y los diálogos de borrar muestran el error sin cerrarse.
 - *Componentes base* (`modal`, `menu`, `button`): todos los modales usan `<dialog>` con `showModal()` (el resto de la página queda inerte, Escape y clic fuera cierran, el foco inicial va a `data-autofocus` y vuelve a quien abrió el modal); los menús de acciones (canción, instrumento, velocidad) son `role="menu"` con flechas, Inicio/Fin y Escape; los paneles con controles (cuenta, atajos) son `Popover`. Botones y chips comparten radio y relleno por tamaño (`buttonClass`, `chipClass`).
 - *MP3 en reproducción*: la URL firmada dura 1 h y se renueva 5 min antes; el motor de audio identifica el MP3 por su ruta y cambia la URL sin cortar (conserva posición, velocidad y estado). Si no se puede obtener, Sincronizar y el karaoke lo avisan.
 - *Huella de la sincronización*: al guardar, `saveSync` lee la letra de la BD, valida las marcas contra sus objetivos reales (`syncTargets`, mismo orden que `syncPlan`) y guarda el texto de cada objetivo en `song_sync.targets`. Si la letra cambia después, la página reubica las marcas (`reconcileSync`): con la misma cantidad de objetivos (una errata) todo sigue igual; si se agregaron o quitaron, se conservan las del tramo común del inicio y del final y lo del medio queda por marcar, con aviso en karaoke y en Sincronizar. La reubicación no se persiste hasta que se vuelve a guardar la sincronización. Al marcar, el cursor salta al siguiente objetivo libre (re-marcar o completar huecos no pisa lo marcado). Conectar otro audio borra la sincronización anterior (con confirmación si tenía marcas) y el MP3 previo.
 - *Selector rápido del buscador*: con **una opción** (por defecto) los botones escriben la búsqueda ("Dom7") y su estado se deriva del texto. Con **Selección múltiple** (interruptor recordado por navegador en localStorage, `yk-finder-multi`) los botones tienen estado propio: varias notas y varios tipos, que se suman dentro de cada fila y se combinan entre filas ((Do o Re) y (m o m7)); la fila de tipos se muestra siempre y un resumen lista lo elegido con "Limpiar". La selección y la búsqueda escrita/dictada se reemplazan entre sí, para que nunca se contradigan. Al activar, lo elegido pasa a la selección; al desactivar se limpia. `fetchChords` solo acepta valores de las listas del selector (`DB_KEYS`, `QUICK_TYPES`).
+- *Idioma en la URL* (`/es`, `/en`): next-intl con `localePrefix: "always"` y sin detección automática; el proxy decide a qué idioma ir desde rutas sin prefijo (cookie `yk-locale`, si no español) y guarda la cookie al visitar un idioma. El selector ES/EN navega a la misma página (con su búsqueda). Cada layout y página llama `setRequestLocale` (requisito para generarlas estáticas) y los proveedores de textos reciben el idioma explícito: en rutas dinámicas con `loading.tsx` (canciones) el de `setRequestLocale` no llega a todos los componentes, por eso la página usa `getTranslations({ locale })` y el 404, la pantalla de carga y los iconos de instrumentos son de cliente.
+- *Catálogo estático*: landing, básicos y buscador se generan en el build para cada idioma e instrumento; el detalle de acorde y las escalas se generan en su primera visita y quedan en caché (`generateStaticParams` vacío). No leen cookies ni sesión (catálogo con la anon key). Solo canciones y login son dinámicos.
+- *Rendimiento*: el proxy no consulta Supabase Auth en páginas públicas; la canción pide canción, audio, sincronización y playlists en paralelo; la lista trae `stamp_count` en lugar de las marcas; los 4 modos de la canción se cargan aparte (`components/song-modes.tsx`, `next/dynamic` desde un módulo de cliente); supabase-js se descarga solo al usarlo (login, selector de acordes, URL firmada del MP3); el karaoke y Sincronizar memorizan cada línea (el reloj del audio solo redibuja la actual) y el motor de audio devuelve acciones estables; la vista previa del editor usa `useDeferredValue`; Tailwind solo escanea `src/`.
 - *Rendimiento del buscador*: la primera página de acordes se consulta en el servidor (catálogo público, anon key) y viaja en el HTML; supabase-js se carga de forma diferida (al buscar/paginar y tras hidratar el menú de cuenta, que lee la sesión con `onAuthStateChange` sin ir a la red). Las tarjetas no se prefetchean al entrar en pantalla (solo al pasar el ratón); los logos por tema no se precargan (solo baja el visible); JetBrains Mono no se precarga.
-- *SEO*: el sitio es indexable; `robots.txt` excluye login, auth, api y playlists; el sitemap incluye básicos, buscador, escalas y detalle de acordes por instrumento (las canciones son de cada usuario). Medir Lighthouse en incógnito: la Vercel Toolbar (sesión de Vercel) inyecta un script que la CSP bloquea a propósito.
+- *SEO*: el sitio es indexable; cada página pública declara canónica y alternativas por idioma (`localeAlternates` en `lib/site.ts`, con `x-default` en español); `robots.txt` excluye login, canciones, auth y api (además llevan `noindex`); el sitemap lista cada página en ambos idiomas con sus `hreflang` (básicos, buscador, escalas y detalle de acordes por instrumento; las canciones son de cada usuario). Medir Lighthouse en incógnito: la Vercel Toolbar (sesión de Vercel) inyecta un script que la CSP bloquea a propósito.
 - *Pantalla de consentimiento de Google* muestra el dominio de Supabase: comportamiento estándar sin dominio propio; se aceptó (opción A) — cambiarlo requiere el add-on Custom Domain de Supabase + verificación de Google.
 - *Búsqueda por voz* solo Chrome/Edge (Web Speech API); la UI lo indica y degrada a escritura.
 - *Acordes con bajo alterado* excluidos del catálogo (48); re-incluibles editando `scripts/generate-chords-sql.mjs`.

@@ -1,22 +1,24 @@
 import { Check, ChevronLeft, ChevronRight, Music, Pencil, Play } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { cache } from "react";
-import { SongBook } from "@/components/song-book";
+import { notFound } from "next/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import { buttonClass } from "@/components/button";
-import { SongCalibration } from "@/components/song-calibration";
-import { SongInstruments } from "@/components/instrument-toggles";
-import { SongEditor } from "@/components/song-editor";
-import { SongKaraoke } from "@/components/song-karaoke";
+import { SongInstruments } from "@/components/song-instruments";
+import {
+  SongBook,
+  SongCalibration,
+  SongEditor,
+  SongKaraoke,
+} from "@/components/song-modes";
 import { reconcileSync, type SongAudioRow, type SongSyncRow } from "@/lib/audio";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
 import { loadChordData } from "@/lib/chord-data";
 import { isUuid } from "@/lib/ids";
 import type { Instrument } from "@/lib/instruments";
 import { keyLabel, type SongRow } from "@/lib/songs";
-import { supabaseWithSession } from "@/lib/supabase-server";
+import { sessionUserId, supabaseWithSession } from "@/lib/supabase-server";
 
 type Mode = "view" | "edit" | "karaoke";
 type Step = "lyrics" | "audio";
@@ -39,7 +41,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { songId } = await params;
   const song = await getSong(songId);
-  return { title: song ? `${song.name} — Yuthikal AudioTech` : "Yuthikal AudioTech" };
+  return {
+    title: song ? `${song.name} — Yuthikal AudioTech` : "Yuthikal AudioTech",
+    // Privada: no se indexa.
+    robots: { index: false },
+  };
 }
 
 /** Modo y paso desde la URL (?mode=calibrate de enlaces viejos → Audio). */
@@ -53,26 +59,56 @@ export default async function SongPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ instrument: string; songId: string }>;
+  params: Promise<{ locale: string; instrument: string; songId: string }>;
   searchParams: Promise<{ mode?: string; step?: string }>;
 }) {
-  const [{ instrument: rawInstrument, songId }, { mode: rawMode, step: rawStep }] =
-    await Promise.all([params, searchParams]);
+  const [
+    { locale, instrument: rawInstrument, songId },
+    { mode: rawMode, step: rawStep },
+  ] = await Promise.all([params, searchParams]);
+  setRequestLocale(locale);
   // El layout del instrumento ya validó el segmento.
   const instrument = rawInstrument as Instrument;
   const { mode, step } = readMode(rawMode, rawStep);
   const songUrl = `/${instrument}/songs/${songId}`;
 
   const supabase = await supabaseWithSession();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(songUrl)}`);
+  if (!(await sessionUserId(supabase))) {
+    redirect({
+      href: `/login?next=${encodeURIComponent(`/${locale}${songUrl}`)}`,
+      locale,
+    });
+  }
 
-  const song = await getSong(songId);
+  /* Todo lo que solo depende de la canción, a la vez; los diagramas de
+     acordes, después (dependen de la letra). */
+  const needsAudio = step === "audio" || mode === "karaoke";
+  const [song, audioRes, syncRes, playlistsRes] = await Promise.all([
+    getSong(songId),
+    needsAudio
+      ? supabase
+          .from("song_audio")
+          .select("song_id,source,youtube_id,youtube_title,file_path")
+          .eq("song_id", songId)
+          .maybeSingle<SongAudioRow>()
+      : null,
+    needsAudio
+      ? supabase
+          .from("song_sync")
+          .select("song_id,granularity,stamps,targets,end_at")
+          .eq("song_id", songId)
+          .maybeSingle<SongSyncRow & { targets: string[] | null }>()
+      : null,
+    mode === "edit" && step === "lyrics"
+      ? supabase
+          .from("playlists")
+          .select("id,name")
+          .order("created_at", { ascending: false })
+      : null,
+  ]);
   if (!song) notFound();
 
-  const t = await getTranslations("songView");
+  const t = await getTranslations({ locale, namespace: "songView" });
 
   const parsed = parseChordPro(song.content);
   const chordData =
@@ -80,40 +116,16 @@ export default async function SongPage({
       ? await loadChordData(instrument, collectChords(parsed))
       : {};
 
-  let audio: SongAudioRow | null = null;
+  const audio: SongAudioRow | null = audioRes?.data ?? null;
   let sync: SongSyncRow | null = null;
   /* Objetivos nuevos sin marca porque la letra cambió después de sincronizar. */
   let syncMissing = 0;
-  if (step === "audio" || mode === "karaoke") {
-    const [audioRes, syncRes] = await Promise.all([
-      supabase
-        .from("song_audio")
-        .select("song_id,source,youtube_id,youtube_title,file_path")
-        .eq("song_id", songId)
-        .maybeSingle<SongAudioRow>(),
-      supabase
-        .from("song_sync")
-        .select("song_id,granularity,stamps,targets,end_at")
-        .eq("song_id", songId)
-        .maybeSingle<SongSyncRow & { targets: string[] | null }>(),
-    ]);
-    audio = audioRes.data;
-    if (syncRes.data) {
-      const reconciled = reconcileSync(syncRes.data, song.content);
-      sync = reconciled.sync;
-      syncMissing = reconciled.missing;
-    }
+  if (syncRes?.data) {
+    const reconciled = reconcileSync(syncRes.data, song.content);
+    sync = reconciled.sync;
+    syncMissing = reconciled.missing;
   }
-
-  const playlists =
-    mode === "edit" && step === "lyrics"
-      ? ((
-          await supabase
-            .from("playlists")
-            .select("id,name")
-            .order("created_at", { ascending: false })
-        ).data ?? [])
-      : [];
+  const playlists = playlistsRes?.data ?? [];
 
   const emptyState = (
     <div className="flex flex-col items-center rounded-[18px] border border-dashed border-edge-2 bg-surface-3 px-5 py-[60px] text-center">

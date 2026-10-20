@@ -3,10 +3,9 @@
 import type { User } from "@supabase/supabase-js";
 import { ChevronDown, LogOut, Settings } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { buttonClass } from "./button";
 import { LanguageSwitcher } from "./language-switcher";
 import { Popover } from "./menu";
@@ -35,6 +34,7 @@ export function UserMenu() {
   const tHeader = useTranslations("header");
   const router = useRouter();
   const pathname = usePathname();
+  const locale = useLocale();
   const [user, setUser] = useState<User | null>(null);
 
   /* supabase-js se carga tras hidratar (fuera del bundle inicial). La sesión
@@ -110,7 +110,7 @@ export function UserMenu() {
               </>
             ) : (
               <Link
-                href={`/login?next=${encodeURIComponent(pathname === "/login" ? "/" : pathname)}`}
+                href={`/login?next=${encodeURIComponent(`/${locale}${pathname === "/login" ? "" : pathname}`)}`}
                 onClick={close}
                 className={`${buttonClass("primary", "sm")} w-full`}
               >

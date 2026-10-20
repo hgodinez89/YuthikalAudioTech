@@ -1,9 +1,8 @@
 "use client";
 
 import { Check, ChevronDown } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
 import { BrandLogo } from "./brand-logo";
 import { InstrumentIcon } from "./instrument-icons";
 import { SECTION_ICONS } from "./instrument-nav";

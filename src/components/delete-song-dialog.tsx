@@ -1,9 +1,9 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { ConfirmDialog } from "./confirm-dialog";
 import type { Instrument } from "@/lib/instruments";
 import { deleteSong } from "@/lib/song-actions";

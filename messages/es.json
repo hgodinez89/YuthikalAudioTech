@@ -24,7 +24,8 @@
     "googleButton": "Continuar con Google",
     "lockNote": "El registro solo está disponible con Google",
     "account": "Cuenta",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "redirecting": "Abriendo Google…"
   },
   "playlists": {
     "title": "Mis playlists",

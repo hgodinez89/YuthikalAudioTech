@@ -10,7 +10,7 @@ import {
 } from "./audio";
 import { syncTargets } from "./chordpro";
 import { isUuid } from "./ids";
-import { supabaseWithSession } from "./supabase-server";
+import { sessionUserId, supabaseWithSession } from "./supabase-server";
 import { parseYouTubeId } from "./youtube";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -46,10 +46,8 @@ export async function setYouTubeAudio(
   if (!videoId) return { ok: false, error: "url" };
 
   const supabase = await supabaseWithSession();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "auth" };
+  const userId = await sessionUserId(supabase);
+  if (!userId) return { ok: false, error: "auth" };
 
   const { data: previous } = await supabase
     .from("song_audio")
@@ -60,7 +58,7 @@ export async function setYouTubeAudio(
   const title = await fetchYouTubeTitle(videoId);
   const { error } = await supabase.from("song_audio").upsert({
     song_id: songId,
-    user_id: user.id,
+    user_id: userId,
     source: "youtube",
     youtube_id: videoId,
     youtube_title: title,
@@ -78,7 +76,7 @@ export async function setYouTubeAudio(
     }
   }
 
-  revalidatePath("/[instrument]/songs", "page");
+  revalidatePath("/[locale]/[instrument]/songs", "page");
   return { ok: true };
 }
 
@@ -91,16 +89,14 @@ export async function setFileAudio(
   if (!isUuid(songId)) return { ok: false, error: "id" };
 
   const supabase = await supabaseWithSession();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "auth" };
+  const userId = await sessionUserId(supabase);
+  if (!userId) return { ok: false, error: "auth" };
   // Un archivo por canción, en la carpeta del usuario.
-  if (filePath !== `${user.id}/${songId}.mp3`) return { ok: false, error: "path" };
+  if (filePath !== `${userId}/${songId}.mp3`) return { ok: false, error: "path" };
 
   const { error } = await supabase.from("song_audio").upsert({
     song_id: songId,
-    user_id: user.id,
+    user_id: userId,
     source: "file",
     youtube_id: null,
     youtube_title: null,
@@ -109,7 +105,7 @@ export async function setFileAudio(
   });
   if (error) return { ok: false, error: "db" };
 
-  revalidatePath("/[instrument]/songs", "page");
+  revalidatePath("/[locale]/[instrument]/songs", "page");
   return { ok: true };
 }
 
@@ -130,10 +126,8 @@ export async function saveSync(
   }
 
   const supabase = await supabaseWithSession();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "auth" };
+  const userId = await sessionUserId(supabase);
+  if (!userId) return { ok: false, error: "auth" };
 
   // RLS: solo se lee si la canción es del usuario.
   const { data: song } = await supabase
@@ -149,7 +143,7 @@ export async function saveSync(
 
   const { error } = await supabase.from("song_sync").upsert({
     song_id: songId,
-    user_id: user.id,
+    user_id: userId,
     granularity,
     stamps,
     targets,

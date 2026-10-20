@@ -11,14 +11,13 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { Link, useRouter } from "@/i18n/navigation";
 import { Button, chipClass } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DuplicateSongModal } from "./duplicate-song-modal";
-import { SongInstruments } from "./instrument-toggles";
+import { SongInstruments } from "./song-instruments";
 import { MoveSongModal } from "./move-song-modal";
 import { NewSongModal } from "./new-song-modal";
 import { FIELD_CLASS, PlaylistFormModal } from "./playlist-form-modal";

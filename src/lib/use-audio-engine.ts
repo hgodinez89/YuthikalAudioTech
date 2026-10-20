@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { clampTime } from "./audio";
 
 /* `start`: posición inicial (s), sin reproducir. Solo se lee al crear el
@@ -353,6 +353,31 @@ export function useAudioEngine(
   const duration = active?.duration ?? 0;
   const muted = active?.muted ?? false;
 
+  /* Acciones estables mientras no cambien la fuente, la duración o el
+     silencio: los componentes memorizados no se redibujan por el reloj. */
+  const actions = useMemo(
+    () => ({
+      now: () => controls?.now() ?? 0,
+      toggle: () => controls?.toggle(),
+      play: () => controls?.play(),
+      pause: () => controls?.pause(),
+      seekTo: (seconds: number) => controls?.seekTo(clampTime(seconds, duration)),
+      skip: (seconds: number) => {
+        if (!controls) return;
+        controls.seekTo(clampTime(controls.now() + seconds, duration));
+      },
+      setRate: (rate: number) => controls?.setRate(rate),
+      setVolume: (volume: number) => {
+        controls?.setVolume(Math.round(Math.min(100, Math.max(0, volume))));
+        // Subir el volumen quita el silencio, como en cualquier reproductor.
+        if (muted && volume > 0) controls?.setMuted(false);
+      },
+      toggleMute: () => controls?.setMuted(!muted),
+      setFade: (gain: number) => controls?.setFade(Math.min(1, Math.max(0, gain))),
+    }),
+    [controls, duration, muted],
+  );
+
   return {
     ready: active?.ready ?? false,
     playing,
@@ -361,22 +386,6 @@ export function useAudioEngine(
     rate: active?.rate ?? 1,
     volume: active?.volume ?? 100,
     muted,
-    now: () => controls?.now() ?? 0,
-    toggle: () => controls?.toggle(),
-    play: () => controls?.play(),
-    pause: () => controls?.pause(),
-    seekTo: (seconds) => controls?.seekTo(clampTime(seconds, duration)),
-    skip: (seconds) => {
-      if (!controls) return;
-      controls.seekTo(clampTime(controls.now() + seconds, duration));
-    },
-    setRate: (rate) => controls?.setRate(rate),
-    setVolume: (volume) => {
-      controls?.setVolume(Math.round(Math.min(100, Math.max(0, volume))));
-      // Subir el volumen quita el silencio, como en cualquier reproductor.
-      if (muted && volume > 0) controls?.setMuted(false);
-    },
-    toggleMute: () => controls?.setMuted(!muted),
-    setFade: (gain) => controls?.setFade(Math.min(1, Math.max(0, gain))),
+    ...actions,
   };
 }

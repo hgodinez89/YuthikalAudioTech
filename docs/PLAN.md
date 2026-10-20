@@ -24,7 +24,7 @@ App web responsive para guitarristas: referencia de acordes, canciones con letra
 - Alta fidelidad: colores, tipografía, espaciado e interacciones son finales. Cada pantalla se recrea como componentes React idiomáticos (los `.dc.html` y `support.js` no se portan, solo se consultan).
 - Los Design Tokens del README del handoff se trasladan una sola vez a Tailwind/CSS variables en la Fase 0.
 - El diagrama de acordes SVG sigue la spec del handoff (`frets` 6ª→1ª con -1/0/n, cejilla `{fret, from, to}`, etiqueta "Nfr").
-- Logos canónicos: `yuthikal-logo-crop.png` (tema oscuro) y `yuthikal-logo-claro.png` (tema claro), tomados del handoff.
+- Logo: SVG de trazos en `components/brand-logo.tsx`, redibujado de los PNG del handoff (`yuthikal-logo-crop.png` / `yuthikal-logo-claro.png`); un solo dibujo para ambos temas (wordmark con el color del texto, onda con el gradiente del tema).
 - Iconos con `lucide-react` manteniendo el trazo de los prototipos.
 - Una pantalla está "terminada" cuando es fiel al prototipo en ambos temas y ambos idiomas.
 
@@ -48,17 +48,19 @@ Género: Rock, Pop, Balada, Bolero, Ranchera, Cumbia, Salsa, Reggae, Blues, Coun
 
 ## Rutas
 
-> Rutas actualizadas tras el rediseño "instrumento primero" (ver `IMPLEMENTATION.md` §8).
+> Rutas actualizadas tras el rediseño "instrumento primero" y el idioma en la URL (ver `IMPLEMENTATION.md` §8).
 
 ```
-/                                Landing: elección de instrumento (o redirige al último usado)
-/[instrument]                    guitar | ukulele → redirige a Acordes
-/[instrument]/chords             Chord finder (selector nota + tipo)
-/[instrument]/chords/[slug]      Chord detail
-/[instrument]/songs              Mis canciones — lista plana, ?list=<playlist> filtra (privado)
-/[instrument]/songs/[songId]     Canción — ?mode=view|edit|karaoke, edit con &step=lyrics|audio
-/[instrument]/basics             Cuerdas del instrumento + notas musicales
-/login                           Login con Google (?next= vuelve al origen)
+/                                → /es o /en (cookie de idioma); con instrumento recordado, a sus acordes
+/[locale]                        es | en: landing con elección de instrumento
+/[locale]/[instrument]           guitar | ukulele | piano → redirige a Acordes
+/[locale]/[instrument]/chords    Chord finder (selector nota + tipo)
+/[locale]/[instrument]/chords/[slug]   Chord detail
+/[locale]/[instrument]/scales/[slug]   Escalas
+/[locale]/[instrument]/songs     Mis canciones — lista plana, ?list=<playlist> filtra (privado)
+/[locale]/[instrument]/songs/[songId]  Canción — ?mode=view|edit|karaoke, edit con &step=lyrics|audio
+/[locale]/[instrument]/basics    Cuerdas del instrumento + notas musicales
+/[locale]/login                  Login con Google (?next= vuelve al origen)
 /api/keepalive                   Cron ping (previene pausa del free tier)
 ```
 

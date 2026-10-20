@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Solo se escanea src/ (no docs/ ni los prototipos del handoff). */
+@import "tailwindcss" source("..");
 
 @custom-variant dark (&:where(.dark, .dark *));
 

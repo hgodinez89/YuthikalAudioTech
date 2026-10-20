@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { locales } from "@/i18n/config";
 import { chordSlug } from "@/lib/chord-search";
 import { DB_KEYS } from "@/lib/chords";
 import { INSTRUMENTS, isFretted, type Instrument } from "@/lib/instruments";
@@ -20,27 +21,43 @@ async function catalogChords(instrument: "guitar" | "ukulele"): Promise<CatalogC
   return error ? [] : (data ?? []);
 }
 
-/** Secciones públicas por instrumento; las canciones son de cada usuario y no entran. */
+/**
+ * Secciones públicas por instrumento, en cada idioma y con sus alternativas
+ * (hreflang). Las canciones son de cada usuario y no entran.
+ */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const catalog = {
-    guitar: await catalogChords("guitar"),
-    ukulele: await catalogChords("ukulele"),
-  };
+  const [guitar, ukulele] = await Promise.all([
+    catalogChords("guitar"),
+    catalogChords("ukulele"),
+  ]);
+  const catalog = { guitar, ukulele };
   // Piano: catálogo de guitarra, solo los tipos con voicing de teclado.
   const chordsOf = (instrument: Instrument) =>
     isFretted(instrument)
       ? catalog[instrument]
       : catalog.guitar.filter((c) => PIANO_SUFFIXES.includes(c.suffix));
 
-  return INSTRUMENTS.flatMap((instrument) => {
-    const base = `${SITE_URL}/${instrument}`;
-    return [
-      `${base}/basics`,
-      `${base}/chords`,
+  const paths = [
+    "",
+    ...INSTRUMENTS.flatMap((instrument) => [
+      `/${instrument}/basics`,
+      `/${instrument}/chords`,
       ...DB_KEYS.flatMap((key) =>
-        SCALES.map(({ id }) => `${base}/scales/${scaleSlug(key, id)}`),
+        SCALES.map(({ id }) => `/${instrument}/scales/${scaleSlug(key, id)}`),
       ),
-      ...chordsOf(instrument).map((c) => `${base}/chords/${chordSlug(c.key, c.suffix)}`),
-    ].map((url) => ({ url }));
+      ...chordsOf(instrument).map(
+        (c) => `/${instrument}/chords/${chordSlug(c.key, c.suffix)}`,
+      ),
+    ]),
+  ];
+
+  return paths.flatMap((path) => {
+    const languages = Object.fromEntries(
+      locales.map((locale) => [locale, `${SITE_URL}/${locale}${path}`]),
+    );
+    return locales.map((locale) => ({
+      url: `${SITE_URL}/${locale}${path}`,
+      alternates: { languages },
+    }));
   });
 }

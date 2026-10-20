@@ -1,9 +1,9 @@
 "use client";
 
 import { Check, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { Badge, Button } from "./button";
 import { Modal, ModalFooter, ModalHeader } from "./modal";
 import type { PlaylistWithCount } from "@/lib/playlists";

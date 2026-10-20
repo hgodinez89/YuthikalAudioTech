@@ -6,7 +6,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/login", "/auth/", "/api/", "/playlists"],
+      // Login y canciones son de cada usuario (además llevan noindex).
+      disallow: ["/*/login", "/*/*/songs", "/auth/", "/api/"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };

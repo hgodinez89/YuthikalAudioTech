@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { chipClass } from "./button";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DB_KEYS, ROOT_SHORT_ES } from "@/lib/chords";

@@ -24,7 +24,8 @@
     "googleButton": "Continue with Google",
     "lockNote": "Sign-up is only available with Google",
     "account": "Account",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "redirecting": "Opening Google…"
   },
   "playlists": {
     "title": "My playlists",

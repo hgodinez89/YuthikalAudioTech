@@ -1,30 +1,34 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { InstrumentStrings } from "@/components/instrument-strings";
 import { MusicalNotes } from "@/components/musical-notes";
 import { PianoBasics } from "@/components/piano-basics";
 import { isFretted, type Instrument } from "@/lib/instruments";
+import { localeAlternates } from "@/lib/site";
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ instrument: string }>;
+  params: Promise<{ locale: string; instrument: string }>;
 }): Promise<Metadata> {
-  const { instrument } = await params;
-  const t = await getTranslations("basics");
-  const tInstruments = await getTranslations("instruments");
+  const { locale, instrument } = await params;
+  const t = await getTranslations({ locale, namespace: "basics" });
+  const tInstruments = await getTranslations({ locale, namespace: "instruments" });
   return {
     title: `${t("title")} · ${tInstruments(`${instrument}.name`)} — Yuthikal AudioTech`,
+    alternates: localeAlternates(locale, `/${instrument}/basics`),
   };
 }
 
 export default async function BasicsPage({
   params,
 }: {
-  params: Promise<{ instrument: string }>;
+  params: Promise<{ locale: string; instrument: string }>;
 }) {
+  const { locale, instrument: rawInstrument } = await params;
+  setRequestLocale(locale);
   // El layout del instrumento ya validó el segmento.
-  const instrument = (await params).instrument as Instrument;
+  const instrument = rawInstrument as Instrument;
   const t = await getTranslations("basics");
   const tInstruments = await getTranslations("instruments");
 

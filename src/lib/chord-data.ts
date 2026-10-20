@@ -2,7 +2,7 @@ import type { ChordDataMap } from "@/components/chord-sheet";
 import { chordIdFromName } from "./chord-search";
 import { catalogInstrument, chordDbId, isFretted, type Instrument } from "./instruments";
 import { pianoChordFromName, pianoInversions } from "./piano";
-import { supabaseWithSession } from "./supabase-server";
+import { supabaseServer } from "./supabase";
 
 /** Diagramas (del instrumento activo) de cada acorde nombrado: canción, escala. */
 export async function loadChordData(
@@ -16,7 +16,8 @@ export async function loadChordData(
   }
   if (idByName.size === 0) return {};
 
-  const supabase = await supabaseWithSession();
+  // Catálogo público: sin cookies, así las páginas de escalas pueden ser estáticas.
+  const supabase = supabaseServer();
   const { data } = await supabase
     .from("chords")
     .select("id,name_es,positions:chord_positions!inner(base_fret,frets,barres,position)")

@@ -1,9 +1,9 @@
 "use client";
 
 import { Trash2, WandSparkles } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useId, useMemo, useState, useTransition } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "./button";
 import { InstrumentToggles } from "./instrument-toggles";
 import { Modal, ModalHeader } from "./modal";

@@ -2,9 +2,9 @@
 
 /* eslint-disable @next/next/no-img-element -- miniatura externa de YouTube */
 import { FileMusic, Link2, Play, Upload } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { Badge } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
 import { formatTime, MAX_MP3_BYTES, MP3_ENABLED, type SongAudioRow } from "@/lib/audio";

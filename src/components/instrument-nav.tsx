@@ -7,9 +7,8 @@ import {
   ListMusic,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
 import { SECTIONS, type Instrument, type Section } from "@/lib/instruments";
 
 export const SECTION_ICONS: Record<Section, LucideIcon> = {

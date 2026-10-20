@@ -1,35 +1,43 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { ChordVisual } from "@/components/chord-visual";
 import { ScalePicker } from "@/components/scale-picker";
 import { ScaleView } from "@/components/scale-view";
 import { loadChordData } from "@/lib/chord-data";
 import type { Instrument } from "@/lib/instruments";
 import { parseScaleSlug, scaleChords, scaleNotes, scaleSteps } from "@/lib/scales";
+import { localeAlternates } from "@/lib/site";
 
-type Params = Promise<{ instrument: string; slug: string }>;
+type Params = Promise<{ locale: string; instrument: string; slug: string }>;
+
+/* Cada escala se genera estática en su primera visita y queda en caché. */
+export function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({
   params,
 }: {
   params: Params;
 }): Promise<Metadata> {
-  const { instrument, slug } = await params;
+  const { locale, instrument, slug } = await params;
   const parsed = parseScaleSlug(slug);
   if (!parsed) notFound();
-  const t = await getTranslations("scales");
-  const tInstruments = await getTranslations("instruments");
-  const lang = (await getLocale()) === "en" ? "en" : "es";
+  const t = await getTranslations({ locale, namespace: "scales" });
+  const tInstruments = await getTranslations({ locale, namespace: "instruments" });
+  const lang = locale === "en" ? "en" : "es";
   const scale = scaleNotes(parsed.key, parsed.id);
   return {
     title: `${t("title", { root: scale.notes[0][lang], name: t(`name.${scale.id}`) })} · ${tInstruments(`${instrument}.name`)} — Yuthikal AudioTech`,
+    alternates: localeAlternates(locale, `/${instrument}/scales/${slug}`),
   };
 }
 
 export default async function ScalePage({ params }: { params: Params }) {
-  const { instrument: rawInstrument, slug } = await params;
+  const { locale, instrument: rawInstrument, slug } = await params;
+  setRequestLocale(locale);
   // El layout del instrumento ya validó el segmento.
   const instrument = rawInstrument as Instrument;
   const parsed = parseScaleSlug(slug);
@@ -37,7 +45,7 @@ export default async function ScalePage({ params }: { params: Params }) {
 
   const t = await getTranslations("scales");
   const tInstruments = await getTranslations("instruments");
-  const lang = (await getLocale()) === "en" ? "en" : "es";
+  const lang = locale === "en" ? "en" : "es";
   const other = lang === "es" ? "en" : "es";
 
   const scale = scaleNotes(parsed.key, parsed.id);

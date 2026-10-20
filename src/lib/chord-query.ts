@@ -50,7 +50,8 @@ export async function fetchChords(
     .from("chords")
     .select(
       "id,key,suffix,name_en,name_es,category,positions:chord_positions!inner(base_fret,frets,barres,position)",
-      { count: "exact" },
+      // El total solo hace falta en la primera página (el scroll lo conserva).
+      offset === 0 ? { count: "exact" } : {},
     )
     .eq("instrument", catalogInstrument(instrument))
     .eq("positions.position", 1);
@@ -90,5 +91,6 @@ export async function fetchChords(
       ? undefined
       : pianoRootKeys(r.key as string, r.suffix as string),
   }));
+  // Sin conteo (páginas siguientes) el total se ignora: el cliente conserva el de la primera.
   return { rows, total: count ?? 0 };
 }

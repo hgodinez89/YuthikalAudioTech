@@ -14,7 +14,7 @@ import {
   Unlink2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useDeferredValue, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "./button";
 import { ChordPicker } from "./chord-picker";
 import { ChordSheet } from "./chord-sheet";
@@ -82,7 +82,10 @@ export function SongEditor({
   const saveState = autosave.state;
   const tooLong = content.length > MAX_CONTENT_LENGTH;
 
-  const parsed = useMemo(() => parseChordPro(content), [content]);
+  /* La vista previa usa un valor diferido: con letras largas, escribir no
+     espera a que se vuelva a parsear y pintar todo el cifrado. */
+  const previewContent = useDeferredValue(content);
+  const parsed = useMemo(() => parseChordPro(previewContent), [previewContent]);
   const visualModel = useMemo(
     () => (subMode === "visual" ? buildVisualModel(content) : []),
     [subMode, content],

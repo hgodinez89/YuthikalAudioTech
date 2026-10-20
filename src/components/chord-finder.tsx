@@ -191,7 +191,6 @@ export function ChordFinder({
       .then((res) => {
         if (requestId.current !== id) return;
         setRows((prev) => [...prev, ...res.rows]);
-        setTotal(res.total);
       })
       .catch((e: Error) => requestId.current === id && setError(e));
   }, [instrument, query, grouping, rows.length, picks]);

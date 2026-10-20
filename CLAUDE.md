@@ -21,7 +21,7 @@ Antes de dar por terminado un cambio: `npm run lint && npm test && npm run build
 
 ## i18n y temas
 
-- next-intl por cookie, **español por defecto**. Todo texto visible vive en `messages/es.json` y `messages/en.json` (ambos idiomas siempre).
+- next-intl con el idioma en la URL (`/es/…`, `/en/…`), **español por defecto**. Todo texto visible vive en `messages/es.json` y `messages/en.json` (ambos idiomas siempre).
 - next-themes claro/oscuro/sistema. Los design tokens (colores, gradientes) son CSS variables en `src/app/globals.css`.
 
 ## Fuente de verdad de diseño

@@ -2,6 +2,17 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { supabaseEnv } from "./supabase";
 
+type SessionClient = Awaited<ReturnType<typeof supabaseWithSession>>;
+
+/**
+ * Id del usuario con sesión, o null. `getClaims` verifica la firma del JWT
+ * (localmente con claves asimétricas, sin ir a Supabase Auth en cada render).
+ */
+export async function sessionUserId(supabase: SessionClient): Promise<string | null> {
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims?.sub ?? null;
+}
+
 /**
  * Cliente de servidor CON la sesión del usuario (leída de cookies).
  * Usar en Server Components, server actions y route handlers que tocan

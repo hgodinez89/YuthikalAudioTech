@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getTranslations } from "next-intl/server";
+import { defaultLocale } from "@/i18n/config";
 
 /*
  * Acceso directo en la pantalla de inicio (Android/iOS). Se abre en el
@@ -7,7 +8,8 @@ import { getTranslations } from "next-intl/server";
  * y el login con Google por redirección perdería la sesión.
  */
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-  const t = await getTranslations("metadata");
+  // Un solo manifest (estático), en el idioma por defecto.
+  const t = await getTranslations({ locale: defaultLocale, namespace: "metadata" });
   return {
     name: t("title"),
     short_name: "Yuthikal",

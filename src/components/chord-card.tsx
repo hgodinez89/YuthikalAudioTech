@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ChordVisual } from "./chord-visual";
 import type { ChordPositionRow } from "@/lib/chords";
 

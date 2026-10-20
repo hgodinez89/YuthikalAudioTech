@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "./button";
 import { Modal, MODAL_PANEL, ModalFooter, ModalHeader } from "./modal";
 import { FIELD_CLASS } from "./playlist-form-modal";

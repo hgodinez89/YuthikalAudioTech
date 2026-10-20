@@ -2,8 +2,8 @@
 
 import { Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { BrandLogo } from "./brand-logo";
-import { supabaseBrowser } from "@/lib/supabase";
 
 /** Logo multicolor oficial de Google (Login.dc.html). */
 function GoogleLogo() {
@@ -46,14 +46,20 @@ export function LoginCard({
   subtitle?: string;
 }) {
   const t = useTranslations("auth");
+  const [pending, setPending] = useState(false);
 
-  const signIn = () => {
-    supabaseBrowser().auth.signInWithOAuth({
+  /* supabase-js se descarga recién al pulsar (fuera del bundle de la página). */
+  const signIn = async () => {
+    setPending(true);
+    const { supabaseBrowser } = await import("@/lib/supabase");
+    const { error } = await supabaseBrowser().auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
+    // Si todo va bien, el navegador ya está yendo a Google.
+    if (error) setPending(false);
   };
 
   return (
@@ -78,11 +84,13 @@ export function LoginCard({
 
         <button
           type="button"
-          onClick={signIn}
-          className="flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 rounded-[13px] bg-white text-[15px] font-semibold text-[#1f2328] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-colors hover:bg-[#f2f4f7]"
+          onClick={() => void signIn()}
+          disabled={pending}
+          aria-busy={pending || undefined}
+          className="flex h-[52px] w-full cursor-pointer items-center justify-center gap-3 rounded-[13px] bg-white text-[15px] font-semibold text-[#1f2328] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-colors hover:bg-[#f2f4f7] disabled:cursor-wait disabled:opacity-80"
         >
           <GoogleLogo />
-          {t("googleButton")}
+          {pending ? t("redirecting") : t("googleButton")}
         </button>
 
         <div className="mt-[22px] flex items-center justify-center gap-2 text-mute">

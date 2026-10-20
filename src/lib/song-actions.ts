@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { supabaseWithSession } from "./supabase-server";
+import { sessionUserId, supabaseWithSession } from "./supabase-server";
 import {
   MP3_ENABLED,
   validateStamps,
@@ -23,23 +23,21 @@ import {
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
 /* Las canciones se ven en /[instrument]/songs para cualquier instrumento. */
-const revalidateSongs = () => revalidatePath("/[instrument]/songs", "page");
+const revalidateSongs = () => revalidatePath("/[locale]/[instrument]/songs", "page");
 
 export async function createSong(input: SongInput): Promise<ActionResult> {
   const invalid = validateSong(input);
   if (invalid) return { ok: false, error: invalid };
 
   const supabase = await supabaseWithSession();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "auth" };
+  const userId = await sessionUserId(supabase);
+  if (!userId) return { ok: false, error: "auth" };
 
   const { data, error } = await supabase
     .from("songs")
     .insert({
       playlist_id: input.playlistId,
-      user_id: user.id,
+      user_id: userId,
       name: input.name.trim(),
       description: input.description.trim(),
       key_note: input.keyNote,
@@ -163,10 +161,8 @@ export async function duplicateSong(
   const want = normalizeInclude(include);
 
   const supabase = await supabaseWithSession();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "auth" };
+  const userId = await sessionUserId(supabase);
+  if (!userId) return { ok: false, error: "auth" };
 
   // RLS: solo se lee si la canción es del usuario.
   const { data: source } = await supabase
@@ -191,7 +187,7 @@ export async function duplicateSong(
     .from("songs")
     .insert({
       playlist_id: input.playlistId,
-      user_id: user.id,
+      user_id: userId,
       name: input.name.trim(),
       description: input.description.trim(),
       key_note: input.keyNote,
@@ -216,7 +212,7 @@ export async function duplicateSong(
     let filePath: string | null = null;
     if (audio.source === "file" && audio.file_path) {
       // Archivo propio para la copia: cambiar o borrar uno no afecta al otro.
-      filePath = `${user.id}/${newId}.mp3`;
+      filePath = `${userId}/${newId}.mp3`;
       const { error } = await supabase.storage
         .from("audio")
         .copy(audio.file_path, filePath);
@@ -225,7 +221,7 @@ export async function duplicateSong(
     }
     const { error } = await supabase.from("song_audio").insert({
       song_id: newId,
-      user_id: user.id,
+      user_id: userId,
       source: audio.source,
       youtube_id: audio.source === "youtube" ? audio.youtube_id : null,
       youtube_title: audio.source === "youtube" ? audio.youtube_title : null,
@@ -245,7 +241,7 @@ export async function duplicateSong(
   ) {
     const { error } = await supabase.from("song_sync").insert({
       song_id: newId,
-      user_id: user.id,
+      user_id: userId,
       granularity: source.sync.granularity,
       stamps: source.sync.stamps,
       targets: source.sync.targets,

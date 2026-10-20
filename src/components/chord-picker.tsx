@@ -8,7 +8,6 @@ import { Modal } from "./modal";
 import { escapeLike, parseChordQuery } from "@/lib/chord-search";
 import { catalogInstrument, isFretted, type Instrument } from "@/lib/instruments";
 import { PIANO_SUFFIXES, pianoRootKeys } from "@/lib/piano";
-import { supabaseBrowser } from "@/lib/supabase";
 
 type PickerChord = {
   name_en: string;
@@ -22,6 +21,7 @@ async function searchChords(
   instrument: Instrument,
   query: string,
 ): Promise<PickerChord[]> {
+  const { supabaseBrowser } = await import("@/lib/supabase");
   let qb = supabaseBrowser()
     .from("chords")
     .select(

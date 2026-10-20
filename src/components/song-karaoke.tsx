@@ -1,9 +1,9 @@
 "use client";
 
 import { History, Info, LogOut, Pause, Play, SkipBack, X } from "lucide-react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "@/i18n/navigation";
 import { ChordVisual } from "./chord-visual";
 import type { ChordDataMap } from "./chord-sheet";
 import { FloatingVideo, type VideoInsets } from "./floating-video";
@@ -25,7 +25,7 @@ import {
 } from "@/lib/audio";
 import { isInstrumental, wordGroups } from "@/lib/chordpro";
 import type { SongRow } from "@/lib/songs";
-import { karaokeLines } from "@/lib/sync-lines";
+import { karaokeLines, type KaraokeLine } from "@/lib/sync-lines";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
 import { usePlayerShortcuts } from "@/lib/use-player-shortcuts";
 import { useSectionTitle } from "@/lib/use-section-title";
@@ -41,6 +41,141 @@ const REPEAT_PREROLL = 1;
 const INTRO_PREROLL = 3;
 /* Video flotante entre la cabecera (Ahora/Sigue) y la barra de transporte. */
 const KARAOKE_VIDEO_INSETS: VideoInsets = { top: 132, bottom: 236, bottomMobile: 268 };
+
+/**
+ * Una línea del karaoke. Memorizada: durante la reproducción el reloj cambia
+ * varias veces por segundo, pero solo se redibuja la línea actual (su barra de
+ * progreso) y, al avanzar, las que cambian de distancia.
+ */
+const KaraokeLineView = memo(function KaraokeLineView({
+  line,
+  index,
+  isCurrent,
+  distance,
+  progress,
+  register,
+}: {
+  line: KaraokeLine;
+  index: number;
+  isCurrent: boolean;
+  /** Distancia a la línea actual (tope 5: más lejos se ven igual). */
+  distance: number;
+  /** Progreso dentro de la línea (0 si no es la actual). */
+  progress: number;
+  register: (index: number, el: HTMLDivElement | null) => void;
+}) {
+  const t = useTranslations("karaoke");
+  const opacity = isCurrent ? 1 : Math.max(0.14, 0.62 - (distance - 1) * 0.15);
+  return (
+    <div
+      ref={(el) => register(index, el)}
+      className="text-center transition-[opacity,transform] duration-[400ms]"
+      style={{ opacity, transform: isCurrent ? "scale(1)" : "scale(0.98)" }}
+    >
+      {line.notes.length > 0 && (
+        <div className="mb-2 flex flex-wrap justify-center gap-2">
+          {line.notes.map((note, ni) => (
+            <span
+              key={ni}
+              className="rounded-lg border border-edge bg-surface-2 px-2.5 py-[3px] text-[12px] italic text-sub"
+            >
+              {note}
+            </span>
+          ))}
+        </div>
+      )}
+      {line.section && (
+        <div className="mb-3 flex flex-wrap items-center justify-center gap-3">
+          <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-accent">
+            {line.section}
+          </span>
+          {line.strum && (
+            <span className="rounded-lg border border-edge bg-surface-2 px-2.5 py-[3px] text-[11.5px] tracking-[0.12em] text-sub">
+              {line.strum}
+            </span>
+          )}
+        </div>
+      )}
+      {isInstrumental(line.segments) ? (
+        /* Solo acordes (intro, solo…): acordes en grande + vuelta actual */
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          {line.segments.map((seg, gi) =>
+            seg.repeat ? null : seg.bar ? (
+              <span
+                key={gi}
+                className="font-light text-edge-2"
+                style={{ fontSize: isCurrent ? 30 : 21 }}
+              >
+                |
+              </span>
+            ) : (
+              <span
+                key={gi}
+                className="font-extrabold tracking-[0.01em] text-accent"
+                style={{
+                  fontSize: isCurrent ? 30 : 21,
+                  textShadow: isCurrent
+                    ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
+                    : "none",
+                }}
+              >
+                {seg.chord}
+              </span>
+            ),
+          )}
+          {line.pass && (
+            <span className="rounded-md border border-accent/35 bg-accent/10 px-2 py-0.5 text-[12px] font-bold tabular-nums text-accent">
+              {t("pass", { n: line.pass.n, total: line.pass.total })}
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-end justify-center gap-y-0.5">
+          {/* Salta entre palabras: una palabra con un acorde en medio no se parte */}
+          {wordGroups(line.segments).map((group, wi) => (
+            <span key={wi} className="inline-flex items-end">
+              {group.map((piece, pi) => (
+                <span key={pi} className="inline-flex flex-col whitespace-pre text-left">
+                  <span
+                    className="font-extrabold leading-normal tracking-[0.01em] text-accent"
+                    style={{
+                      fontSize: isCurrent ? 17 : 13,
+                      minHeight: isCurrent ? 26 : 20,
+                      textShadow: isCurrent
+                        ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
+                        : "none",
+                    }}
+                  >
+                    {piece.chord ?? ""}
+                  </span>
+                  <span
+                    className="leading-[1.3]"
+                    style={{
+                      fontSize: isCurrent ? 30 : 21,
+                      fontWeight: isCurrent ? 700 : 500,
+                      color: isCurrent ? "var(--ink)" : "var(--sub)",
+                    }}
+                  >
+                    {/* acorde final sin palabra: mantiene la altura de la línea */}
+                    {piece.text || " "}
+                  </span>
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      )}
+      {isCurrent && (
+        <div className="mx-auto mt-3 h-[3px] w-[180px] overflow-hidden rounded-[3px] bg-edge">
+          <div
+            className="h-full rounded-[3px] bg-[linear-gradient(90deg,var(--grad-from),var(--grad-to))] shadow-[0_0_12px_rgba(53,214,232,0.7)]"
+            style={{ width: `${Math.round(progress * 100)}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+});
 
 export function SongKaraoke({
   song,
@@ -194,6 +329,10 @@ export function SongKaraoke({
   /* Scroll: centrar la línea actual. */
   const containerRef = useRef<HTMLDivElement>(null);
   const lineRefs = useRef(new Map<number, HTMLDivElement>());
+  const registerLine = useCallback((i: number, el: HTMLDivElement | null) => {
+    if (el) lineRefs.current.set(i, el);
+    else lineRefs.current.delete(i);
+  }, []);
   const prevIndexRef = useRef(-1);
   useEffect(() => {
     const container = containerRef.current;
@@ -426,127 +565,17 @@ export function SongKaraoke({
         className="relative flex-1 overflow-hidden [mask-image:linear-gradient(180deg,transparent_0%,#000_20%,#000_80%,transparent_100%)] [scrollbar-width:none]"
       >
         <div className="flex flex-col items-center gap-[22px] px-5 pb-[45vh] pt-[40vh]">
-          {lines.map((line, i) => {
-            const isCurrent = i === currentIndex;
-            const distance = Math.abs(i - currentIndex);
-            const opacity = isCurrent ? 1 : Math.max(0.14, 0.62 - (distance - 1) * 0.15);
-            return (
-              <div
-                key={i}
-                ref={(el) => {
-                  if (el) lineRefs.current.set(i, el);
-                  else lineRefs.current.delete(i);
-                }}
-                className="text-center transition-[opacity,transform] duration-[400ms]"
-                style={{ opacity, transform: isCurrent ? "scale(1)" : "scale(0.98)" }}
-              >
-                {line.notes.length > 0 && (
-                  <div className="mb-2 flex flex-wrap justify-center gap-2">
-                    {line.notes.map((note, ni) => (
-                      <span
-                        key={ni}
-                        className="rounded-lg border border-edge bg-surface-2 px-2.5 py-[3px] text-[12px] italic text-sub"
-                      >
-                        {note}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {line.section && (
-                  <div className="mb-3 flex flex-wrap items-center justify-center gap-3">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-accent">
-                      {line.section}
-                    </span>
-                    {line.strum && (
-                      <span className="rounded-lg border border-edge bg-surface-2 px-2.5 py-[3px] text-[11.5px] tracking-[0.12em] text-sub">
-                        {line.strum}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {isInstrumental(line.segments) ? (
-                  /* Solo acordes (intro, solo…): acordes en grande + vuelta actual */
-                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-                    {line.segments.map((seg, gi) =>
-                      seg.repeat ? null : seg.bar ? (
-                        <span
-                          key={gi}
-                          className="font-light text-edge-2"
-                          style={{ fontSize: isCurrent ? 30 : 21 }}
-                        >
-                          |
-                        </span>
-                      ) : (
-                        <span
-                          key={gi}
-                          className="font-extrabold tracking-[0.01em] text-accent"
-                          style={{
-                            fontSize: isCurrent ? 30 : 21,
-                            textShadow: isCurrent
-                              ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
-                              : "none",
-                          }}
-                        >
-                          {seg.chord}
-                        </span>
-                      ),
-                    )}
-                    {line.pass && (
-                      <span className="rounded-md border border-accent/35 bg-accent/10 px-2 py-0.5 text-[12px] font-bold tabular-nums text-accent">
-                        {t("pass", { n: line.pass.n, total: line.pass.total })}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-end justify-center gap-y-0.5">
-                    {/* Salta entre palabras: una palabra con un acorde en medio no se parte */}
-                    {wordGroups(line.segments).map((group, wi) => (
-                      <span key={wi} className="inline-flex items-end">
-                        {group.map((piece, pi) => (
-                          <span
-                            key={pi}
-                            className="inline-flex flex-col whitespace-pre text-left"
-                          >
-                            <span
-                              className="font-extrabold leading-normal tracking-[0.01em] text-accent"
-                              style={{
-                                fontSize: isCurrent ? 17 : 13,
-                                minHeight: isCurrent ? 26 : 20,
-                                textShadow: isCurrent
-                                  ? "0 0 14px rgba(53,214,232,0.85), 0 0 28px rgba(46,107,240,0.4)"
-                                  : "none",
-                              }}
-                            >
-                              {piece.chord ?? ""}
-                            </span>
-                            <span
-                              className="leading-[1.3]"
-                              style={{
-                                fontSize: isCurrent ? 30 : 21,
-                                fontWeight: isCurrent ? 700 : 500,
-                                color: isCurrent ? "var(--ink)" : "var(--sub)",
-                              }}
-                            >
-                              {/* acorde final sin palabra: mantiene la altura de la línea */}
-                              {piece.text || " "}
-                            </span>
-                          </span>
-                        ))}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {isCurrent && (
-                  <div className="mx-auto mt-3 h-[3px] w-[180px] overflow-hidden rounded-[3px] bg-edge">
-                    <div
-                      className="h-full rounded-[3px] bg-[linear-gradient(90deg,var(--grad-from),var(--grad-to))] shadow-[0_0_12px_rgba(53,214,232,0.7)]"
-                      style={{ width: `${Math.round(progress * 100)}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {lines.map((line, i) => (
+            <KaraokeLineView
+              key={i}
+              line={line}
+              index={i}
+              isCurrent={i === currentIndex}
+              distance={Math.min(Math.abs(i - currentIndex), 5)}
+              progress={i === currentIndex ? progress : 0}
+              register={registerLine}
+            />
+          ))}
         </div>
       </div>
 
