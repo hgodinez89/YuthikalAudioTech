@@ -89,6 +89,31 @@ describe("sortSongs", () => {
   const d = song("Canción 2", "2026-01-04", ["ukulele", "guitar"], "p-rock");
   const all = [a, b, c, d];
 
+  it("setlist: posición guardada y, sin ella, al final por fecha", () => {
+    const list = [
+      { ...song("Sin lugar nueva", "2026-02-02"), playlist_position: null },
+      { ...song("Segunda", "2026-01-05"), playlist_position: 1 },
+      { ...song("Sin lugar vieja", "2026-02-01") },
+      { ...song("Primera", "2026-01-09"), playlist_position: 0 },
+    ];
+    const order = (dir: SortDir) =>
+      sortSongs(list, {
+        by: "setlist",
+        dir,
+        instrument: "guitar",
+        playlistNames,
+        locale: "es",
+      }).map((s) => s.name);
+    expect(order("asc")).toEqual([
+      "Primera",
+      "Segunda",
+      "Sin lugar vieja",
+      "Sin lugar nueva",
+    ]);
+    // La dirección no cambia el setlist.
+    expect(order("desc")).toEqual(order("asc"));
+  });
+
   it("por fecha", () => {
     expect(names(all, "recent", "desc")).toEqual([
       "Canción 2",

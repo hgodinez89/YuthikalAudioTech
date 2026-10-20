@@ -183,6 +183,24 @@ body {
   );
 }
 
+/* Texto con el degradado de marca (cuenta regresiva del karaoke). */
+.yk-gradient-text {
+  background: linear-gradient(135deg, var(--grad-from), var(--grad-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Contorno con el degradado de marca (las líneas de un bucle A–B). */
+.yk-gradient-ring {
+  border: 1.5px solid transparent;
+  background: linear-gradient(135deg, var(--grad-from), var(--grad-to)) border-box;
+  mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
 /* Tarjeta elevada: superficie lisa en claro, degradado sutil en oscuro. */
 .yk-raised {
   background: var(--raised);

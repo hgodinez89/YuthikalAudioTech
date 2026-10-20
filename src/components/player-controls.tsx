@@ -1,6 +1,6 @@
 "use client";
 
-import { Gauge, Keyboard, MonitorPlay, Volume2, VolumeX } from "lucide-react";
+import { Gauge, Keyboard, MonitorPlay, Timer, Volume2, VolumeX } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, type KeyboardEvent } from "react";
 import { Menu, MenuItem, Popover } from "./menu";
@@ -14,7 +14,7 @@ export const SMALL_BUTTON =
   "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border border-edge-2 bg-surface-2 px-2.5 text-[12.5px] font-semibold tabular-nums text-sub hover:text-ink disabled:cursor-not-allowed disabled:opacity-50";
 
 /* Panel flotante encima del botón. */
-const PANEL =
+export const PLAYER_PANEL =
   "absolute bottom-12 z-[71] rounded-[12px] border border-edge-2 bg-surface p-1.5 shadow-pop";
 
 /** Velocidad de reproducción: botón con el valor actual y menú de opciones. */
@@ -45,7 +45,7 @@ export function SpeedControl({
           </>
         ),
       }}
-      panelClassName={`${PANEL} left-1/2 flex -translate-x-1/2 flex-col gap-0.5`}
+      panelClassName={`${PLAYER_PANEL} left-1/2 flex -translate-x-1/2 flex-col gap-0.5`}
     >
       {rates.map((value) => (
         <MenuItem
@@ -57,6 +57,56 @@ export function SpeedControl({
           }`}
         >
           {value}×
+        </MenuItem>
+      ))}
+    </Menu>
+  );
+}
+
+/** Segundos de la cuenta regresiva antes de tocar (0 = sin cuenta). */
+export const COUNTDOWN_OPTIONS = [0, 3, 5] as const;
+export type CountdownSeconds = (typeof COUNTDOWN_OPTIONS)[number];
+
+/** Cuenta regresiva: botón con el valor y menú No / 3 s / 5 s. */
+export function CountdownControl({
+  value,
+  onChange,
+}: {
+  value: CountdownSeconds;
+  onChange: (value: CountdownSeconds) => void;
+}) {
+  const t = useTranslations("player");
+  const label = (n: CountdownSeconds) =>
+    n ? t("countdownSeconds", { n }) : t("countdownOff");
+  return (
+    <Menu
+      label={t("countdown")}
+      trigger={{
+        "aria-label": `${t("countdown")}: ${label(value)}`,
+        title: t("countdown"),
+        className: `${SMALL_BUTTON} ${value ? "border-accent/50 text-accent" : ""}`,
+        children: (
+          <>
+            <Timer size={15} strokeWidth={2} />
+            {value ? <span>{t("countdownSeconds", { n: value })}</span> : null}
+          </>
+        ),
+      }}
+      panelClassName={`${PLAYER_PANEL} left-1/2 flex w-[170px] -translate-x-1/2 flex-col gap-0.5`}
+    >
+      <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-tert">
+        {t("countdown")}
+      </div>
+      {COUNTDOWN_OPTIONS.map((n) => (
+        <MenuItem
+          key={n}
+          checked={value === n}
+          onSelect={() => onChange(n)}
+          className={`rounded-[8px] px-3 py-1.5 text-left text-[13px] font-semibold ${
+            value === n ? "bg-accent/15 text-accent" : "text-sub hover:text-ink"
+          }`}
+        >
+          {label(n)}
         </MenuItem>
       ))}
     </Menu>
@@ -137,7 +187,7 @@ export function ShortcutsButton({ items }: { items: { keys: string; label: strin
         className: SMALL_BUTTON,
         children: <Keyboard size={16} strokeWidth={2} />,
       }}
-      panelClassName={`${PANEL} right-0`}
+      panelClassName={`${PLAYER_PANEL} right-0`}
     >
       <div className="w-[250px] p-1.5">
         <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-tert">

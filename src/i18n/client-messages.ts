@@ -32,6 +32,7 @@ export const SECTION_NAMESPACES = {
     "songView",
     "karaoke",
     "book",
+    "concert",
   ],
 } as const;
 

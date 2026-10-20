@@ -1,15 +1,28 @@
 "use client";
 
-import { History, Info, Pause, Play, SkipBack, X } from "lucide-react";
+import { History, Info, Pause, Play, Repeat, SkipBack, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { ChordVisual } from "./chord-visual";
 import type { ChordDataMap } from "./chord-sheet";
 import { FloatingVideo, type VideoInsets } from "./floating-video";
+import { Menu, MenuItem, MenuSeparator } from "./menu";
 import {
+  COUNTDOWN_OPTIONS,
+  CountdownControl,
+  PLAYER_PANEL,
   ProgressWave,
   ShortcutsButton,
+  type CountdownSeconds,
   SKIP_SECONDS,
   SMALL_BUTTON,
   SpeedControl,
@@ -24,6 +37,13 @@ import {
   type SongSyncRow,
 } from "@/lib/audio";
 import { isInstrumental, wordGroups } from "@/lib/chordpro";
+import {
+  crossedLoopEnd,
+  loopRange,
+  sectionLines,
+  type LoopLines,
+  type LoopRange,
+} from "@/lib/loop";
 import { smoothBehavior } from "@/lib/motion";
 import type { SongRow } from "@/lib/songs";
 import { karaokeLines, type KaraokeLine } from "@/lib/sync-lines";
@@ -31,7 +51,7 @@ import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
 import { usePlayerShortcuts } from "@/lib/use-player-shortcuts";
 import { useSectionTitle } from "@/lib/use-section-title";
 import { useSignedAudioUrl } from "@/lib/use-signed-audio-url";
-import { useStoredFlag } from "@/lib/use-stored-flag";
+import { useStoredFlag, useStoredValue } from "@/lib/use-stored-flag";
 
 /* Velocidades: con audio, la de reproducción; sin audio, la del autoscroll. */
 const AUDIO_RATES = [0.5, 0.75, 1, 1.25] as const;
@@ -40,6 +60,10 @@ const AUTO_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 const REPEAT_PREROLL = 1;
 /* Saltar la intro: se empieza un poco antes de la primera línea sincronizada. */
 const INTRO_PREROLL = 3;
+/* Cuenta regresiva antes de tocar: preferencia del dispositivo. */
+const COUNTDOWN_KEY = "yk-countdown";
+const parseCountdown = (raw: string) =>
+  COUNTDOWN_OPTIONS.find((n) => String(n) === raw) ?? null;
 /* Video flotante entre la cabecera (Ahora/Sigue) y la barra de transporte. */
 const KARAOKE_VIDEO_INSETS: VideoInsets = { top: 132, bottom: 236, bottomMobile: 268 };
 
@@ -55,6 +79,8 @@ const KaraokeLineView = memo(function KaraokeLineView({
   distance,
   progress,
   register,
+  picking,
+  onPick,
 }: {
   line: KaraokeLine;
   index: number;
@@ -64,13 +90,35 @@ const KaraokeLineView = memo(function KaraokeLineView({
   /** Progreso dentro de la línea (0 si no es la actual). */
   progress: number;
   register: (index: number, el: HTMLDivElement | null) => void;
+  /** Eligiendo A o B: las líneas se ven más y se pueden tocar. */
+  picking: boolean;
+  onPick: (index: number) => void;
 }) {
   const t = useTranslations("karaoke");
-  const opacity = isCurrent ? 1 : Math.max(0.14, 0.62 - (distance - 1) * 0.15);
+  const fade = Math.max(0.14, 0.62 - (distance - 1) * 0.15);
+  const opacity = isCurrent ? 1 : picking ? Math.max(0.5, fade) : fade;
   return (
     <div
       ref={(el) => register(index, el)}
-      className="text-center transition-[opacity,transform] duration-[400ms]"
+      {...(picking
+        ? {
+            role: "button",
+            tabIndex: 0,
+            onClick: () => onPick(index),
+            onKeyDown: (e: React.KeyboardEvent) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                onPick(index);
+              }
+            },
+          }
+        : {})}
+      className={`text-center transition-[opacity,transform] duration-[400ms] ${
+        picking
+          ? "-mx-3 cursor-pointer rounded-xl px-3 hover:bg-surface hover:opacity-100 focus-visible:opacity-100"
+          : ""
+      }`}
       style={{ opacity, transform: isCurrent ? "scale(1)" : "scale(0.98)" }}
     >
       {line.notes.length > 0 && (
@@ -250,9 +298,24 @@ export function SongKaraoke({
     setSpeed(next);
   };
 
+  /* Valores vivos para los intervalos (reloj, bucle) sin re-suscribirse. */
+  const autoTRef = useRef(autoT);
+  const autoLoopRef = useRef<LoopRange | null>(null);
+  const loopBackRef = useRef<() => void>(() => {});
+  useLayoutEffect(() => {
+    autoTRef.current = autoT;
+  });
+
   useEffect(() => {
     if (variant !== "auto" || !autoPlaying) return;
     const interval = setInterval(() => {
+      // Bucle A–B sin audio: al llegar a B vuelve a A.
+      const range = autoLoopRef.current;
+      const prev = autoTRef.current;
+      if (range && crossedLoopEnd(prev, prev + 0.1, range)) {
+        loopBackRef.current();
+        return;
+      }
       setAutoT((prev) => {
         const next = prev + 0.1;
         if (next >= autoTotal) {
@@ -368,24 +431,83 @@ export function SongKaraoke({
       ? 0
       : Math.max(0, firstStart - INTRO_PREROLL);
 
+  /* Cuenta regresiva (No / 3 s / 5 s): al dar play desde pausa, en "Al
+     inicio" y en cada vuelta del bucle; el audio arranca al llegar a cero. */
+  const [countdownPref, setCountdownPref] = useStoredValue<CountdownSeconds>(
+    COUNTDOWN_KEY,
+    0,
+    parseCountdown,
+    String,
+  );
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancelCountdown = useCallback(() => {
+    if (countdownTimer.current) clearInterval(countdownTimer.current);
+    countdownTimer.current = null;
+    setCountdown(null);
+  }, []);
+  useEffect(() => cancelCountdown, [cancelCountdown]);
+  const withCountdown = (start: () => void) => {
+    cancelCountdown();
+    if (!countdownPref) {
+      start();
+      return;
+    }
+    let left: number = countdownPref;
+    setCountdown(left);
+    countdownTimer.current = setInterval(() => {
+      left -= 1;
+      if (left > 0) {
+        setCountdown(left);
+        return;
+      }
+      cancelCountdown();
+      start();
+    }, 1000);
+  };
+  /* El motor cambia de identidad en cada render; los intervalos usan el vigente. */
+  const engineRef = useRef(engine);
+  useEffect(() => {
+    engineRef.current = engine;
+  });
+  const play = () =>
+    variant === "sync" ? engineRef.current.play() : setAutoPlaying(true);
+
   const togglePlay = () => {
+    // Tocar durante la cuenta la cancela.
+    if (countdown !== null) {
+      cancelCountdown();
+      return;
+    }
     if (variant === "sync") {
+      if (engine.playing) {
+        engine.pause();
+        return;
+      }
       // Antes de la primera línea, play salta la intro en lugar de esperarla;
       // en el fin, vuelve a empezar.
       const atEnd = endAt !== null && engine.currentTime >= endAt - 0.1;
-      if (!engine.playing && (engine.currentTime < introEnd || atEnd)) {
-        engine.seekTo(introEnd);
-        engine.play();
-      } else engine.toggle();
+      if (engine.currentTime < introEnd || atEnd) engine.seekTo(introEnd);
+      withCountdown(play);
     } else {
-      if (!autoPlaying && autoT >= autoTotal) setAutoT(0);
-      setAutoPlaying((p) => !p);
+      if (autoPlaying) {
+        setAutoPlaying(false);
+        return;
+      }
+      if (autoT >= autoTotal) setAutoT(0);
+      withCountdown(play);
     }
   };
 
   const restart = () => {
+    const wasPlaying = playing || countdown !== null;
+    if (countdownPref && wasPlaying) {
+      if (variant === "sync") engine.pause();
+      else setAutoPlaying(false);
+    }
     if (variant === "sync") engine.seekTo(introEnd);
     else setAutoT(0);
+    if (countdownPref && wasPlaying) withCountdown(play);
   };
 
   const prevSection = () => {
@@ -411,12 +533,7 @@ export function SongKaraoke({
   /* La barra cuenta desde el final de la intro. */
   const barOffset = variant === "sync" ? introEnd : 0;
 
-  /* Con fin marcado: fundido en los últimos segundos y pausa al llegar. El
-     motor cambia de identidad en cada render; el intervalo usa el vigente. */
-  const engineRef = useRef(engine);
-  useEffect(() => {
-    engineRef.current = engine;
-  });
+  /* Con fin marcado: fundido en los últimos segundos y pausa al llegar. */
   const enginePlaying = engine.playing;
   useEffect(() => {
     if (endAt === null || !enginePlaying) return;
@@ -445,6 +562,106 @@ export function SongKaraoke({
     }
   };
 
+  /* Repetir A–B: la sección actual o dos líneas elegidas. Con audio, el rango
+     sale de las marcas; sin audio, de los tiempos del autoscroll. */
+  const [loop, setLoop] = useState<LoopLines | null>(null);
+  const [picking, setPicking] = useState<{ a: number | null } | null>(null);
+  const sectionStarts = useMemo(
+    () => lines.map((line) => line.section !== null),
+    [lines],
+  );
+  const autoStarts = useMemo(() => lines.map((_, i) => i * dwell), [lines, dwell]);
+  const range = loop
+    ? variant === "sync"
+      ? lineStarts && loopRange(lineStarts, loop, total)
+      : loopRange(autoStarts, loop, autoTotal)
+    : null;
+  useLayoutEffect(() => {
+    autoLoopRef.current = variant === "auto" ? range : null;
+  });
+
+  /* Al llegar a B: vuelve a A (con el pre-roll de "Repasar"); con cuenta
+     regresiva, pausa, cuenta y sigue. */
+  const loopBack = () => {
+    if (!range) return;
+    if (variant === "sync") {
+      const target = Math.max(0, range.from - REPEAT_PREROLL);
+      if (countdownPref) engine.pause();
+      engine.seekTo(target);
+    } else {
+      if (countdownPref) setAutoPlaying(false);
+      setAutoT(range.from);
+    }
+    if (countdownPref) withCountdown(play);
+  };
+  useLayoutEffect(() => {
+    loopBackRef.current = loopBack;
+  });
+
+  const rangeFrom = range?.from;
+  const rangeTo = range?.to;
+  useEffect(() => {
+    if (variant !== "sync" || !enginePlaying) return;
+    if (rangeFrom === undefined || rangeTo === undefined) return;
+    let previous = engineRef.current.now();
+    const interval = setInterval(() => {
+      const now = engineRef.current.now();
+      if (crossedLoopEnd(previous, now, { from: rangeFrom, to: rangeTo })) {
+        loopBackRef.current();
+      }
+      previous = now;
+    }, 50);
+    return () => clearInterval(interval);
+  }, [variant, enginePlaying, rangeFrom, rangeTo]);
+
+  const loopSection = () => {
+    setPicking(null);
+    setLoop(sectionLines(sectionStarts, currentIndex));
+  };
+  const toggleLoop = () => (loop ? setLoop(null) : loopSection());
+  const seekToLineRef = useRef(seekToLine);
+  useLayoutEffect(() => {
+    seekToLineRef.current = seekToLine;
+  });
+  /* Elegir A y luego B tocando las líneas; con B, el bucle empieza en A. */
+  const pickLine = useCallback(
+    (index: number) => {
+      if (!picking) return;
+      if (picking.a === null) {
+        setPicking({ a: index });
+        return;
+      }
+      const next = { a: picking.a, b: index };
+      setPicking(null);
+      setLoop(next);
+      seekToLineRef.current(Math.min(next.a, next.b));
+    },
+    [picking],
+  );
+
+  /* Contorno en degradado sobre las líneas del bucle (se ubica con el DOM). */
+  const loopBoxRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const box = loopBoxRef.current;
+    if (!box) return;
+    if (!loop) {
+      box.hidden = true;
+      return;
+    }
+    const place = () => {
+      const first = lineRefs.current.get(Math.min(loop.a, loop.b));
+      const last = lineRefs.current.get(Math.max(loop.a, loop.b));
+      if (!first || !last) return;
+      box.hidden = false;
+      box.style.top = `${first.offsetTop - 12}px`;
+      box.style.height = `${last.offsetTop + last.offsetHeight - first.offsetTop + 24}px`;
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    if (box.parentElement) observer.observe(box.parentElement);
+    return () => observer.disconnect();
+  }, [loop, lines]);
+
   const rate = variant === "sync" ? engine.rate : speed;
   const rates = variant === "sync" ? AUDIO_RATES : AUTO_RATES;
   const setRate = (next: number) =>
@@ -460,8 +677,10 @@ export function SongKaraoke({
   const router = useRouter();
 
   usePlayerShortcuts({
-    // Los menús abiertos (velocidad, atajos) atrapan su propio Escape.
-    Escape: () => router.push(exitHref),
+    // Los menús abiertos (velocidad, atajos) atrapan su propio Escape; al
+    // elegir A–B, Escape cancela la elección.
+    Escape: () => (picking ? setPicking(null) : router.push(exitHref)),
+    b: toggleLoop,
     " ": togglePlay,
     k: togglePlay,
     ArrowLeft: () => skip(-5),
@@ -490,6 +709,7 @@ export function SongKaraoke({
     { keys: "[ / ]", label: tp("keys.speed") },
     ...(variant === "sync" ? [{ keys: "M", label: tp("keys.mute") }] : []),
     { keys: "R", label: tp("keys.repeatLine") },
+    { keys: "B", label: tp("keys.loop") },
     ...(hasVideo ? [{ keys: "V", label: tp("keys.video") }] : []),
     { keys: "Esc", label: t("exit") },
   ];
@@ -551,8 +771,27 @@ export function SongKaraoke({
         </Link>
       </div>
 
+      {/* ELEGIR A–B (reemplaza a la línea de datos mientras dura) */}
+      {picking && (
+        <div className="flex shrink-0 items-center justify-center gap-2.5 px-5 pb-1 pt-0.5">
+          <span role="status" className="text-[13.5px] font-semibold text-accent">
+            {picking.a === null ? t("loop.pickA") : t("loop.pickB")}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPicking(null)}
+            className="yk-hit-y relative cursor-pointer rounded-lg border border-edge-2 px-2.5 py-1 text-[12.5px] font-semibold text-sub hover:text-ink"
+          >
+            {t("loop.cancel")}
+          </button>
+        </div>
+      )}
+
       {/* META */}
-      <div className="shrink-0 px-5 pb-1 pt-0.5 text-center text-[13px] text-tert">
+      <div
+        hidden={picking !== null}
+        className="shrink-0 px-5 pb-1 pt-0.5 text-center text-[13px] text-tert"
+      >
         {song.name}
         {song.key_note && (
           <>
@@ -569,7 +808,20 @@ export function SongKaraoke({
         ref={containerRef}
         className="relative flex-1 overflow-hidden [mask-image:linear-gradient(180deg,transparent_0%,#000_20%,#000_80%,transparent_100%)] [scrollbar-width:none]"
       >
-        <div className="flex flex-col items-center gap-[22px] px-5 pb-[45vh] pt-[40vh]">
+        <div className="relative flex flex-col items-center gap-[22px] px-5 pb-[45vh] pt-[40vh]">
+          <div
+            ref={loopBoxRef}
+            aria-hidden
+            className="pointer-events-none absolute inset-x-3 sm:inset-x-[12%]"
+          >
+            <div className="yk-gradient-ring absolute inset-0 rounded-2xl" />
+            <span className="yk-gradient absolute -top-2.5 left-4 rounded-md px-1.5 text-[11px] font-bold">
+              A
+            </span>
+            <span className="yk-gradient absolute -bottom-2.5 left-4 rounded-md px-1.5 text-[11px] font-bold">
+              B
+            </span>
+          </div>
           {lines.map((line, i) => (
             <KaraokeLineView
               key={i}
@@ -579,10 +831,29 @@ export function SongKaraoke({
               distance={Math.min(Math.abs(i - currentIndex), 5)}
               progress={i === currentIndex ? progress : 0}
               register={registerLine}
+              picking={picking !== null}
+              onPick={pickLine}
             />
           ))}
         </div>
       </div>
+
+      {/* CUENTA REGRESIVA: número grande en degradado sobre la letra */}
+      {countdown !== null && (
+        <div
+          role="timer"
+          aria-live="assertive"
+          // La letra se atenúa detrás del número para que se lea de lejos.
+          className="pointer-events-none absolute inset-x-0 top-[96px] bottom-[220px] z-10 grid place-items-center bg-page/75 backdrop-blur-[3px]"
+        >
+          <span
+            key={countdown}
+            className="yk-gradient-text text-[min(34vw,180px)] font-extrabold leading-none tabular-nums [animation:yk-fade-up_.35s_ease_both]"
+          >
+            {countdown}
+          </span>
+        </div>
+      )}
 
       {/* TRANSPORTE */}
       <div className="shrink-0 border-t border-edge bg-[linear-gradient(180deg,transparent_0%,var(--surface-3)_30%)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3 sm:px-6">
@@ -733,6 +1004,34 @@ export function SongKaraoke({
             <History size={15} strokeWidth={2} />
             <span className="hidden sm:inline">{t("review")}</span>
           </button>
+          <Menu
+            label={t("loop.title")}
+            trigger={{
+              "aria-label": loop ? t("loop.active") : t("loop.title"),
+              title: t("loop.title"),
+              disabled: transportDisabled,
+              className: `${SMALL_BUTTON} ${loop || picking ? "border-accent/50 text-accent" : ""}`,
+              children: (
+                <>
+                  <Repeat size={15} strokeWidth={2} />
+                  <span className="hidden sm:inline">
+                    {loop ? t("loop.short") : t("loop.button")}
+                  </span>
+                </>
+              ),
+            }}
+            panelClassName={`${PLAYER_PANEL} left-1/2 flex w-[220px] -translate-x-1/2 flex-col gap-0.5`}
+          >
+            <MenuItem onSelect={loopSection}>{t("loop.section")}</MenuItem>
+            <MenuItem onSelect={() => setPicking({ a: null })}>{t("loop.pick")}</MenuItem>
+            {loop && (
+              <>
+                <MenuSeparator />
+                <MenuItem onSelect={() => setLoop(null)}>{t("loop.clear")}</MenuItem>
+              </>
+            )}
+          </Menu>
+          <CountdownControl value={countdownPref} onChange={setCountdownPref} />
           <ShortcutsButton items={shortcuts} />
         </div>
       </div>

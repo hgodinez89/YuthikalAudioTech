@@ -182,6 +182,7 @@
       "name": "Nombre",
       "instruments": "Instrumento",
       "playlist": "Playlist",
+      "setlist": "Setlist",
       "asc": "Ascendente",
       "desc": "Descendente"
     },
@@ -214,6 +215,18 @@
     "duplicatedElsewhere": "Duplicada en «{name}»",
     "soon": "Próximamente",
     "copyFileSoon": "Copiar archivos MP3 estará disponible próximamente.",
+    "setlist": {
+      "concert": "Modo concierto",
+      "order": "Ordenar",
+      "hint": "Arrastra con el asa o usa las flechas para cambiar el orden del setlist.",
+      "drag": "Mover «{name}» (arrastra o usa las flechas)",
+      "up": "Subir «{name}»",
+      "down": "Bajar «{name}»",
+      "moved": "«{name}» en el lugar {n} de {total}",
+      "cancel": "Cancelar",
+      "save": "Guardar orden",
+      "saving": "Guardando…"
+    },
     "toast": {
       "deleted": "«{name}» eliminada",
       "moved": "«{name}» movida a «{playlist}»",
@@ -289,6 +302,9 @@
     "videoOpen": "Mostrar video",
     "videoResize": "Redimensionar video",
     "videoResizeHint": "Arrastra para cambiar el tamaño · doble clic: tamaño mínimo · flechas: ajustar",
+    "countdown": "Cuenta regresiva",
+    "countdownOff": "Sin cuenta",
+    "countdownSeconds": "{n} s",
     "keys": {
       "space": "Espacio",
       "home": "Inicio",
@@ -301,7 +317,8 @@
       "mute": "Silenciar",
       "video": "Mostrar / ocultar video",
       "section": "Sección anterior / siguiente",
-      "repeatLine": "Repetir la línea"
+      "repeatLine": "Repetir la línea",
+      "loop": "Repetir la sección / quitar la repetición"
     }
   },
   "calibration": {
@@ -410,6 +427,19 @@
     "breadcrumb": "Ruta de navegación",
     "backToLyrics": "Volver a la letra"
   },
+  "concert": {
+    "title": "Modo concierto",
+    "exit": "Salir del modo concierto",
+    "position": "{n} / {total}",
+    "next": "Siguiente: {name}",
+    "lastSong": "Última canción de «{playlist}»",
+    "previousSong": "Canción anterior",
+    "nextSong": "Canción siguiente",
+    "index": "Setlist",
+    "fullscreen": "Pantalla completa",
+    "exitFullscreen": "Salir de pantalla completa",
+    "empty": "Esta canción aún no tiene letra."
+  },
   "karaoke": {
     "now": "Ahora",
     "next": "Sigue",
@@ -425,7 +455,19 @@
     "reviewHint": "Repetir la línea actual desde el principio",
     "syncDrift": "La letra cambió: {count, plural, one {1 línea sin sincronizar} other {# líneas sin sincronizar}}",
     "syncReview": "Revisar sincronización",
-    "fileLoadError": "No se pudo cargar el MP3 · recarga la página"
+    "fileLoadError": "No se pudo cargar el MP3 · recarga la página",
+    "loop": {
+      "title": "Repetir una parte",
+      "button": "Repetir",
+      "short": "A–B",
+      "active": "Repitiendo de A a B (abrir opciones)",
+      "section": "Repetir esta sección",
+      "pick": "Elegir de A a B…",
+      "clear": "Quitar la repetición",
+      "pickA": "Toca la línea donde empieza (A)",
+      "pickB": "Ahora toca la línea donde termina (B)",
+      "cancel": "Cancelar"
+    }
   },
   "strings": {
     "title": "{instrument, select, ukulele {Las cuerdas del ukelele} other {Las cuerdas de la guitarra}}",

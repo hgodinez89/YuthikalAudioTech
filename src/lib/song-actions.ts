@@ -93,7 +93,12 @@ export async function moveSongToPlaylist(
   // RLS: la canción y la playlist destino deben ser del mismo usuario.
   const { data, error } = await supabase
     .from("songs")
-    .update({ playlist_id: playlistId, updated_at: new Date().toISOString() })
+    // En la playlist nueva va al final del setlist (sin posición).
+    .update({
+      playlist_id: playlistId,
+      playlist_position: null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id)
     .select("id");
   if (error) return { ok: false, error: "db" };

@@ -182,6 +182,7 @@
       "name": "Name",
       "instruments": "Instrument",
       "playlist": "Playlist",
+      "setlist": "Setlist",
       "asc": "Ascending",
       "desc": "Descending"
     },
@@ -214,6 +215,18 @@
     "duplicatedElsewhere": "Duplicated into “{name}”",
     "soon": "Coming soon",
     "copyFileSoon": "Copying MP3 files will be available soon.",
+    "setlist": {
+      "concert": "Concert mode",
+      "order": "Reorder",
+      "hint": "Drag the handle or use the arrows to change the setlist order.",
+      "drag": "Move “{name}” (drag or use the arrow keys)",
+      "up": "Move “{name}” up",
+      "down": "Move “{name}” down",
+      "moved": "“{name}” is now {n} of {total}",
+      "cancel": "Cancel",
+      "save": "Save order",
+      "saving": "Saving…"
+    },
     "toast": {
       "deleted": "“{name}” deleted",
       "moved": "“{name}” moved to “{playlist}”",
@@ -288,6 +301,9 @@
     "videoClose": "Hide video",
     "videoOpen": "Show video",
     "videoResize": "Resize video",
+    "countdown": "Count-in",
+    "countdownOff": "No count-in",
+    "countdownSeconds": "{n} s",
     "videoResizeHint": "Drag to resize · double-click: smallest size · arrow keys: adjust",
     "keys": {
       "space": "Space",
@@ -301,6 +317,7 @@
       "mute": "Mute",
       "video": "Show / hide video",
       "section": "Previous / next section",
+      "loop": "Loop the section / stop looping",
       "repeatLine": "Repeat the line"
     }
   },
@@ -410,6 +427,19 @@
     "breadcrumb": "Breadcrumb",
     "backToLyrics": "Back to the lyrics"
   },
+  "concert": {
+    "title": "Concert mode",
+    "exit": "Exit concert mode",
+    "position": "{n} / {total}",
+    "next": "Next: {name}",
+    "lastSong": "Last song in “{playlist}”",
+    "previousSong": "Previous song",
+    "nextSong": "Next song",
+    "index": "Setlist",
+    "fullscreen": "Full screen",
+    "exitFullscreen": "Exit full screen",
+    "empty": "This song has no lyrics yet."
+  },
   "karaoke": {
     "now": "Now",
     "next": "Next",
@@ -425,7 +455,19 @@
     "reviewHint": "Repeat the current line from the start",
     "syncDrift": "The lyrics changed: {count, plural, one {1 line not synced} other {# lines not synced}}",
     "syncReview": "Review sync",
-    "fileLoadError": "Couldn't load the MP3 · reload the page"
+    "fileLoadError": "Couldn't load the MP3 · reload the page",
+    "loop": {
+      "title": "Loop a part",
+      "button": "Loop",
+      "short": "A–B",
+      "active": "Looping from A to B (open options)",
+      "section": "Loop this section",
+      "pick": "Choose A to B…",
+      "clear": "Stop looping",
+      "pickA": "Tap the line where it starts (A)",
+      "pickB": "Now tap the line where it ends (B)",
+      "cancel": "Cancel"
+    }
   },
   "strings": {
     "title": "{instrument, select, ukulele {The ukulele strings} other {The guitar strings}}",

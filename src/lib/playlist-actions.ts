@@ -84,3 +84,41 @@ export async function deletePlaylist(id: string): Promise<ActionResult> {
   revalidateSongs();
   return { ok: true };
 }
+
+/* Tope de canciones por setlist al reordenar (la base admite hasta 100 000). */
+const MAX_SETLIST = 500;
+
+/**
+ * Guarda el orden del setlist de una playlist: `songIds` en el orden nuevo.
+ * Una sola llamada (función `reorder_playlist`, con RLS del usuario); si alguna
+ * canción no es suya o ya no está en esa playlist, no cuenta y se avisa.
+ */
+export async function reorderPlaylist(
+  playlistId: string,
+  songIds: string[],
+): Promise<ActionResult> {
+  if (!isUuid(playlistId)) return { ok: false, error: "id" };
+  if (
+    !Array.isArray(songIds) ||
+    songIds.length === 0 ||
+    songIds.length > MAX_SETLIST ||
+    !songIds.every(isUuid) ||
+    new Set(songIds).size !== songIds.length
+  ) {
+    return { ok: false, error: "id" };
+  }
+
+  const supabase = await supabaseWithSession();
+  const userId = await sessionUserId(supabase);
+  if (!userId) return { ok: false, error: "auth" };
+
+  const { data, error } = await supabase.rpc("reorder_playlist", {
+    p_playlist: playlistId,
+    p_songs: songIds,
+  });
+  if (error) return { ok: false, error: "db" };
+  if (data !== songIds.length) return { ok: false, error: "missing" };
+
+  revalidateSongs();
+  return { ok: true };
+}

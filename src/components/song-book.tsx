@@ -130,17 +130,28 @@ export function SongBook({
   );
 }
 
-function BookView({
+/**
+ * Páginas del modo libro. En el modo concierto (`onBeyond`), pasar de la
+ * última página va a la canción siguiente y retroceder de la primera a la
+ * anterior (que abre en su última página con `startAtEnd`); la pantalla
+ * completa y "Continuo" los maneja el concierto.
+ */
+export function BookView({
   songId,
   sections,
   chords,
   onContinuous,
+  onBeyond,
+  startAtEnd = false,
 }: {
   songId: string;
   sections: SheetSection[];
   chords: ChordDataMap;
-  onContinuous: () => void;
+  onContinuous?: () => void;
+  onBeyond?: (direction: 1 | -1) => void;
+  startAtEnd?: boolean;
 }) {
+  const concert = onBeyond !== undefined;
   const t = useTranslations("book");
   const [zoom, setZoom] = useState(() => {
     const saved = Number(readPref(zoomKey(songId)));
@@ -149,7 +160,15 @@ function BookView({
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [count, setCount] = useState(1);
   // Página donde quedaste (en esta sesión): al volver de Editar/Audio caes ahí.
-  const [start, setStart] = useState(() => Number(readSession(pageKey(songId))) || 0);
+  // En concierto, al principio (o al final si se vuelve desde la siguiente):
+  // un número grande se ajusta a la última página al medir.
+  const [start, setStart] = useState(() =>
+    concert
+      ? startAtEnd
+        ? Number.MAX_SAFE_INTEGER
+        : 0
+      : Number(readSession(pageKey(songId))) || 0,
+  );
   const [fullscreen, setFullscreen] = useState(false);
 
   const areaRef = useRef<HTMLDivElement>(null);
@@ -254,8 +273,8 @@ function BookView({
       behavior: smooth.current ? smoothBehavior() : "auto",
     });
     smooth.current = true;
-    writeSession(pageKey(songId), String(start));
-  }, [start, stride, songId]);
+    if (!concert) writeSession(pageKey(songId), String(start));
+  }, [start, stride, songId, concert]);
 
   const applyZoom = (next: number) => {
     const z = clampZoom(next);
@@ -284,11 +303,15 @@ function BookView({
   };
 
   const go = (target: number) => setStart(clampStart(target, count, visible));
-  const turn = (direction: 1 | -1) =>
-    setStart(turnPage(start, count, visible, direction));
+  const turn = (direction: 1 | -1) => {
+    const edge = direction === 1 ? start + visible >= count : start === 0;
+    if (edge && onBeyond) onBeyond(direction);
+    else setStart(turnPage(start, count, visible, direction));
+  };
 
   /* Pantalla completa: overlay propio + Fullscreen API si el navegador la da. */
   const toggleFullscreen = () => {
+    if (concert) return; // el concierto ya ocupa la pantalla y maneja la tecla F
     if (!fullscreen) {
       setFullscreen(true);
       document.documentElement.requestFullscreen?.().catch(() => {});
@@ -317,7 +340,7 @@ function BookView({
       const target = e.target;
       if (
         target instanceof Element &&
-        target.closest("input, textarea, select, [contenteditable='true']")
+        target.closest("input, textarea, select, [contenteditable='true'], [role='menu']")
       ) {
         return;
       }
@@ -413,8 +436,9 @@ function BookView({
   };
 
   const lastVisible = Math.min(start + visible, count);
-  const atStart = start === 0;
-  const atEnd = start + visible >= count;
+  // En concierto los extremos pasan a la canción vecina: nunca se bloquean.
+  const atStart = start === 0 && !concert;
+  const atEnd = start + visible >= count && !concert;
   const pagesLabel =
     lastVisible - start <= 1
       ? t("page", { n: start + 1, total: count })
@@ -500,7 +524,7 @@ function BookView({
             <button
               type="button"
               onClick={() => go(0)}
-              disabled={atStart}
+              disabled={start === 0}
               aria-label={t("first")}
               title={t("first")}
               className={iconButton}
@@ -533,7 +557,7 @@ function BookView({
             <button
               type="button"
               onClick={() => go(count)}
-              disabled={atEnd}
+              disabled={start + visible >= count}
               aria-label={t("last")}
               title={t("last")}
               className={iconButton}
@@ -580,29 +604,33 @@ function BookView({
               <Scaling size={16} strokeWidth={2} />
               {t("fit")}
             </button>
-            <span className="mx-1 h-6 w-px bg-edge" />
-            <button
-              type="button"
-              onClick={onContinuous}
-              title={t("continuousMode")}
-              className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-[11px] border border-edge-2 bg-surface-2 px-3 text-[13px] font-semibold text-sub hover:text-ink"
-            >
-              <AlignJustify size={16} strokeWidth={2} />
-              {t("continuous")}
-            </button>
-            <button
-              type="button"
-              onClick={toggleFullscreen}
-              aria-label={fullscreen ? t("exitFullscreen") : t("fullscreen")}
-              title={fullscreen ? t("exitFullscreen") : t("fullscreen")}
-              className="yk-gradient grid size-10 cursor-pointer place-items-center rounded-[11px]"
-            >
-              {fullscreen ? (
-                <Minimize size={17} strokeWidth={2.2} />
-              ) : (
-                <Maximize size={17} strokeWidth={2.2} />
-              )}
-            </button>
+            {!concert && (
+              <>
+                <span className="mx-1 h-6 w-px bg-edge" />
+                <button
+                  type="button"
+                  onClick={onContinuous}
+                  title={t("continuousMode")}
+                  className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-[11px] border border-edge-2 bg-surface-2 px-3 text-[13px] font-semibold text-sub hover:text-ink"
+                >
+                  <AlignJustify size={16} strokeWidth={2} />
+                  {t("continuous")}
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  aria-label={fullscreen ? t("exitFullscreen") : t("fullscreen")}
+                  title={fullscreen ? t("exitFullscreen") : t("fullscreen")}
+                  className="yk-gradient grid size-10 cursor-pointer place-items-center rounded-[11px]"
+                >
+                  {fullscreen ? (
+                    <Minimize size={17} strokeWidth={2.2} />
+                  ) : (
+                    <Maximize size={17} strokeWidth={2.2} />
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -2,8 +2,10 @@
 
 import {
   ArrowDownWideNarrow,
+  ArrowUpDown,
   ArrowUpNarrowWide,
   FileMusic,
+  MonitorPlay,
   Music,
   Pencil,
   Play,
@@ -14,7 +16,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
-import { Button, chipClass } from "./button";
+import { Button, buttonClass, chipClass } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DuplicateSongModal } from "./duplicate-song-modal";
 import { FadeRow } from "./fade-row";
@@ -22,11 +24,17 @@ import { SongInstruments } from "./song-instruments";
 import { MoveSongModal } from "./move-song-modal";
 import { NewSongModal } from "./new-song-modal";
 import { FIELD_CLASS, PlaylistFormModal } from "./playlist-form-modal";
+import { SetlistOrder } from "./setlist-order";
 import { SongMenu } from "./song-menu";
 import { StarsRow } from "./stars";
 import { useToast } from "./toast";
 import type { Instrument } from "@/lib/instruments";
-import { createPlaylist, deletePlaylist, updatePlaylist } from "@/lib/playlist-actions";
+import {
+  createPlaylist,
+  deletePlaylist,
+  reorderPlaylist,
+  updatePlaylist,
+} from "@/lib/playlist-actions";
 import type { PlaylistInput, PlaylistRow, PlaylistWithCount } from "@/lib/playlists";
 import { moveSongToPlaylist } from "@/lib/song-actions";
 import {
@@ -49,23 +57,32 @@ const EMPTY_PLAYLIST: PlaylistInput = {
   ratingLike: 4,
 };
 
-/* Orden de la lista: preferencia de este navegador. */
+/* Orden de la lista: preferencia de este navegador, una para "Todas" y otra
+   para las playlists (ahí el predeterminado es su setlist). */
 const SORT_KEY = "yk-song-sort";
+const LIST_SORT_KEY = "yk-song-sort-list";
 type SortPref = { by: SongSort; dir: SortDir };
 const DEFAULT_SORT: SortPref = { by: "recent", dir: DEFAULT_DIR.recent };
+const DEFAULT_LIST_SORT: SortPref = { by: "setlist", dir: DEFAULT_DIR.setlist };
+/* Con una playlist filtrada, ordenar por playlist no aporta; sí su setlist. */
+const LIST_SORTS: SongSort[] = ["setlist", "recent", "name", "instruments"];
 
-function parseSort(raw: string): SortPref | null {
-  try {
-    const saved: unknown = JSON.parse(raw);
-    if (saved && typeof saved === "object" && "by" in saved && "dir" in saved) {
-      const { by, dir } = saved;
-      if (SONG_SORTS.includes(by as SongSort) && (dir === "asc" || dir === "desc")) {
-        return { by: by as SongSort, dir };
+const sortParser =
+  (allowed: SongSort[]) =>
+  (raw: string): SortPref | null => {
+    try {
+      const saved: unknown = JSON.parse(raw);
+      if (saved && typeof saved === "object" && "by" in saved && "dir" in saved) {
+        const { by, dir } = saved;
+        if (allowed.includes(by as SongSort) && (dir === "asc" || dir === "desc")) {
+          return { by: by as SongSort, dir };
+        }
       }
-    }
-  } catch {}
-  return null;
-}
+    } catch {}
+    return null;
+  };
+const parseSort = sortParser(SONG_SORTS);
+const parseListSort = sortParser(LIST_SORTS);
 
 /* Logo de YouTube (Playlist Detail.dc.html) — lucide ya no trae marcas. */
 function YoutubeIcon({ size = 15 }: { size?: number }) {
@@ -125,12 +142,22 @@ export function SongsView({
   const locale = useLocale();
   const [search, setSearch] = useState("");
   /* Antes de montar, el orden por defecto (el del servidor): sin desajuste de hidratación. */
-  const [sort, saveSort] = useStoredValue(
+  const [allSort, saveAllSort] = useStoredValue(
     SORT_KEY,
     DEFAULT_SORT,
     parseSort,
     JSON.stringify,
   );
+  const [listSort, saveListSort] = useStoredValue(
+    LIST_SORT_KEY,
+    DEFAULT_LIST_SORT,
+    parseListSort,
+    JSON.stringify,
+  );
+  /* Ordenar el setlist (con una playlist filtrada). */
+  const [ordering, setOrdering] = useState(false);
+  const [savingOrder, startSaveOrder] = useTransition();
+  const [orderError, setOrderError] = useState<string | null>(null);
   const toast = useToast();
   const deleteLater = useDeleteSong();
   const [songToMove, setSongToMove] = useState<SongListRow | null>(null);
@@ -194,9 +221,10 @@ export function SongsView({
       ? p.genre_other
       : tPlaylists(`genres.${p.genre}`);
 
-  /* Con una playlist filtrada, ordenar por playlist no aporta: se usa el nombre. */
-  const sortBy = activeList && sort.by === "playlist" ? "name" : sort.by;
-  const sortDir = sortBy === sort.by ? sort.dir : DEFAULT_DIR.name;
+  const sort = activeList ? listSort : allSort;
+  const saveSort = activeList ? saveListSort : saveAllSort;
+  const sortBy = sort.by;
+  const sortDir = sort.dir;
 
   // Las que se están borrando (con «Deshacer» pendiente) ya no se muestran.
   const listed = songs.filter((s) => !toast.hidden.has(s.id));
@@ -205,6 +233,32 @@ export function SongsView({
     needle ? listed.filter((s) => s.name.toLowerCase().includes(needle)) : listed,
     { by: sortBy, dir: sortDir, instrument, playlistNames: playlistName, locale },
   );
+
+  /* El setlist en su orden actual (lo que se ordena y lo que toca el concierto). */
+  const setlist = sortSongs(listed, {
+    by: "setlist",
+    dir: "asc",
+    instrument,
+    playlistNames: playlistName,
+    locale,
+  });
+  const saveOrder = (ids: string[]) => {
+    if (!activeList) return;
+    setOrderError(null);
+    startSaveOrder(async () => {
+      const result = await reorderPlaylist(activeList.id, ids).catch(() => null);
+      if (!result?.ok) {
+        setOrderError(t(`errors.${result?.error ?? "db"}`));
+        return;
+      }
+      // La lista se cambia cuando llega el orden nuevo del servidor.
+      startSaveOrder(() => {
+        router.refresh();
+        setOrdering(false);
+        if (sortBy !== "setlist") saveSort(DEFAULT_LIST_SORT);
+      });
+    });
+  };
 
   const createList = async (input: PlaylistInput) => {
     const result = await createPlaylist(input);
@@ -318,7 +372,28 @@ export function SongsView({
               <StarsRow value={activeList.rating_like} />
             </div>
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
+            {listed.length > 0 && !ordering && (
+              <Link
+                href={`${base}/concert?list=${activeList.id}`}
+                className={buttonClass("primary", "sm")}
+              >
+                <MonitorPlay size={15} strokeWidth={2} />
+                {t("setlist.concert")}
+              </Link>
+            )}
+            {listed.length > 1 && !ordering && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setOrderError(null);
+                  setOrdering(true);
+                }}
+              >
+                <ArrowUpDown size={15} strokeWidth={2} />
+                {t("setlist.order")}
+              </Button>
+            )}
             <Button size="sm" onClick={() => setEditListOpen(true)}>
               <Pencil size={15} strokeWidth={2} />
               {t("edit")}
@@ -335,8 +410,19 @@ export function SongsView({
         </div>
       )}
 
+      {/* ORDENAR EL SETLIST (reemplaza la lista mientras dura) */}
+      {ordering && activeList && (
+        <SetlistOrder
+          songs={setlist}
+          pending={savingOrder}
+          error={orderError}
+          onCancel={() => setOrdering(false)}
+          onSave={saveOrder}
+        />
+      )}
+
       {/* BÚSQUEDA Y ORDEN */}
-      {listed.length > 0 && (
+      {!ordering && listed.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
           <div className="relative flex min-w-[220px] flex-1 items-center">
             <Search
@@ -368,34 +454,37 @@ export function SongsView({
                 title={t("sort.label")}
                 className={`${FIELD_CLASS} h-11 w-auto cursor-pointer`}
               >
-                {SONG_SORTS.filter((s) => !(activeList && s === "playlist")).map((s) => (
+                {(activeList ? LIST_SORTS : SONG_SORTS).map((s) => (
                   <option key={s} value={s}>
                     {t(`sort.${s}`)}
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={() =>
-                  saveSort({ by: sortBy, dir: sortDir === "asc" ? "desc" : "asc" })
-                }
-                aria-label={`${t("sort.label")}: ${t(`sort.${sortDir}`)}`}
-                title={t(`sort.${sortDir}`)}
-                className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-[11px] border border-edge bg-surface-2 text-sub hover:text-ink"
-              >
-                {sortDir === "asc" ? (
-                  <ArrowUpNarrowWide size={18} strokeWidth={2} />
-                ) : (
-                  <ArrowDownWideNarrow size={18} strokeWidth={2} />
-                )}
-              </button>
+              {/* El setlist tiene un solo sentido: el del concierto. */}
+              {sortBy !== "setlist" && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    saveSort({ by: sortBy, dir: sortDir === "asc" ? "desc" : "asc" })
+                  }
+                  aria-label={`${t("sort.label")}: ${t(`sort.${sortDir}`)}`}
+                  title={t(`sort.${sortDir}`)}
+                  className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-[11px] border border-edge bg-surface-2 text-sub hover:text-ink"
+                >
+                  {sortDir === "asc" ? (
+                    <ArrowUpNarrowWide size={18} strokeWidth={2} />
+                  ) : (
+                    <ArrowDownWideNarrow size={18} strokeWidth={2} />
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>
       )}
 
       {/* CANCIONES */}
-      {visible.length > 0 ? (
+      {ordering ? null : visible.length > 0 ? (
         <div className="flex flex-col gap-2.5">
           {visible.map((song) => {
             const url = songUrl(song);

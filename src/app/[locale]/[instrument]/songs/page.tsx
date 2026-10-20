@@ -20,6 +20,9 @@ export async function generateMetadata({
   return { title: `${t("title")} — Yuthikal AudioTech`, robots: { index: false } };
 }
 
+const SONG_COLUMNS =
+  "id,playlist_id,playlist_position,name,description,key_note,instruments,created_at,audio:song_audio(source,youtube_title),sync:song_sync(granularity,stamp_count)";
+
 type SongWithMeta = Omit<
   SongListRow,
   "source" | "youtubeTitle" | "synced" | "stampCount" | "granularity"
@@ -59,9 +62,7 @@ export default async function SongsPage({
   const listId = list && isUuid(list) ? list : null;
   let songsQuery = supabase
     .from("songs")
-    .select(
-      "id,playlist_id,name,description,key_note,instruments,created_at,audio:song_audio(source,youtube_title),sync:song_sync(granularity,stamp_count)",
-    )
+    .select(SONG_COLUMNS)
     .order("created_at", { ascending: false });
   if (listId) songsQuery = songsQuery.eq("playlist_id", listId);
 
@@ -86,9 +87,7 @@ export default async function SongsPage({
       ? ((
           await supabase
             .from("songs")
-            .select(
-              "id,playlist_id,name,description,key_note,instruments,created_at,audio:song_audio(source,youtube_title),sync:song_sync(granularity,stamp_count)",
-            )
+            .select(SONG_COLUMNS)
             .order("created_at", { ascending: false })
             .returns<SongWithMeta[]>()
         ).data ?? [])

@@ -40,7 +40,8 @@ export function sortInstruments(list: readonly Instrument[]): Instrument[] {
   return INSTRUMENTS.filter((i) => list.includes(i));
 }
 
-export type SongSort = "recent" | "name" | "instruments" | "playlist";
+/** "setlist": orden propio de una playlist (solo con una playlist filtrada). */
+export type SongSort = "recent" | "name" | "instruments" | "playlist" | "setlist";
 export type SortDir = "asc" | "desc";
 export const SONG_SORTS: SongSort[] = ["recent", "name", "instruments", "playlist"];
 /** Dirección natural al elegir cada criterio. */
@@ -49,14 +50,22 @@ export const DEFAULT_DIR: Record<SongSort, SortDir> = {
   name: "asc",
   instruments: "asc",
   playlist: "asc",
+  setlist: "asc",
 };
 
-type SortableSong = Pick<SongRow, "name" | "created_at" | "instruments" | "playlist_id">;
+type SortableSong = Pick<
+  SongRow,
+  "name" | "created_at" | "instruments" | "playlist_id"
+> & {
+  /** Lugar en el setlist de su playlist; null = al final, por fecha. */
+  playlist_position?: number | null;
+};
 
 /**
  * Orden de la lista de canciones. "instruments" agrupa: preparadas para el
  * instrumento actual, para otros, sin definir. Las canciones sin playlist van
- * al final en cualquier dirección.
+ * al final en cualquier dirección. "setlist" ignora la dirección: posición
+ * guardada y, sin ella, al final por fecha de creación.
  */
 export function sortSongs<T extends SortableSong>(
   songs: readonly T[],
@@ -92,6 +101,14 @@ export function sortSongs<T extends SortableSong>(
           return (la === null ? 1 : 0) - (lb === null ? 1 : 0) || byName(a, b);
         }
         return sign * collator.compare(la, lb) || byName(a, b);
+      }
+      case "setlist": {
+        const pa = a.playlist_position ?? null;
+        const pb = b.playlist_position ?? null;
+        if (pa === null || pb === null) {
+          return (pa === null ? 1 : 0) - (pb === null ? 1 : 0) || byDate(a, b);
+        }
+        return pa - pb || byDate(a, b);
       }
     }
   };
@@ -135,6 +152,8 @@ export type DuplicateInclude = { audio: boolean; sync: boolean };
 
 /** Fila de "Mis canciones": sin la letra, con el resumen de audio y sincronización. */
 export type SongListRow = Omit<SongRow, "content"> & {
+  /** Lugar en el setlist de su playlist (null = al final). */
+  playlist_position: number | null;
   source: "youtube" | "file" | null;
   /** Título del video (para mostrarlo al duplicar). */
   youtubeTitle: string | null;
