@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { chipClass } from "./button";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DB_KEYS, ROOT_SHORT_ES } from "@/lib/chords";
 import type { Instrument } from "@/lib/instruments";
@@ -10,15 +11,8 @@ import {
   type ScaleId,
 } from "@/lib/scales";
 
-const chip = (active: boolean) =>
-  active
-    ? "yk-gradient min-w-[46px] shrink-0 rounded-[10px] px-2.5 py-2 text-center text-[13.5px] font-bold"
-    : "min-w-[46px] shrink-0 rounded-[10px] border border-edge bg-surface-2 px-2.5 py-2 text-center text-[13.5px] font-semibold text-sub hover:border-edge-2 hover:text-ink";
-
-const pill = (active: boolean) =>
-  active
-    ? "shrink-0 rounded-full border border-accent bg-accent/15 px-3.5 py-1.5 text-[13px] font-bold text-accent"
-    : "shrink-0 rounded-full border border-edge bg-surface-2 px-3.5 py-1.5 text-[13px] font-semibold text-sub hover:text-ink";
+const chip = (active: boolean) => chipClass({ active, shape: "key" });
+const pill = (active: boolean) => chipClass({ active, tone: "accent" });
 
 /**
  * Selector nota → tipo de escala. Cada opción es un enlace: cambiar de

@@ -240,7 +240,8 @@
     "saveErrorTooLong": "La canción supera los 20 000 caracteres: acórtala para guardar",
     "saveErrorMissing": "No se pudo guardar: la canción ya no existe",
     "retry": "Reintentar",
-    "charCount": "{count, number} / {max, number} caracteres"
+    "charCount": "{count, number} / {max, number} caracteres",
+    "strumBackspace": "Borrar el último golpe"
   },
   "player": {
     "toStart": "Ir al inicio",
@@ -340,7 +341,8 @@
       "mp3Disabled": "La subida de archivos MP3 estará disponible próximamente.",
       "stamps": "Las marcas no coinciden con la letra actual. Recarga la página.",
       "end": "El fin debe ir después de la última marca.",
-      "granularity": "Precisión inválida."
+      "granularity": "Precisión inválida.",
+      "fileLoad": "No se pudo cargar el MP3. Recarga la página para intentar de nuevo."
     },
     "pass": "Vuelta {n}/{total}",
     "review": "Repasar",
@@ -355,7 +357,8 @@
     "driftNotice": "La letra cambió desde que sincronizaste: {count, plural, one {1 marca nueva por hacer} other {# marcas nuevas por hacer}}. Las demás se conservaron.",
     "sourceChangeTitle": "¿Cambiar el audio?",
     "sourceChangeMessage": "Se eliminarán las {count, plural, one {1 marca} other {# marcas}} de la sincronización, porque sus tiempos son de la grabación anterior.",
-    "sourceChangeConfirm": "Cambiar y borrar marcas"
+    "sourceChangeConfirm": "Cambiar y borrar marcas",
+    "connecting": "Conectando…"
   },
   "songView": {
     "keyPrefix": "Tonalidad:",
@@ -392,7 +395,8 @@
     "review": "Repasar",
     "reviewHint": "Repetir la línea actual desde el principio",
     "syncDrift": "La letra cambió: {count, plural, one {1 línea sin sincronizar} other {# líneas sin sincronizar}}",
-    "syncReview": "Revisar sincronización"
+    "syncReview": "Revisar sincronización",
+    "fileLoadError": "No se pudo cargar el MP3 · recarga la página"
   },
   "strings": {
     "title": "{instrument, select, ukulele {Las cuerdas del ukelele} other {Las cuerdas de la guitarra}}",

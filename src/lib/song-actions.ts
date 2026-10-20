@@ -10,6 +10,7 @@ import {
   type SongSyncRow,
 } from "./audio";
 import { syncTargets } from "./chordpro";
+import { isUuid } from "./ids";
 import {
   MAX_CONTENT_LENGTH,
   normalizeInclude,
@@ -23,8 +24,6 @@ type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
 /* Las canciones se ven en /[instrument]/songs para cualquier instrumento. */
 const revalidateSongs = () => revalidatePath("/[instrument]/songs", "page");
-
-const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s);
 
 export async function createSong(input: SongInput): Promise<ActionResult> {
   const invalid = validateSong(input);

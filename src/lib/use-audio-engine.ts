@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { clampTime } from "./audio";
 
 /* `start`: posición inicial (s), sin reproducir. Solo se lee al crear el
    reproductor: no forma parte de la clave de la fuente. */
 export type AudioSource = (
-  { type: "youtube"; videoId: string } | { type: "file"; url: string }
+  | { type: "youtube"; videoId: string }
+  | {
+      type: "file";
+      url: string;
+      /** Identidad estable (la ruta del archivo): la URL firmada se renueva. */
+      id: string;
+    }
 ) & { start?: number };
 
 export type AudioEngine = {
@@ -129,9 +135,11 @@ export function useAudioEngine(
 ): AudioEngine {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [controls, setControls] = useState<Controls | null>(null);
+  /* MP3 vigente: permite cambiar su URL (renovada) sin recrear el reproductor. */
+  const fileRef = useRef<{ key: string; swap: (url: string) => void } | null>(null);
 
   const sourceKey = source
-    ? `${source.type}:${source.type === "youtube" ? source.videoId : source.url}`
+    ? `${source.type}:${source.type === "youtube" ? source.videoId : source.id}`
     : null;
 
   useEffect(() => {
@@ -246,7 +254,28 @@ export function useAudioEngine(
     // MP3
     const audio = new Audio(source.url);
     audio.preload = "metadata";
+    /* URL renovada: al cargar se recuperan posición, velocidad y estado. */
+    let resume: { at: number; playing: boolean; rate: number } | null = null;
+    fileRef.current = {
+      key,
+      swap: (url) => {
+        if (audio.src === url) return;
+        resume = {
+          at: audio.currentTime,
+          playing: !audio.paused,
+          rate: audio.playbackRate,
+        };
+        audio.src = url;
+      },
+    };
     const onMeta = () => {
+      if (resume) {
+        audio.currentTime = resume.at;
+        audio.playbackRate = resume.rate;
+        if (resume.playing) void audio.play();
+        resume = null;
+        return;
+      }
       if (start) audio.currentTime = start;
       patch({ ready: true, duration: audio.duration || 0, currentTime: start });
       setControls({
@@ -290,6 +319,7 @@ export function useAudioEngine(
 
     return () => {
       cancelled = true;
+      if (fileRef.current?.key === key) fileRef.current = null;
       audio.pause();
       audio.removeEventListener("loadedmetadata", onMeta);
       audio.removeEventListener("play", onPlay);
@@ -298,6 +328,12 @@ export function useAudioEngine(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceKey]);
+
+  /* Misma fuente, URL nueva (firmada otra vez): se cambia en caliente. */
+  const fileUrl = source?.type === "file" ? source.url : null;
+  useEffect(() => {
+    if (fileUrl && fileRef.current?.key === sourceKey) fileRef.current.swap(fileUrl);
+  }, [fileUrl, sourceKey]);
 
   const active = snapshot && snapshot.key === sourceKey ? snapshot : null;
   const playing = active?.playing ?? false;

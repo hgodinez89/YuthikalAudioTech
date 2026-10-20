@@ -1,7 +1,9 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { Button } from "./button";
+import { Modal } from "./modal";
 
 /**
  * Confirmación destructiva del design system (reemplaza a window.confirm).
@@ -31,57 +33,42 @@ export function ConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCancel();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
-
+  const titleId = useId();
+  const messageId = useId();
   if (!open) return null;
 
   return (
-    <div
-      onClick={onCancel}
+    <Modal
+      onClose={onCancel}
+      labelledBy={titleId}
+      describedBy={messageId}
       role="alertdialog"
-      aria-modal="true"
-      aria-label={title}
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-page/70 p-6 backdrop-blur-[6px]"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[420px] rounded-[20px] border border-edge-2 bg-surface px-7 pb-6 pt-8 text-center shadow-[0_30px_70px_rgba(0,0,0,0.6)]"
-      >
+      <div className="w-full max-w-[420px] rounded-[20px] border border-edge-2 bg-surface px-7 pb-6 pt-8 text-center shadow-[0_30px_70px_rgba(0,0,0,0.6)]">
         <div className="mx-auto mb-5 grid size-[52px] place-items-center rounded-full border border-warn/30 bg-warn/10 text-warn">
           <TriangleAlert size={24} strokeWidth={2.2} />
         </div>
-        <h2 className="mb-3 text-[19px] font-extrabold tracking-[-0.01em]">{title}</h2>
-        <p className="mb-7 text-[14.5px] leading-[1.55] text-sub">{message}</p>
+        <h2 id={titleId} className="mb-3 text-[19px] font-extrabold tracking-[-0.01em]">
+          {title}
+        </h2>
+        <p id={messageId} className="mb-7 text-[14.5px] leading-[1.55] text-sub">
+          {message}
+        </p>
         {error && (
           <p role="alert" className="-mt-3 mb-5 text-[13px] font-semibold text-warn">
             {error}
           </p>
         )}
         <div className="flex justify-center gap-2.5">
-          <button
-            type="button"
-            autoFocus
-            onClick={onCancel}
-            className="cursor-pointer rounded-[11px] border border-edge-2 bg-surface-2 px-[18px] py-[11px] text-sm font-semibold"
-          >
+          <Button data-autofocus onClick={onCancel}>
             {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={pending}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-[11px] bg-warn px-5 py-[11px] text-sm font-bold text-page disabled:opacity-60"
-          >
+          </Button>
+          <Button variant="danger" onClick={onConfirm} disabled={pending}>
             {confirmIcon}
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

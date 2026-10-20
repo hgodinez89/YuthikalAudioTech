@@ -2,7 +2,8 @@
 
 import { Gauge, Keyboard, MonitorPlay, Volume2, VolumeX } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
+import { Menu, MenuItem, Popover } from "./menu";
 import { formatTime } from "@/lib/audio";
 
 /* Piezas de reproducción compartidas por Calibración y Karaoke. */
@@ -12,32 +13,9 @@ export const SKIP_SECONDS = 10;
 export const SMALL_BUTTON =
   "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[11px] border border-edge-2 bg-surface-2 px-2.5 text-[12.5px] font-semibold tabular-nums text-sub hover:text-ink disabled:cursor-not-allowed disabled:opacity-50";
 
-/* Menú flotante encima del botón, con un fondo que lo cierra al hacer clic fuera. */
-function Popover({
-  open,
-  onClose,
-  align,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  align: "center" | "right";
-  children: ReactNode;
-}) {
-  if (!open) return null;
-  return (
-    <>
-      <div className="fixed inset-0 z-[70]" onClick={onClose} />
-      <div
-        className={`absolute bottom-12 z-[71] rounded-[12px] border border-edge-2 bg-surface p-1.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)] ${
-          align === "center" ? "left-1/2 -translate-x-1/2" : "right-0"
-        }`}
-      >
-        {children}
-      </div>
-    </>
-  );
-}
+/* Panel flotante encima del botón. */
+const PANEL =
+  "absolute bottom-12 z-[71] rounded-[12px] border border-edge-2 bg-surface p-1.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)]";
 
 /** Velocidad de reproducción: botón con el valor actual y menú de opciones. */
 export function SpeedControl({
@@ -52,42 +30,36 @@ export function SpeedControl({
   disabled?: boolean;
 }) {
   const t = useTranslations("player");
-  const [open, setOpen] = useState(false);
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        disabled={disabled}
-        aria-label={t("speed")}
-        title={t("speed")}
-        className={`${SMALL_BUTTON} min-w-[64px] ${rate !== 1 ? "border-accent/50 text-accent" : ""}`}
-      >
-        <Gauge size={15} strokeWidth={2} />
-        {rate}×
-      </button>
-      <Popover open={open} onClose={() => setOpen(false)} align="center">
-        <div className="flex flex-col gap-0.5">
-          {rates.map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                onChange(value);
-                setOpen(false);
-              }}
-              className={`cursor-pointer rounded-[8px] px-4 py-1.5 text-[13px] font-semibold tabular-nums ${
-                rate === value
-                  ? "bg-accent/15 text-accent"
-                  : "text-sub hover:bg-edge hover:text-ink"
-              }`}
-            >
-              {value}×
-            </button>
-          ))}
-        </div>
-      </Popover>
-    </div>
+    <Menu
+      label={t("speed")}
+      trigger={{
+        "aria-label": `${t("speed")}: ${rate}×`,
+        title: t("speed"),
+        disabled,
+        className: `${SMALL_BUTTON} min-w-[64px] ${rate !== 1 ? "border-accent/50 text-accent" : ""}`,
+        children: (
+          <>
+            <Gauge size={15} strokeWidth={2} />
+            {rate}×
+          </>
+        ),
+      }}
+      panelClassName={`${PANEL} left-1/2 flex -translate-x-1/2 flex-col gap-0.5`}
+    >
+      {rates.map((value) => (
+        <MenuItem
+          key={value}
+          checked={rate === value}
+          onSelect={() => onChange(value)}
+          className={`justify-center rounded-[8px] px-4 py-1.5 text-[13px] font-semibold tabular-nums ${
+            rate === value ? "bg-accent/15 text-accent" : "text-sub hover:text-ink"
+          }`}
+        >
+          {value}×
+        </MenuItem>
+      ))}
+    </Menu>
   );
 }
 
@@ -157,38 +129,35 @@ export function VideoToggle({ open, onToggle }: { open: boolean; onToggle: () =>
 /** Botón con la lista de atajos de teclado (oculto en celular). */
 export function ShortcutsButton({ items }: { items: { keys: string; label: string }[] }) {
   const t = useTranslations("player");
-  const [open, setOpen] = useState(false);
   return (
-    <div className="relative hidden sm:block">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={t("shortcuts")}
-        title={t("shortcuts")}
-        className={SMALL_BUTTON}
-      >
-        <Keyboard size={16} strokeWidth={2} />
-      </button>
-      <Popover open={open} onClose={() => setOpen(false)} align="right">
-        <div className="w-[250px] p-1.5">
-          <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-tert">
-            {t("shortcuts")}
-          </div>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12.5px]">
-            {items.map(({ keys, label }) => (
-              <div key={label} className="contents">
-                <dt>
-                  <kbd className="rounded-[5px] border border-edge-2 bg-surface-2 px-1.5 py-px font-mono text-[11px] text-ink">
-                    {keys}
-                  </kbd>
-                </dt>
-                <dd className="text-sub">{label}</dd>
-              </div>
-            ))}
-          </dl>
+    <Popover
+      rootClassName="relative hidden sm:block"
+      trigger={{
+        "aria-label": t("shortcuts"),
+        title: t("shortcuts"),
+        className: SMALL_BUTTON,
+        children: <Keyboard size={16} strokeWidth={2} />,
+      }}
+      panelClassName={`${PANEL} right-0`}
+    >
+      <div className="w-[250px] p-1.5">
+        <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-tert">
+          {t("shortcuts")}
         </div>
-      </Popover>
-    </div>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12.5px]">
+          {items.map(({ keys, label }) => (
+            <div key={label} className="contents">
+              <dt>
+                <kbd className="rounded-[5px] border border-edge-2 bg-surface-2 px-1.5 py-px font-mono text-[11px] text-ink">
+                  {keys}
+                </kbd>
+              </dt>
+              <dd className="text-sub">{label}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </Popover>
   );
 }
 

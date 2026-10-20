@@ -27,6 +27,8 @@ export type PlaylistRow = {
   created_at: string;
 };
 
+export type PlaylistWithCount = PlaylistRow & { songs_count: number };
+
 export type PlaylistInput = {
   name: string;
   description: string;

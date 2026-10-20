@@ -38,7 +38,7 @@ Next.js (App Router, TypeScript) · Tailwind CSS · next-themes · next-intl (de
 |---|---|---|
 | `profiles` | id (= auth.users), nombre, idioma y tema preferidos | Dueño |
 | `chords` | instrumento (guitar/ukulele), nota raíz ES/EN, sufijo, categoría paraguas | Público lectura |
-| `chord_positions` | chord_id, trastes, dedos, cejillas, capo, orden, popularity (reservado) | Público lectura |
+| `chord_positions` | chord_id, trastes, dedos, cejillas, capo, orden | Público lectura |
 | `playlists` | user_id, nombre, descripción, género (+ "otro"), rating_gusto 1–5 | RLS solo dueño |
 | `songs` | playlist_id (opcional), nombre, descripción, tonalidad, ChordPro (con `{key:}` y `{strum:}` por sección) | RLS solo dueño |
 | `song_audio` | song_id, tipo (youtube/archivo), url o ruta Storage | RLS solo dueño |

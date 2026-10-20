@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { chipClass } from "./button";
 import { ChordCard } from "./chord-card";
 import {
   fetchChords,
@@ -24,6 +25,7 @@ import {
 import { chordSlug, composeChordQuery, parseChordQuery } from "@/lib/chord-search";
 import { DB_KEYS, NOTE_LABELS, ROOT_SHORT_ES, type ChordCategory } from "@/lib/chords";
 import type { Instrument } from "@/lib/instruments";
+import { useAtBottom } from "@/lib/use-at-bottom";
 import { useStoredFlag } from "@/lib/use-stored-flag";
 
 const NO_PICKS: ChordPicks = { keys: [], suffixes: [] };
@@ -135,7 +137,7 @@ export function ChordFinder({
   const [error, setError] = useState<Error | null>(null);
   const [listening, setListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  const [atBottom, setAtBottom] = useState(false);
+  const [bottomRef, atBottom] = useAtBottom();
 
   const requestId = useRef(0);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
@@ -205,19 +207,6 @@ export function ChordFinder({
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasMore, loading, loadMore]);
-
-  /* Estado del FAB según posición del scroll. */
-  useEffect(() => {
-    const onScroll = () => {
-      const near =
-        window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight - 100;
-      setAtBottom(near);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const search = (text: string) => {
     setQuery(text);
@@ -351,11 +340,7 @@ export function ChordFinder({
               type="button"
               onClick={() => pickNote(key)}
               aria-pressed={noteOn(key)}
-              className={`inline-flex min-w-[46px] shrink-0 cursor-pointer items-center justify-center gap-1 rounded-[10px] px-2.5 py-2 text-[13.5px] ${
-                noteOn(key)
-                  ? "yk-gradient font-bold"
-                  : "border border-edge bg-surface-2 font-semibold text-sub hover:border-edge-2 hover:text-ink"
-              }`}
+              className={chipClass({ active: noteOn(key), shape: "key" })}
             >
               {multi && noteOn(key) && <Check size={13} strokeWidth={3} />}
               {noteLabel(key)}
@@ -374,11 +359,7 @@ export function ChordFinder({
                 type="button"
                 onClick={() => pickType(suffix)}
                 aria-pressed={typeOn(suffix)}
-                className={`inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-3.5 py-1.5 text-[13px] ${
-                  typeOn(suffix)
-                    ? "border-accent bg-accent/15 font-bold text-accent"
-                    : "border-edge bg-surface-2 font-semibold text-sub hover:text-ink"
-                }`}
+                className={chipClass({ active: typeOn(suffix), tone: "accent" })}
               >
                 {multi && typeOn(suffix) && <Check size={12} strokeWidth={3} />}
                 {typeLabel(suffix)}
@@ -601,7 +582,8 @@ export function ChordFinder({
         </div>
       )}
 
-      {/* FAB DE SCROLL */}
+      {/* FAB DE SCROLL: un centinela al pie decide si sube o baja */}
+      <div ref={bottomRef} aria-hidden />
       <button
         type="button"
         onClick={() =>

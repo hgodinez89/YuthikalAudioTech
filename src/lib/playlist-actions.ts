@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isUuid } from "./ids";
 import { supabaseWithSession } from "./supabase-server";
 import { validatePlaylist, type PlaylistInput } from "./playlists";
 
@@ -42,7 +43,7 @@ export async function updatePlaylist(
   id: string,
   input: PlaylistInput,
 ): Promise<ActionResult> {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return { ok: false, error: "id" };
+  if (!isUuid(id)) return { ok: false, error: "id" };
   const invalid = validatePlaylist(input);
   if (invalid) return { ok: false, error: invalid };
 
@@ -69,7 +70,7 @@ export async function updatePlaylist(
 }
 
 export async function deletePlaylist(id: string): Promise<ActionResult> {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return { ok: false, error: "id" };
+  if (!isUuid(id)) return { ok: false, error: "id" };
 
   const supabase = await supabaseWithSession();
   // RLS garantiza que solo el dueño puede borrar su fila; sus canciones se

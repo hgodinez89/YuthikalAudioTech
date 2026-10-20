@@ -2,8 +2,9 @@
 
 import { Search, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { ChordVisual } from "./chord-visual";
+import { Modal } from "./modal";
 import { escapeLike, parseChordQuery } from "@/lib/chord-search";
 import { catalogInstrument, isFretted, type Instrument } from "@/lib/instruments";
 import { PIANO_SUFFIXES, pianoRootKeys } from "@/lib/piano";
@@ -77,13 +78,9 @@ export function ChordPicker({
   onClose: () => void;
 }) {
   const t = useTranslations("editor");
+  const inputId = useId();
   const [query, setQuery] = useState("");
   const [chords, setChords] = useState<PickerChord[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,22 +103,20 @@ export function ChordPicker({
   const top = Math.min(y, window.innerHeight - 340);
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 bg-page/55 backdrop-blur-[3px]"
-      role="dialog"
-      aria-label={t("pickerTitle")}
-    >
+    <Modal onClose={onClose} label={t("pickerTitle")} variant="anchored" backdrop="light">
       <div
-        onClick={(e) => e.stopPropagation()}
         className="absolute w-[300px] overflow-hidden rounded-2xl border border-edge-2 bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
         style={{ left, top }}
       >
         <div className="border-b border-edge px-3.5 py-3">
           <div className="relative flex items-center">
             <Search size={15} strokeWidth={2} className="absolute left-3 text-mute" />
+            <label htmlFor={inputId} className="sr-only">
+              {t("pickerTitle")}
+            </label>
             <input
-              ref={inputRef}
+              id={inputId}
+              data-autofocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("pickerPlaceholder")}
@@ -173,6 +168,6 @@ export function ChordPicker({
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -645,6 +645,22 @@ export function syncPlan(content: string, granularity: "line" | "word"): SyncPas
 }
 
 /**
+ * Título visible de una sección: su etiqueta propia, o el nombre del tipo con
+ * su número ("Verso 2"; el coro solo se numera desde el segundo). Las
+ * secciones implícitas ("plain") no tienen título.
+ */
+export function sectionTitle(
+  section: { type: SectionType; number: number; label: string | null },
+  name: (type: Exclude<SectionType, "plain">) => string,
+): string | null {
+  if (section.label) return section.label;
+  if (section.type === "plain") return null;
+  const base = name(section.type);
+  if (section.type === "verse") return `${base} ${section.number}`;
+  return section.number > 1 ? `${base} ${section.number}` : base;
+}
+
+/**
  * Huella de la sincronización: el texto de cada objetivo en el mismo orden
  * que `syncPlan` (línea completa o palabra, más su vuelta). Si la letra cambia,
  * comparar huellas dice qué marcas siguen valiendo.

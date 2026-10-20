@@ -1,15 +1,22 @@
 "use client";
 
-import { Check, FileMusic, Info, X } from "lucide-react";
+import { Check, FileMusic, Info } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { Badge, Button } from "./button";
 import { InstrumentToggles } from "./instrument-toggles";
+import { Modal, MODAL_PANEL, ModalFooter, ModalHeader } from "./modal";
 import { FIELD_CLASS } from "./playlist-form-modal";
-import type { SongListRow } from "./songs-view";
 import type { PlaylistRow } from "@/lib/playlists";
 import { MP3_ENABLED } from "@/lib/audio";
 import { duplicateSong } from "@/lib/song-actions";
-import { copyName, KEY_OPTIONS, keyLabel, validateSong } from "@/lib/songs";
+import {
+  copyName,
+  KEY_OPTIONS,
+  keyLabel,
+  validateSong,
+  type SongListRow,
+} from "@/lib/songs";
 
 /** Casilla con el estilo de la app (los checkbox nativos no se pueden teñir bien). */
 function CheckOption({
@@ -47,11 +54,7 @@ function CheckOption({
       <span className="min-w-0">
         <span className="flex items-center gap-2 text-[14px] font-semibold">
           {title}
-          {badge && (
-            <span className="rounded-full border border-edge-2 px-1.5 py-px text-[10px] font-bold uppercase tracking-[0.06em] text-tert">
-              {badge}
-            </span>
-          )}
+          {badge && <Badge>{badge}</Badge>}
         </span>
         <span className="block truncate text-[12.5px] text-tert">{detail}</span>
       </span>
@@ -89,12 +92,6 @@ export function DuplicateSongModal({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const submit = () => {
     const input = { ...form, playlistId: form.playlistId || null };
     const invalid = validateSong(input);
@@ -104,9 +101,11 @@ export function DuplicateSongModal({
     }
     setError(null);
     startTransition(async () => {
-      const result = await duplicateSong(song.id, input, { audio, sync });
-      if (!result.ok || !result.id) {
-        setError(t(`errors.${result.ok ? "db" : result.error}`));
+      const result = await duplicateSong(song.id, input, { audio, sync }).catch(
+        () => null,
+      );
+      if (!result?.ok || !result.id) {
+        setError(t(`errors.${result && !result.ok ? result.error : "db"}`));
         return;
       }
       onDone(result.id, input.playlistId);
@@ -119,34 +118,20 @@ export function DuplicateSongModal({
       : t("sourceFile");
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-page/70 p-6 backdrop-blur-[6px]"
-    >
+    <Modal onClose={onClose} labelledBy="duplicate-title">
       <form
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="duplicate-title"
-        onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
-        className="max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-[20px] border border-edge-2 bg-surface shadow-[0_30px_70px_rgba(0,0,0,0.6)]"
+        className={`${MODAL_PANEL} max-w-[480px]`}
       >
-        <div className="flex items-center justify-between border-b border-edge px-6 py-[20px]">
-          <h2 id="duplicate-title" className="text-[19px] font-extrabold">
-            {t("duplicateTitle")}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("close")}
-            className="grid size-8 cursor-pointer place-items-center rounded-[9px] border border-edge bg-surface-2 text-sub"
-          >
-            <X size={16} strokeWidth={2.2} />
-          </button>
-        </div>
+        <ModalHeader
+          id="duplicate-title"
+          title={t("duplicateTitle")}
+          closeLabel={t("close")}
+          onClose={onClose}
+        />
 
         <div className="flex flex-col gap-[16px] px-6 py-[20px]">
           <div>
@@ -158,7 +143,7 @@ export function DuplicateSongModal({
             </label>
             <input
               id="dup-name"
-              autoFocus
+              data-autofocus
               onFocus={(e) => e.currentTarget.select()}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -278,26 +263,20 @@ export function DuplicateSongModal({
             </div>
           </div>
 
-          {error && <p className="text-[13px] font-semibold text-warn">{error}</p>}
+          {error && (
+            <p role="alert" className="text-[13px] font-semibold text-warn">
+              {error}
+            </p>
+          )}
         </div>
 
-        <div className="flex justify-end gap-2.5 border-t border-edge px-6 py-[16px]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="cursor-pointer rounded-[11px] border border-edge-2 bg-surface-2 px-[18px] py-[11px] text-sm font-semibold"
-          >
-            {t("cancel")}
-          </button>
-          <button
-            type="submit"
-            disabled={pending}
-            className="yk-gradient cursor-pointer rounded-[11px] px-5 py-[11px] text-sm font-bold disabled:opacity-60"
-          >
+        <ModalFooter>
+          <Button onClick={onClose}>{t("cancel")}</Button>
+          <Button type="submit" variant="primary" disabled={pending}>
             {pending ? t("duplicating") : t("duplicate")}
-          </button>
-        </div>
+          </Button>
+        </ModalFooter>
       </form>
-    </div>
+    </Modal>
   );
 }

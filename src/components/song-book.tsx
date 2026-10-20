@@ -39,6 +39,7 @@ import {
   type BookLayout,
 } from "@/lib/book";
 import type { SheetSection } from "@/lib/chordpro";
+import { readPref, writePref } from "@/lib/use-stored-flag";
 
 /* Modo libro solo donde hay espacio para páginas a lo alto. */
 const BOOK_QUERY = "(min-width: 768px) and (min-height: 560px)";
@@ -68,22 +69,6 @@ function subscribeMedia(onChange: () => void) {
   const mql = window.matchMedia(BOOK_QUERY);
   mql.addEventListener("change", onChange);
   return () => mql.removeEventListener("change", onChange);
-}
-
-/* Preferencias por dispositivo: si el almacenamiento falla, valores por defecto. */
-function readPref(key: string): string | null {
-  try {
-    return typeof window === "undefined" ? null : window.localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-function writePref(key: string, value: string) {
-  try {
-    window.localStorage.setItem(key, value);
-  } catch {
-    /* sin almacenamiento: la preferencia dura solo esta visita */
-  }
 }
 
 /**

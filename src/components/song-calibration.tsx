@@ -1,30 +1,16 @@
 "use client";
 
-import {
-  Check,
-  FileMusic,
-  Flag,
-  History,
-  Link2,
-  Music,
-  Play,
-  RotateCcw,
-  TriangleAlert,
-  Upload,
-  X,
-} from "lucide-react";
-/* eslint-disable @next/next/no-img-element -- miniatura externa de YouTube */
+import { Check, Flag, History, Music, RotateCcw, TriangleAlert, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { AudioSourcePanel } from "./audio-source-panel";
 import { CalibrationTransport, RATES, SKIP_SECONDS } from "./calibration-transport";
 import { ConfirmDialog } from "./confirm-dialog";
 import { FloatingVideo } from "./floating-video";
 import {
   formatStamp,
   formatTime,
-  MAX_MP3_BYTES,
-  MP3_ENABLED,
   nextUnmarked,
   REVIEW_PREROLL,
   resumePoint,
@@ -33,76 +19,20 @@ import {
   type SongAudioRow,
   type SongSyncRow,
 } from "@/lib/audio";
-import { saveSync, setFileAudio, setYouTubeAudio } from "@/lib/audio-actions";
-import { buildVisualModel, syncPlan, type SectionType } from "@/lib/chordpro";
+import { saveSync } from "@/lib/audio-actions";
 import type { SongRow } from "@/lib/songs";
-import { supabaseBrowser } from "@/lib/supabase";
+import { calibrationRows, type CalibrationRow } from "@/lib/sync-lines";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
 import { useAutosave } from "@/lib/use-autosave";
 import { usePlayerShortcuts } from "@/lib/use-player-shortcuts";
-import { parseYouTubeId, youtubeThumbnail } from "@/lib/youtube";
+import { useSectionTitle } from "@/lib/use-section-title";
+import { useSignedAudioUrl } from "@/lib/use-signed-audio-url";
 import { useStoredFlag } from "@/lib/use-stored-flag";
 
 /* Alto del header del sitio (sticky): límite superior de la zona visible. */
 const HEADER_HEIGHT = 72;
 
-type Row =
-  | { kind: "section"; title: string }
-  | {
-      kind: "line";
-      /** Trozos marcables; `spaceAfter` evita partir palabras con acordes ("Re·demp·tion"). */
-      words: { text: string; spaceAfter: boolean }[];
-      firstTarget: number;
-      targetCount: number;
-      /** Vuelta de una línea con repetición (x2 → 1/2, 2/2). */
-      pass: { n: number; total: number } | null;
-    };
-
-/**
- * Filas de la hoja + total de objetivos según granularidad. Los objetivos
- * salen de `syncPlan`, el mismo que usa el karaoke: una fila por vuelta.
- */
-function buildRows(
-  content: string,
-  granularity: "line" | "word",
-  sectionTitle: (
-    type: SectionType,
-    number: number,
-    label: string | null,
-  ) => string | null,
-): { rows: Row[]; totalTargets: number } {
-  const rows: Row[] = [];
-  const plan = syncPlan(content, granularity);
-  let p = 0;
-  let lineNo = 0;
-  for (const section of buildVisualModel(content)) {
-    const title = sectionTitle(section.type, section.number, section.label);
-    if (title) rows.push({ kind: "section", title });
-    for (const line of section.lines) {
-      // En líneas instrumentales cada acorde es un objetivo "por palabra".
-      const words = line.instrumental
-        ? line.instrumental.tokens.flatMap((tk) =>
-            tk.kind === "chord" ? [{ text: tk.chord, spaceAfter: true }] : [],
-          )
-        : line.units
-            .filter((u) => u.text)
-            .map((u) => ({ text: u.text, spaceAfter: u.spaceAfter }));
-      for (; p < plan.length && plan[p].line === lineNo; p++) {
-        const step = plan[p];
-        rows.push({
-          kind: "line",
-          words,
-          firstTarget: step.firstTarget,
-          targetCount: step.targets,
-          pass: step.passes > 1 ? { n: step.pass, total: step.passes } : null,
-        });
-      }
-      lineNo++;
-    }
-  }
-  const last = plan.at(-1);
-  return { rows, totalTargets: last ? last.firstTarget + last.targets : 0 };
-}
+type LineRow = Extract<CalibrationRow, { kind: "line" }>;
 
 export function SongCalibration({
   song,
@@ -117,19 +47,8 @@ export function SongCalibration({
   syncMissing?: number;
 }) {
   const t = useTranslations("calibration");
-  const tSongView = useTranslations("songView");
   const router = useRouter();
-
-  const [sourceTab, setSourceTab] = useState<"youtube" | "file">(
-    audio?.source ?? "youtube",
-  );
-  /* Subida de MP3 en "Próximamente": la pestaña solo se abre si ya hay un MP3. */
-  const fileTabEnabled = MP3_ENABLED || audio?.source === "file";
-  const [urlInput, setUrlInput] = useState("");
-  const [sourceError, setSourceError] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const sectionTitle = useSectionTitle();
 
   const [granularity, setGranularity] = useState<"line" | "word">(
     sync?.granularity ?? "line",
@@ -139,22 +58,11 @@ export function SongCalibration({
   );
   /* Fin opcional: el karaoke termina ahí; sin él, suena hasta el final. */
   const [endAt, setEndAt] = useState<number | null>(sync?.end_at ?? null);
-  const [confirm, setConfirm] = useState<"reset" | "granularity" | "source" | null>(null);
+  const [confirm, setConfirm] = useState<"reset" | "granularity" | null>(null);
   const pendingGranularity = useRef<"line" | "word">("line");
 
-  const sectionTitle = useCallback(
-    (type: SectionType, number: number, label: string | null) => {
-      if (label) return label;
-      if (type === "plain") return null;
-      const base = tSongView(type);
-      if (type === "verse") return `${base} ${number}`;
-      return number > 1 ? `${base} ${number}` : base;
-    },
-    [tSongView],
-  );
-
   const { rows, totalTargets } = useMemo(
-    () => buildRows(song.content, granularity, sectionTitle),
+    () => calibrationRows(song.content, granularity, sectionTitle),
     [song.content, granularity, sectionTitle],
   );
 
@@ -181,28 +89,17 @@ export function SongCalibration({
   });
   const [showResume, setShowResume] = useState(resume !== null);
 
-  /* URL firmada del MP3 (bucket privado). */
-  useEffect(() => {
-    if (audio?.source !== "file" || !audio.file_path) return;
-    let cancelled = false;
-    supabaseBrowser()
-      .storage.from("audio")
-      .createSignedUrl(audio.file_path, 3600)
-      .then(({ data }) => {
-        if (!cancelled && data) setFileUrl(data.signedUrl);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [audio?.source, audio?.file_path]);
+  /* URL firmada del MP3 (bucket privado), renovada antes de vencer. */
+  const filePath = audio?.source === "file" ? audio.file_path : null;
+  const signed = useSignedAudioUrl(filePath);
 
   const startFor = (sourceId: string | null | undefined) =>
     resume && resume.sourceId === sourceId ? resume.at : undefined;
   const engineSource: AudioSource | null =
     audio?.source === "youtube" && audio.youtube_id
       ? { type: "youtube", videoId: audio.youtube_id, start: startFor(audio.youtube_id) }
-      : audio?.source === "file" && fileUrl
-        ? { type: "file", url: fileUrl, start: startFor(audio.file_path) }
+      : filePath && signed.url
+        ? { type: "file", url: signed.url, id: filePath, start: startFor(filePath) }
         : null;
 
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
@@ -346,7 +243,7 @@ export function SongCalibration({
 
   /* Re-marcar: borra las marcas de la fila y la vuelve a escuchar desde un
      poco antes de la marca anterior, para no tener que buscarla a mano. */
-  const remarkLine = (row: Extract<Row, { kind: "line" }>) => {
+  const remarkLine = (row: LineRow) => {
     setTouched(true);
     const next = new Map(stamps);
     for (let i = 0; i < row.targetCount; i++) next.delete(row.firstTarget + i);
@@ -376,78 +273,10 @@ export function SongCalibration({
     setCursor(0);
   };
 
-  /* Conectar otro audio borra la sincronización (sus tiempos son de otra
-     grabación): con marcas, se confirma antes. */
-  const requestYouTube = () => {
-    const videoId = parseYouTubeId(urlInput);
-    const replaces =
-      audio !== null && (audio.source !== "youtube" || audio.youtube_id !== videoId);
-    if (videoId && replaces && (stamps.size > 0 || endAt !== null)) {
-      setConfirm("source");
-      return;
-    }
-    void connectYouTube();
-  };
-
-  const connectYouTube = async () => {
-    setConfirm(null);
-    setConnecting(true);
-    setSourceError(null);
-    // Lo pendiente era del audio anterior: no debe guardarse al remontar.
-    autosave.discard();
-    const result = await setYouTubeAudio(song.id, urlInput).catch(() => null);
-    setConnecting(false);
-    if (!result?.ok) {
-      setSourceError(t(`errors.${result?.error ?? "network"}`));
-      return;
-    }
-    setUrlInput("");
-    router.refresh();
-  };
-
-  const uploadFile = async (file: File) => {
-    setSourceError(null);
-    if (file.type !== "audio/mpeg") {
-      setSourceError(t("errors.fileType"));
-      return;
-    }
-    if (file.size > MAX_MP3_BYTES) {
-      setSourceError(t("errors.fileSize"));
-      return;
-    }
-    setUploading(true);
-    const supabase = supabaseBrowser();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setUploading(false);
-      setSourceError(t("errors.auth"));
-      return;
-    }
-    const path = `${user.id}/${song.id}.mp3`;
-    const { error } = await supabase.storage
-      .from("audio")
-      .upload(path, file, { upsert: true, contentType: "audio/mpeg" });
-    if (error) {
-      setUploading(false);
-      setSourceError(t("errors.upload"));
-      return;
-    }
-    const result = await setFileAudio(song.id, path).catch(() => null);
-    setUploading(false);
-    if (!result?.ok) {
-      setSourceError(t(`errors.${result?.error ?? "network"}`));
-      return;
-    }
-    setFileUrl(null); // se regenerará la URL firmada
-    router.refresh();
-  };
-
   /* Progreso para la fila actual en modo palabra. */
-  const cursorInRow = (row: Extract<Row, { kind: "line" }>) =>
+  const cursorInRow = (row: LineRow) =>
     cursor >= row.firstTarget && cursor < row.firstTarget + row.targetCount;
-  const rowDone = (row: Extract<Row, { kind: "line" }>) => {
+  const rowDone = (row: LineRow) => {
     for (let i = 0; i < row.targetCount; i++) {
       if (!stamps.has(row.firstTarget + i)) return false;
     }
@@ -470,158 +299,14 @@ export function SongCalibration({
       {/* ASIDE IZQUIERDO */}
       <aside className="flex flex-col gap-[18px] lg:sticky lg:top-[90px]">
         {/* FUENTE DE AUDIO */}
-        <div className="overflow-hidden rounded-2xl border border-edge bg-surface">
-          <div className="border-b border-edge px-4 py-3.5">
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-tert">
-              {t("sourceTitle")}
-            </span>
-          </div>
-          <div className="p-4">
-            <div className="mb-3.5 flex rounded-[10px] border border-edge bg-surface-3 p-1 text-[13px] font-semibold">
-              {(["youtube", "file"] as const).map((tab) => {
-                const disabled = tab === "file" && !fileTabEnabled;
-                return (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setSourceTab(tab)}
-                    disabled={disabled}
-                    aria-pressed={sourceTab === tab}
-                    title={disabled ? t("fileSoonHint") : undefined}
-                    className={
-                      sourceTab === tab
-                        ? "yk-gradient flex-1 cursor-pointer rounded-lg py-[7px]"
-                        : "inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg py-[7px] text-sub disabled:cursor-not-allowed disabled:text-disabled"
-                    }
-                  >
-                    {tab === "youtube" ? "YouTube" : t("fileTab")}
-                    {disabled && (
-                      <span className="rounded-full border border-edge-2 px-1.5 py-px text-[10px] font-bold uppercase tracking-[0.06em] text-tert">
-                        {t("soon")}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {sourceTab === "youtube" && (
-              <div>
-                <div className="relative mb-3 flex items-center">
-                  <Link2
-                    size={15}
-                    strokeWidth={2}
-                    className="absolute left-3 text-mute"
-                  />
-                  <input
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && requestYouTube()}
-                    placeholder={t("urlPlaceholder")}
-                    className="h-10 w-full rounded-[10px] border border-edge bg-surface-2 pl-9 pr-20 text-[13px] text-ink outline-none focus:border-accent"
-                  />
-                  <button
-                    type="button"
-                    onClick={requestYouTube}
-                    disabled={connecting || !urlInput.trim()}
-                    className="yk-gradient absolute right-1.5 cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-bold disabled:opacity-50"
-                  >
-                    {connecting ? "…" : t("connect")}
-                  </button>
-                </div>
-                {audio?.source === "youtube" && audio.youtube_id && (
-                  <div className="flex gap-3 rounded-xl border border-edge-2 bg-surface-2 p-2.5">
-                    <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-surface-3">
-                      <img
-                        src={youtubeThumbnail(audio.youtube_id)}
-                        alt=""
-                        className="size-full object-cover"
-                      />
-                      <div className="absolute inset-0 grid place-items-center">
-                        <span className="grid size-[26px] place-items-center rounded-full bg-page/70">
-                          <Play size={12} fill="#fff" strokeWidth={0} className="ml-px" />
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex min-w-0 flex-col justify-center">
-                      <div className="mb-[3px] flex items-center gap-1.5 text-[10.5px] font-bold text-accent">
-                        <span className="size-1.5 rounded-full bg-accent" />
-                        {t("connected")}
-                      </div>
-                      <div className="line-clamp-2 text-[13px] font-semibold leading-[1.25]">
-                        {audio.youtube_title ?? audio.youtube_id}
-                      </div>
-                      {engine.duration > 0 && (
-                        <div className="mt-0.5 text-[11.5px] text-tert">
-                          {formatTime(engine.duration)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {sourceTab === "file" && (
-              <div>
-                {!MP3_ENABLED && (
-                  <p className="mb-3 text-[12.5px] text-tert">{t("fileSoonHint")}</p>
-                )}
-                {MP3_ENABLED && (
-                  <label
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const file = e.dataTransfer.files[0];
-                      if (file) void uploadFile(file);
-                    }}
-                    className="flex cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border-[1.5px] border-dashed border-edge-2 bg-surface-2 px-4 py-7 text-center hover:border-accent"
-                  >
-                    <input
-                      type="file"
-                      accept="audio/mpeg,.mp3"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) void uploadFile(file);
-                      }}
-                    />
-                    <Upload size={28} strokeWidth={1.8} className="text-accent" />
-                    <div className="text-[13.5px] font-semibold">
-                      {uploading ? t("uploading") : t("dropTitle")}
-                    </div>
-                    <div className="text-xs text-tert">{t("dropHint")}</div>
-                  </label>
-                )}
-                {audio?.source === "file" && audio.file_path && (
-                  <div className="mt-3 flex items-center gap-3 rounded-xl border border-edge-2 bg-surface-2 p-2.5">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
-                      <FileMusic size={18} strokeWidth={2} />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="mb-[3px] flex items-center gap-1.5 text-[10.5px] font-bold text-accent">
-                        <span className="size-1.5 rounded-full bg-accent" />
-                        {t("connected")}
-                      </div>
-                      <div className="truncate text-[13px] font-semibold">
-                        {audio.file_path.split("/").pop()}
-                      </div>
-                      {engine.duration > 0 && (
-                        <div className="mt-0.5 text-[11.5px] text-tert">
-                          {formatTime(engine.duration)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {sourceError && (
-              <p className="mt-3 text-[12.5px] font-semibold text-warn">{sourceError}</p>
-            )}
-          </div>
-        </div>
+        <AudioSourcePanel
+          songId={song.id}
+          audio={audio}
+          duration={engine.duration}
+          marks={stamps.size + (endAt !== null ? 1 : 0)}
+          fileError={signed.error}
+          onBeforeChange={autosave.discard}
+        />
 
         {/* GRANULARIDAD */}
         <div className="overflow-hidden rounded-2xl border border-edge bg-surface">
@@ -975,15 +660,6 @@ export function SongCalibration({
         confirmIcon={<RotateCcw size={15} strokeWidth={2.2} />}
         onCancel={() => setConfirm(null)}
         onConfirm={applyReset}
-      />
-      <ConfirmDialog
-        open={confirm === "source"}
-        title={t("sourceChangeTitle")}
-        message={t("sourceChangeMessage", { count: stamps.size })}
-        cancelLabel={t("cancel")}
-        confirmLabel={t("sourceChangeConfirm")}
-        onCancel={() => setConfirm(null)}
-        onConfirm={() => void connectYouTube()}
       />
       <ConfirmDialog
         open={confirm === "granularity"}

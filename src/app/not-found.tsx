@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { buttonClass } from "@/components/button";
 import { getTranslations } from "next-intl/server";
 
 export default async function NotFound() {
@@ -15,10 +16,7 @@ export default async function NotFound() {
           {t("title")}
         </h1>
         <p className="mb-7 text-[15px] leading-relaxed text-sub">{t("description")}</p>
-        <Link
-          href="/"
-          className="yk-gradient inline-flex items-center gap-[9px] rounded-[13px] px-6 py-3 text-[15px] font-bold"
-        >
+        <Link href="/" className={buttonClass("primary", "lg")}>
           <ArrowLeft size={17} strokeWidth={2.2} />
           {t("back")}
         </Link>

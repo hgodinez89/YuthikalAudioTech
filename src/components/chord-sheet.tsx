@@ -2,15 +2,16 @@
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState, type MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import { ChordVisual } from "./chord-visual";
 import {
   isInstrumental,
+  sectionTitle,
   strumToArrows,
   type SheetSection,
-  type SectionType,
   wordGroups,
 } from "@/lib/chordpro";
+import { useAtBottom } from "@/lib/use-at-bottom";
 
 export type SheetChordData = {
   name: string;
@@ -47,14 +48,6 @@ export function RepeatBadge({ times }: { times: number }) {
   );
 }
 
-function sectionLabel(section: SheetSection, t: (key: string) => string): string | null {
-  if (section.label) return section.label;
-  if (section.type === "plain") return null;
-  const base = t(section.type satisfies SectionType);
-  if (section.type === "verse") return `${base} ${section.number}`;
-  return section.number > 1 ? `${base} ${section.number}` : base;
-}
-
 /** Chord sheet clásico: acordes en cian sobre la sílaba exacta del cambio. */
 export function ChordSheet({
   sections,
@@ -74,19 +67,7 @@ export function ChordSheet({
   const [popover, setPopover] = useState<{ name: string; x: number; y: number } | null>(
     null,
   );
-  const [atBottom, setAtBottom] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const near =
-        window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight - 100;
-      setAtBottom(near);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const [bottomRef, atBottom] = useAtBottom();
 
   const legendChords = Object.values(chords).filter(
     (c): c is SheetChordData => c !== undefined,
@@ -113,7 +94,7 @@ export function ChordSheet({
         style={zoom === 1 ? undefined : { fontSize: `${BASE_FONT_PX * zoom}px` }}
       >
         {sections.map((section, si) => {
-          const label = sectionLabel(section, t);
+          const label = sectionTitle(section, (type) => t(type));
           const header = (label || section.strum) && (
             <div className="mb-[0.78em] flex flex-wrap items-center gap-[0.67em]">
               {label && (
@@ -255,7 +236,8 @@ export function ChordSheet({
         </div>
       )}
 
-      {/* FAB DE SCROLL */}
+      {/* FAB DE SCROLL: un centinela al pie decide si sube o baja */}
+      {showFab && <div ref={bottomRef} aria-hidden />}
       {showFab && (
         <button
           type="button"

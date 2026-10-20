@@ -58,6 +58,7 @@ RLS: todas las políticas usan `(select auth.uid())` (se evalúa una vez por con
 8. `supabase/migrations/00000000000007_drop_playlist_difficulty.sql` (borra `playlists.rating_difficulty`; ejecutar **después** de desplegar el código que ya no la usa)
 9. `supabase/migrations/00000000000008_sync_end.sql` (columna `song_sync.end_at`; ejecutar **antes** de desplegar el código que la usa)
 10. `supabase/migrations/00000000000009_hardening.sql` (RLS con `(select auth.uid())`, audio/sincronización atados a canciones propias, límites en la BD, columna `song_sync.targets` y subida de MP3 bloqueada en Storage; ejecutar **antes** de desplegar el código que guarda `targets`)
+11. `supabase/migrations/00000000000010_drop_unused.sql` (borra `chords.popularity`, `chord_positions.popularity` y `keepalive.last_seen_at`, sin uso; ejecutar **después** de desplegar el código que ya no las lee)
 
 ### 3.3 Seed del catálogo de acordes
 
@@ -65,7 +66,7 @@ RLS: todas las políticas usan `(select auth.uid())` (se evalúa una vez por con
 node scripts/generate-chords-sql.mjs   # regenera supabase/seed_chords_{guitar,ukulele}.sql (~280/316 KB)
 ```
 
-Luego pegar y ejecutar `supabase/seed_chords_guitar.sql` y `supabase/seed_chords_ukulele.sql` en el SQL Editor (después de las migraciones 1 y 5). Cada seed borra e inserta solo su instrumento, así que se pueden correr por separado. **En una BD existente** basta con ejecutar la migración 5 y luego `seed_chords_ukulele.sql` (las filas de guitarra quedan con `instrument = 'guitar'` por defecto). Los ids de guitarra no llevan prefijo (`a-minor`); los de ukelele sí (`ukulele-a-minor`); las URLs usan siempre el slug sin prefijo. Las raíces `Db`/`Gb` del ukelele se normalizan a `C#`/`F#`. El script excluye los acordes con bajo alterado ("/E", "m/B"…) por ser inversiones, no cualidades; calcula notas/intervalos desde los MIDI, asigna categorías paraguas y nombres en español. El campo `popularity` queda reservado para curación manual futura.
+Luego pegar y ejecutar `supabase/seed_chords_guitar.sql` y `supabase/seed_chords_ukulele.sql` en el SQL Editor (después de las migraciones 1 y 5). Cada seed borra e inserta solo su instrumento, así que se pueden correr por separado. **En una BD existente** basta con ejecutar la migración 5 y luego `seed_chords_ukulele.sql` (las filas de guitarra quedan con `instrument = 'guitar'` por defecto). Los ids de guitarra no llevan prefijo (`a-minor`); los de ukelele sí (`ukulele-a-minor`); las URLs usan siempre el slug sin prefijo. Las raíces `Db`/`Gb` del ukelele se normalizan a `C#`/`F#`. El script excluye los acordes con bajo alterado ("/E", "m/B"…) por ser inversiones, no cualidades; calcula notas/intervalos desde los MIDI, asigna categorías paraguas y nombres en español.
 
 ## 4. Ejecución local
 
@@ -125,14 +126,23 @@ src/components/           UI (fieles al handoff):
   chord-sheet             Cifrado clásico: acordes sobre sílabas, popovers, leyenda. El renglón salta
                           entre palabras, no en los acordes: `wordGroups` (y `unitGroups` en el editor
                           visual) mantiene juntas las palabras con acorde en medio; el karaoke usa lo mismo
-  songs-view              Lista plana de canciones con playlists como filtros
-  song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets),
-                          "Pegar cifrado" y datos de la canción (incl. playlist).
+  modal / menu / button   Base del design system: `Modal` sobre `<dialog>` (velo,
+                          Escape, foco atrapado y devuelto; centrado, drawer o anclado),
+                          `Menu`/`MenuItem` (role="menu", flechas, Escape) y `Popover`
+                          (paneles no modales), `Button`/`buttonClass` y `chipClass`
+  songs-view              Lista plana de canciones con playlists como filtros; modales
+                          `new-song-modal`, `move-song-modal`, `duplicate-song-modal`,
+                          `playlist-form-modal` y menú ⋯ `song-menu`
+  song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets).
+                          Piezas: `chordpro-highlight`, `visual-editor`, `strum-builder`,
+                          `paste-chords-modal` ("Pegar cifrado"), `song-meta-drawer`
+                          (datos de la canción) y `delete-song-dialog`.
                           Lado a lado (lg+), el botón entre paneles vincula el scroll
                           de ChordPro y vista previa (por defecto sí, recordado en
                           localStorage): cada sección es un ancla (`startLine` en el
                           texto, `[data-section]` en la vista previa) y entre anclas
-                          se interpola (`lib/scroll-sync.ts`)
+                          se interpola (`lib/use-linked-scroll.ts`, `lib/scroll-sync.ts`)
+  audio-source-panel      Fuente de audio de Sincronizar (YouTube; MP3 en "Próximamente")
   song-calibration        Fuente de audio, granularidad, marcado con ESPACIO, transporte. Al retomar a medias, el audio arranca (pausado) en el inicio de la última línea marcada; las marcas pendientes se guardan al salir. Con todas las líneas marcadas, ESPACIO marca un fin opcional; la X lo descarta y el audio suena completo. "Sin fin" no se guarda: al volver a entrar sin fin marcado, la sincronización se muestra completa (la bandera permite agregar uno después). En modo palabra, los trozos que separa un acorde (`Re[D]demp[G]tion`) se muestran pegados según `spaceAfter`, aunque cada uno sea su propia marca
   song-karaoke            Pantalla hero: sigue el audio si hay sincronización; si no, autoscroll. Con audio, la intro queda fuera: play, "Al inicio" y los saltos empiezan 3 s antes de la primera línea sincronizada, y la barra cuenta 0:00 desde ahí. Con fin marcado, la barra termina en él y el audio se apaga con un fundido de 2 s y se pausa
   confirm-dialog          Confirmación destructiva estándar (no hay diálogos nativos)
@@ -151,6 +161,12 @@ src/lib/                  Lógica y acceso a datos:
   youtube.ts / audio.ts   Validaciones de audio (+tests)
   use-audio-engine.ts     Reloj unificado YouTube IFrame API / <audio>
   use-autosave.ts         Autoguardado (debounce, en fila, al salir, aviso al cerrar, reintentar)
+  sync-lines.ts           Filas de Sincronizar y líneas del karaoke desde `syncPlan` (+tests)
+  use-signed-audio-url.ts URL firmada del MP3, renovada antes de vencer (el motor la cambia en caliente)
+  use-section-title.ts    Título traducido de una sección (`sectionTitle` en chordpro.ts)
+  use-at-bottom.ts        Fin de la página por IntersectionObserver (FAB ir arriba/abajo)
+  use-stored-flag.ts      Preferencias del dispositivo: `useStoredValue`/`useStoredFlag`
+  ids.ts                  `isUuid` para ids de URL y server actions (+tests)
   *-actions.ts            Server actions (re-validación en servidor)
   supabase(-server).ts    Clientes anon (público) y con sesión (cookies)
   site.ts                 URL pública (VERCEL_PROJECT_PRODUCTION_URL) para metadata y sitemap
@@ -210,6 +226,8 @@ where o.bucket_id = 'audio'
 - *Canción*: Ver (con **Tocar** como acción principal) y Editar en dos pasos, **Letra → Audio** (la antigua "Calibración", ahora "Sincronizar audio"; `?mode=calibrate` sigue funcionando).
 - *Sin pantalla de carga global* (rendimiento/Lighthouse): el título y el contenido se pintan en el primer render, sin el cambio desde "Afinando tu sesión…". Solo `[instrument]/songs` tiene `loading.tsx` (sesión + BD). Por eso las URLs inexistentes responden 404 real; bajo `/songs`, por el streaming, siguen respondiendo HTTP 200 con la UI correcta (404 visual / redirect a login). Los datos jamás se filtran (los guards corren antes de cualquier query).
 - *Autoguardado* (`lib/use-autosave.ts`, editor y sincronización): debounce, guardados en fila (uno lento nunca pisa a uno más nuevo), lo pendiente se guarda al salir de la pantalla, el navegador avisa al cerrar o recargar con cambios sin guardar y un fallo de red o BD queda en error con **Reintentar**. El editor muestra un contador al acercarse a los 20 000 caracteres. Las server actions de actualizar/borrar confirman que se modificó una fila (si no, error `missing`) y los diálogos de borrar muestran el error sin cerrarse.
+- *Componentes base* (`modal`, `menu`, `button`): todos los modales usan `<dialog>` con `showModal()` (el resto de la página queda inerte, Escape y clic fuera cierran, el foco inicial va a `data-autofocus` y vuelve a quien abrió el modal); los menús de acciones (canción, instrumento, velocidad) son `role="menu"` con flechas, Inicio/Fin y Escape; los paneles con controles (cuenta, atajos) son `Popover`. Botones y chips comparten radio y relleno por tamaño (`buttonClass`, `chipClass`).
+- *MP3 en reproducción*: la URL firmada dura 1 h y se renueva 5 min antes; el motor de audio identifica el MP3 por su ruta y cambia la URL sin cortar (conserva posición, velocidad y estado). Si no se puede obtener, Sincronizar y el karaoke lo avisan.
 - *Huella de la sincronización*: al guardar, `saveSync` lee la letra de la BD, valida las marcas contra sus objetivos reales (`syncTargets`, mismo orden que `syncPlan`) y guarda el texto de cada objetivo en `song_sync.targets`. Si la letra cambia después, la página reubica las marcas (`reconcileSync`): con la misma cantidad de objetivos (una errata) todo sigue igual; si se agregaron o quitaron, se conservan las del tramo común del inicio y del final y lo del medio queda por marcar, con aviso en karaoke y en Sincronizar. La reubicación no se persiste hasta que se vuelve a guardar la sincronización. Al marcar, el cursor salta al siguiente objetivo libre (re-marcar o completar huecos no pisa lo marcado). Conectar otro audio borra la sincronización anterior (con confirmación si tenía marcas) y el MP3 previo.
 - *Selector rápido del buscador*: con **una opción** (por defecto) los botones escriben la búsqueda ("Dom7") y su estado se deriva del texto. Con **Selección múltiple** (interruptor recordado por navegador en localStorage, `yk-finder-multi`) los botones tienen estado propio: varias notas y varios tipos, que se suman dentro de cada fila y se combinan entre filas ((Do o Re) y (m o m7)); la fila de tipos se muestra siempre y un resumen lista lo elegido con "Limpiar". La selección y la búsqueda escrita/dictada se reemplazan entre sí, para que nunca se contradigan. Al activar, lo elegido pasa a la selección; al desactivar se limpia. `fetchChords` solo acepta valores de las listas del selector (`DB_KEYS`, `QUICK_TYPES`).
 - *Rendimiento del buscador*: la primera página de acordes se consulta en el servidor (catálogo público, anon key) y viaja en el HTML; supabase-js se carga de forma diferida (al buscar/paginar y tras hidratar el menú de cuenta, que lee la sesión con `onAuthStateChange` sin ir a la red). Las tarjetas no se prefetchean al entrar en pantalla (solo al pasar el ratón); los logos por tema no se precargan (solo baja el visible); JetBrains Mono no se precarga.

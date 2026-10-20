@@ -240,7 +240,8 @@
     "saveErrorTooLong": "The song is over 20,000 characters: shorten it to save",
     "saveErrorMissing": "Couldn't save: the song no longer exists",
     "retry": "Retry",
-    "charCount": "{count, number} / {max, number} characters"
+    "charCount": "{count, number} / {max, number} characters",
+    "strumBackspace": "Delete the last stroke"
   },
   "player": {
     "toStart": "Go to start",
@@ -340,7 +341,8 @@
       "mp3Disabled": "MP3 uploads will be available soon.",
       "stamps": "The marks don't match the current lyrics. Reload the page.",
       "end": "The end must come after the last mark.",
-      "granularity": "Invalid precision."
+      "granularity": "Invalid precision.",
+      "fileLoad": "Couldn't load the MP3. Reload the page to try again."
     },
     "pass": "Round {n}/{total}",
     "review": "Review",
@@ -355,7 +357,8 @@
     "driftNotice": "The lyrics changed since you synced: {count, plural, one {1 new mark to make} other {# new marks to make}}. The rest were kept.",
     "sourceChangeTitle": "Change the audio?",
     "sourceChangeMessage": "The {count, plural, one {1 sync mark} other {# sync marks}} will be deleted, because their times belong to the previous recording.",
-    "sourceChangeConfirm": "Change and delete marks"
+    "sourceChangeConfirm": "Change and delete marks",
+    "connecting": "Connecting…"
   },
   "songView": {
     "keyPrefix": "Key:",
@@ -392,7 +395,8 @@
     "review": "Review",
     "reviewHint": "Repeat the current line from the start",
     "syncDrift": "The lyrics changed: {count, plural, one {1 line not synced} other {# lines not synced}}",
-    "syncReview": "Review sync"
+    "syncReview": "Review sync",
+    "fileLoadError": "Couldn't load the MP3 · reload the page"
   },
   "strings": {
     "title": "{instrument, select, ukulele {The ukulele strings} other {The guitar strings}}",

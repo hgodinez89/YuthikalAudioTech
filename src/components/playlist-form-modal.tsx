@@ -1,8 +1,9 @@
 "use client";
 
-import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
+import { Button } from "./button";
+import { Modal, MODAL_PANEL, ModalFooter, ModalHeader } from "./modal";
 import { StarsInput } from "./stars";
 import {
   GENRES,
@@ -34,6 +35,7 @@ export function PlaylistFormModal({
   onSubmit: (input: PlaylistInput) => Promise<string | null>;
 }) {
   const t = useTranslations("playlists");
+  const id = useId();
   const [form, setForm] = useState<PlaylistInput>(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -46,39 +48,39 @@ export function PlaylistFormModal({
     }
     setError(null);
     startTransition(async () => {
-      const serverError = await onSubmit(form);
+      const serverError = await onSubmit(form).catch(() => "db");
       if (serverError) setError(t(`errors.${serverError}`));
       else onClose();
     });
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-page/70 p-6 backdrop-blur-[6px]"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-[20px] border border-edge-2 bg-surface shadow-[0_30px_70px_rgba(0,0,0,0.6)]"
+    <Modal onClose={onClose} labelledBy={`${id}-title`}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+        className={`${MODAL_PANEL} max-w-[480px]`}
       >
-        <div className="flex items-center justify-between border-b border-edge px-6 py-[22px]">
-          <h2 className="text-[19px] font-extrabold">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("close")}
-            className="grid size-8 cursor-pointer place-items-center rounded-[9px] border border-edge bg-surface-2 text-sub"
-          >
-            <X size={16} strokeWidth={2.2} />
-          </button>
-        </div>
+        <ModalHeader
+          id={`${id}-title`}
+          title={title}
+          closeLabel={t("close")}
+          onClose={onClose}
+        />
 
         <div className="flex flex-col gap-[18px] px-6 py-[22px]">
           <div>
-            <label className="mb-[7px] block text-[12.5px] font-semibold text-sub">
+            <label
+              htmlFor={`${id}-name`}
+              className="mb-[7px] block text-[12.5px] font-semibold text-sub"
+            >
               {t("form.name")}
             </label>
             <input
+              id={`${id}-name`}
+              data-autofocus
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder={t("form.namePlaceholder")}
@@ -87,10 +89,14 @@ export function PlaylistFormModal({
             />
           </div>
           <div>
-            <label className="mb-[7px] block text-[12.5px] font-semibold text-sub">
+            <label
+              htmlFor={`${id}-description`}
+              className="mb-[7px] block text-[12.5px] font-semibold text-sub"
+            >
               {t("form.description")}
             </label>
             <textarea
+              id={`${id}-description`}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder={t("form.descriptionPlaceholder")}
@@ -100,10 +106,14 @@ export function PlaylistFormModal({
             />
           </div>
           <div>
-            <label className="mb-[7px] block text-[12.5px] font-semibold text-sub">
+            <label
+              htmlFor={`${id}-genre`}
+              className="mb-[7px] block text-[12.5px] font-semibold text-sub"
+            >
               {t("form.genre")}
             </label>
             <select
+              id={`${id}-genre`}
               value={form.genre}
               onChange={(e) => setForm({ ...form, genre: e.target.value as Genre })}
               className={`${FIELD_CLASS} h-11 cursor-pointer`}
@@ -117,10 +127,14 @@ export function PlaylistFormModal({
           </div>
           {form.genre === "other" && (
             <div>
-              <label className="mb-[7px] block text-[12.5px] font-semibold text-sub">
+              <label
+                htmlFor={`${id}-genre-other`}
+                className="mb-[7px] block text-[12.5px] font-semibold text-sub"
+              >
                 {t("form.genreOther")}
               </label>
               <input
+                id={`${id}-genre-other`}
                 value={form.genreOther}
                 onChange={(e) => setForm({ ...form, genreOther: e.target.value })}
                 placeholder={t("form.genreOtherPlaceholder")}
@@ -134,27 +148,20 @@ export function PlaylistFormModal({
             value={form.ratingLike}
             onChange={(v) => setForm({ ...form, ratingLike: v })}
           />
-          {error && <p className="text-[13px] font-semibold text-warn">{error}</p>}
+          {error && (
+            <p role="alert" className="text-[13px] font-semibold text-warn">
+              {error}
+            </p>
+          )}
         </div>
 
-        <div className="flex justify-end gap-2.5 border-t border-edge px-6 py-[18px]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="cursor-pointer rounded-[11px] border border-edge-2 bg-surface-2 px-[18px] py-[11px] text-sm font-semibold"
-          >
-            {t("cancel")}
-          </button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={pending}
-            className="yk-gradient cursor-pointer rounded-[11px] px-5 py-[11px] text-sm font-bold disabled:opacity-60"
-          >
+        <ModalFooter>
+          <Button onClick={onClose}>{t("cancel")}</Button>
+          <Button type="submit" variant="primary" disabled={pending}>
             {pending ? submittingLabel : submitLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

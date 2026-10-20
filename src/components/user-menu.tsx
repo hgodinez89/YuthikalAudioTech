@@ -7,7 +7,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { buttonClass } from "./button";
 import { LanguageSwitcher } from "./language-switcher";
+import { Popover } from "./menu";
 import { ThemeToggle } from "./theme-toggle";
 
 function GoogleGlyph() {
@@ -34,7 +36,6 @@ export function UserMenu() {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   /* supabase-js se carga tras hidratar (fuera del bundle inicial). La sesión
      solo pinta el avatar: INITIAL_SESSION la lee de las cookies sin ir a la
@@ -58,7 +59,6 @@ export function UserMenu() {
   }, []);
 
   const signOut = async () => {
-    setMenuOpen(false);
     const { supabaseBrowser } = await import("@/lib/supabase");
     await supabaseBrowser().auth.signOut();
     router.push("/");
@@ -69,74 +69,83 @@ export function UserMenu() {
   const fullName = (user?.user_metadata.full_name as string | undefined) ?? "";
 
   return (
-    <div className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setMenuOpen((open) => !open)}
-        aria-label={user ? t("account") : tHeader("settings")}
-        aria-expanded={menuOpen}
-        className="flex cursor-pointer items-center gap-2 rounded-full border border-edge bg-surface-3 py-1 pl-1 pr-1.5"
-      >
-        {!user ? (
-          <span className="grid size-[30px] place-items-center rounded-full text-sub">
-            <Settings size={18} strokeWidth={2} />
-          </span>
-        ) : avatarUrl ? (
-          <Image src={avatarUrl} alt="" width={30} height={30} className="rounded-full" />
-        ) : (
-          <span className="yk-gradient grid size-[30px] place-items-center rounded-full text-[13px] font-extrabold">
-            {initialsOf(user)}
-          </span>
-        )}
-        <ChevronDown size={15} strokeWidth={2} className="text-sub" />
-      </button>
-
-      {menuOpen && (
+    <Popover
+      rootClassName="relative shrink-0"
+      trigger={{
+        "aria-label": user ? t("account") : tHeader("settings"),
+        className:
+          "flex cursor-pointer items-center gap-2 rounded-full border border-edge bg-surface-3 py-1 pl-1 pr-1.5",
+        children: (
+          <>
+            {!user ? (
+              <span className="grid size-[30px] place-items-center rounded-full text-sub">
+                <Settings size={18} strokeWidth={2} />
+              </span>
+            ) : avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt=""
+                width={30}
+                height={30}
+                className="rounded-full"
+              />
+            ) : (
+              <span className="yk-gradient grid size-[30px] place-items-center rounded-full text-[13px] font-extrabold">
+                {initialsOf(user)}
+              </span>
+            )}
+            <ChevronDown size={15} strokeWidth={2} className="text-sub" />
+          </>
+        ),
+      }}
+      panelClassName="absolute right-0 top-[46px] z-40 w-[250px] overflow-hidden rounded-[14px] border border-edge-2 bg-surface shadow-[0_18px_44px_rgba(0,0,0,0.6)]"
+    >
+      {(close) => (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 top-[46px] z-40 w-[250px] overflow-hidden rounded-[14px] border border-edge-2 bg-surface shadow-[0_18px_44px_rgba(0,0,0,0.6)]">
-            <div className="border-b border-edge px-4 py-3.5">
-              {user ? (
-                <>
-                  <div className="truncate text-sm font-bold">{fullName}</div>
-                  <div className="truncate text-xs text-tert">{user.email}</div>
-                </>
-              ) : (
-                <Link
-                  href={`/login?next=${encodeURIComponent(pathname === "/login" ? "/" : pathname)}`}
-                  onClick={() => setMenuOpen(false)}
-                  className="yk-gradient flex items-center justify-center gap-[9px] rounded-[11px] px-4 py-2.5 text-[13.5px] font-bold"
-                >
-                  <GoogleGlyph />
-                  {t("signIn")}
-                </Link>
-              )}
-            </div>
-            <div className="flex flex-col gap-3 border-b border-edge px-4 py-3.5 text-[13.5px]">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sub">{tHeader("language")}</span>
-                <LanguageSwitcher />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sub">{tHeader("theme")}</span>
-                <ThemeToggle />
-              </div>
-            </div>
-            {user && (
-              <div className="p-1.5">
-                <button
-                  type="button"
-                  onClick={signOut}
-                  className="flex w-full cursor-pointer items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-[13.5px] hover:bg-edge"
-                >
-                  <LogOut size={16} strokeWidth={2} />
-                  {t("signOut")}
-                </button>
-              </div>
+          <div className="border-b border-edge px-4 py-3.5">
+            {user ? (
+              <>
+                <div className="truncate text-sm font-bold">{fullName}</div>
+                <div className="truncate text-xs text-tert">{user.email}</div>
+              </>
+            ) : (
+              <Link
+                href={`/login?next=${encodeURIComponent(pathname === "/login" ? "/" : pathname)}`}
+                onClick={close}
+                className={`${buttonClass("primary", "sm")} w-full`}
+              >
+                <GoogleGlyph />
+                {t("signIn")}
+              </Link>
             )}
           </div>
+          <div className="flex flex-col gap-3 border-b border-edge px-4 py-3.5 text-[13.5px]">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sub">{tHeader("language")}</span>
+              <LanguageSwitcher />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sub">{tHeader("theme")}</span>
+              <ThemeToggle />
+            </div>
+          </div>
+          {user && (
+            <div className="p-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  close();
+                  void signOut();
+                }}
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-[13.5px] hover:bg-edge"
+              >
+                <LogOut size={16} strokeWidth={2} />
+                {t("signOut")}
+              </button>
+            </div>
+          )}
         </>
       )}
-    </div>
+    </Popover>
   );
 }

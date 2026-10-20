@@ -23,19 +23,13 @@ import {
   type SongAudioRow,
   type SongSyncRow,
 } from "@/lib/audio";
-import {
-  isInstrumental,
-  parseChordPro,
-  strumToArrows,
-  syncPlan,
-  type SheetLine,
-  type SectionType,
-  wordGroups,
-} from "@/lib/chordpro";
+import { isInstrumental, wordGroups } from "@/lib/chordpro";
 import type { SongRow } from "@/lib/songs";
-import { supabaseBrowser } from "@/lib/supabase";
+import { karaokeLines } from "@/lib/sync-lines";
 import { useAudioEngine, type AudioSource } from "@/lib/use-audio-engine";
 import { usePlayerShortcuts } from "@/lib/use-player-shortcuts";
+import { useSectionTitle } from "@/lib/use-section-title";
+import { useSignedAudioUrl } from "@/lib/use-signed-audio-url";
 import { useStoredFlag } from "@/lib/use-stored-flag";
 
 /* Velocidades: con audio, la de reproducción; sin audio, la del autoscroll. */
@@ -47,88 +41,6 @@ const REPEAT_PREROLL = 1;
 const INTRO_PREROLL = 3;
 /* Video flotante entre la cabecera (Ahora/Sigue) y la barra de transporte. */
 const KARAOKE_VIDEO_INSETS: VideoInsets = { top: 132, bottom: 236, bottomMobile: 268 };
-
-/* Línea de karaoke: segmentos + encabezado de sección si es la primera. */
-type KaraokeLine = {
-  section: string | null;
-  strum: string | null;
-  /** Notas {c: …} que preceden a la línea (no se sincronizan). */
-  notes: string[];
-  segments: SheetLine;
-  /** Vuelta de una línea con repetición (x2 → 1/2, 2/2), o null. */
-  pass: { n: number; total: number } | null;
-  /** Objetivos de sincronización de esta vuelta (ver `syncPlan`). */
-  firstTarget: number;
-  targets: number;
-};
-
-type BaseLine = Omit<KaraokeLine, "pass" | "firstTarget" | "targets">;
-
-/**
- * Líneas a mostrar: una por vuelta. Una línea con `x2` aparece dos veces y
- * dura dos vueltas. Los índices de marca salen de `syncPlan`, el mismo que
- * usa la calibración.
- */
-function buildLines(
-  content: string,
-  granularity: "line" | "word",
-  sectionTitle: (
-    type: SectionType,
-    number: number,
-    label: string | null,
-  ) => string | null,
-): KaraokeLine[] {
-  const bases = baseLines(content, sectionTitle);
-  return syncPlan(content, granularity).flatMap((step) => {
-    const base = bases[step.line];
-    if (!base) return [];
-    const first = step.pass === 1;
-    return [
-      {
-        ...base,
-        // encabezado y notas solo en la primera vuelta
-        section: first ? base.section : null,
-        strum: first ? base.strum : null,
-        notes: first ? base.notes : [],
-        pass: step.passes > 1 ? { n: step.pass, total: step.passes } : null,
-        firstTarget: step.firstTarget,
-        targets: step.targets,
-      },
-    ];
-  });
-}
-
-function baseLines(
-  content: string,
-  sectionTitle: (
-    type: SectionType,
-    number: number,
-    label: string | null,
-  ) => string | null,
-): BaseLine[] {
-  const lines: BaseLine[] = [];
-  // Las notas se adjuntan a la siguiente línea de letra (aunque sea de otra sección).
-  let notes: string[] = [];
-  for (const section of parseChordPro(content).sections) {
-    let first = true;
-    for (const segments of section.lines) {
-      if (!segments.length) continue; // separadores en blanco no aplican aquí
-      if (segments[0].note) {
-        notes.push(segments[0].text);
-        continue;
-      }
-      lines.push({
-        section: first ? sectionTitle(section.type, section.number, section.label) : null,
-        strum: first && section.strum ? strumToArrows(section.strum) : null,
-        notes,
-        segments,
-      });
-      notes = [];
-      first = false;
-    }
-  }
-  return lines;
-}
 
 export function SongKaraoke({
   song,
@@ -151,20 +63,12 @@ export function SongKaraoke({
 }) {
   const t = useTranslations("karaoke");
   const tSongView = useTranslations("songView");
-
-  const sectionTitle = (type: SectionType, number: number, label: string | null) => {
-    if (label) return label;
-    if (type === "plain") return null;
-    const base = tSongView(type);
-    if (type === "verse") return `${base} ${number}`;
-    return number > 1 ? `${base} ${number}` : base;
-  };
+  const sectionTitle = useSectionTitle();
 
   const granularity = sync?.granularity ?? "line";
   const lines = useMemo(
-    () => buildLines(song.content, granularity, sectionTitle),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [song.content, granularity],
+    () => karaokeLines(song.content, granularity, sectionTitle),
+    [song.content, granularity, sectionTitle],
   );
 
   /* Inicio de cada línea/vuelta: su primera marca (en "por palabra", la menor). */
@@ -185,27 +89,16 @@ export function SongKaraoke({
   /* Con sincronización sigue el audio; sin ella, autoscroll por tiempo fijo. */
   const variant: "sync" | "auto" = syncAvailable ? "sync" : "auto";
 
-  /* Motor de audio (solo variante sincronizada). */
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (audio?.source !== "file" || !audio.file_path) return;
-    let cancelled = false;
-    supabaseBrowser()
-      .storage.from("audio")
-      .createSignedUrl(audio.file_path, 3600)
-      .then(({ data }) => {
-        if (!cancelled && data) setFileUrl(data.signedUrl);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [audio?.source, audio?.file_path]);
+  /* Motor de audio (solo variante sincronizada). URL firmada del MP3, renovada. */
+  const filePath =
+    variant === "sync" && audio?.source === "file" ? audio.file_path : null;
+  const signed = useSignedAudioUrl(filePath);
 
   const engineSource: AudioSource | null =
     variant === "sync" && audio?.source === "youtube" && audio.youtube_id
       ? { type: "youtube", videoId: audio.youtube_id }
-      : variant === "sync" && audio?.source === "file" && fileUrl
-        ? { type: "file", url: fileUrl }
+      : filePath && signed.url
+        ? { type: "file", url: signed.url, id: filePath }
         : null;
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
   const engine = useAudioEngine(engineSource, youtubeContainerRef);
@@ -667,6 +560,15 @@ export function SongKaraoke({
           bars={72}
           className="mx-auto mb-1.5 max-w-[640px]"
         />
+        {signed.error && (
+          <div
+            role="alert"
+            className="mb-2 flex items-center justify-center gap-[7px] text-xs text-warn"
+          >
+            <Info size={14} strokeWidth={2} />
+            {t("fileLoadError")}
+          </div>
+        )}
         {variant === "sync" && syncMissing > 0 && (
           <div className="mb-2 flex flex-wrap items-center justify-center gap-[7px] text-xs text-warn">
             <Info size={14} strokeWidth={2} />

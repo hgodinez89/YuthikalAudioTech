@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { LoginCard } from "@/components/login-card";
-import { SongsView, type SongListRow } from "@/components/songs-view";
+import { SongsView } from "@/components/songs-view";
 import type { Instrument } from "@/lib/instruments";
 import type { PlaylistRow } from "@/lib/playlists";
+import type { SongListRow } from "@/lib/songs";
 import { supabaseWithSession } from "@/lib/supabase-server";
 
 export async function generateMetadata(): Promise<Metadata> {

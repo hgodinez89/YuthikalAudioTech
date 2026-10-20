@@ -1,4 +1,5 @@
 import { DB_KEYS, ROOT_SHORT_ES } from "./chords";
+import { isUuid } from "./ids";
 import { INSTRUMENTS, isInstrument, type Instrument } from "./instruments";
 
 export type SongRow = {
@@ -101,7 +102,7 @@ export type SongValidationError =
   "name" | "description" | "keyNote" | "instruments" | "playlist";
 
 export function validateSong(input: SongInput): SongValidationError | null {
-  if (input.playlistId !== null && !/^[0-9a-f-]{36}$/i.test(input.playlistId)) {
+  if (input.playlistId !== null && !isUuid(input.playlistId)) {
     return "playlist";
   }
   const name = input.name.trim();
@@ -131,6 +132,17 @@ export function copyName(name: string, suffix: string): string {
 }
 
 export type DuplicateInclude = { audio: boolean; sync: boolean };
+
+/** Fila de "Mis canciones": sin la letra, con el resumen de audio y sincronización. */
+export type SongListRow = Omit<SongRow, "content"> & {
+  source: "youtube" | "file" | null;
+  /** Título del video (para mostrarlo al duplicar). */
+  youtubeTitle: string | null;
+  synced: boolean;
+  /** Marcas de sincronización y su precisión (para mostrarlas al duplicar). */
+  stampCount: number;
+  granularity: "line" | "word" | null;
+};
 
 /** La sincronización solo tiene sentido con el audio al que pertenecen sus marcas. */
 export function normalizeInclude(include: DuplicateInclude): DuplicateInclude {

@@ -9,12 +9,11 @@ import {
   type SyncStamp,
 } from "./audio";
 import { syncTargets } from "./chordpro";
+import { isUuid } from "./ids";
 import { supabaseWithSession } from "./supabase-server";
 import { parseYouTubeId } from "./youtube";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
-
-const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s);
 
 /** Título vía oEmbed (en servidor: sin restricciones de CSP del navegador). */
 async function fetchYouTubeTitle(videoId: string): Promise<string | null> {

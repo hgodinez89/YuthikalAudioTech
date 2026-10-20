@@ -2,6 +2,7 @@
 
 import { Mail, RotateCcw, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Button, buttonClass } from "./button";
 
 /** Onda "flatline" con latido cian animado (Error DB.dc.html). */
 function FlatlineWave() {
@@ -62,19 +63,12 @@ export function ErrorDb({ onRetry, digest }: { onRetry: () => void; digest?: str
         </p>
 
         <div className="flex flex-wrap justify-center gap-3">
-          <button
-            type="button"
-            onClick={onRetry}
-            className="yk-gradient inline-flex cursor-pointer items-center gap-[9px] rounded-[13px] px-6 py-[13px] text-[15px] font-bold"
-          >
+          <Button variant="primary" size="lg" onClick={onRetry}>
             <RotateCcw size={17} strokeWidth={2.2} />
             {t("retry")}
-          </button>
+          </Button>
           {adminEmail && (
-            <a
-              href={`mailto:${adminEmail}`}
-              className="inline-flex items-center gap-[9px] rounded-[13px] border border-edge-2 bg-surface-2 px-[22px] py-[13px] text-[15px] font-semibold text-ink"
-            >
+            <a href={`mailto:${adminEmail}`} className={buttonClass("secondary", "lg")}>
               <Mail size={17} strokeWidth={2} />
               {t("contact")}
             </a>

@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { cache } from "react";
 import { SongBook } from "@/components/song-book";
+import { buttonClass } from "@/components/button";
 import { SongCalibration } from "@/components/song-calibration";
 import { SongInstruments } from "@/components/instrument-toggles";
 import { SongEditor } from "@/components/song-editor";
@@ -12,6 +13,7 @@ import { SongKaraoke } from "@/components/song-karaoke";
 import { reconcileSync, type SongAudioRow, type SongSyncRow } from "@/lib/audio";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
 import { loadChordData } from "@/lib/chord-data";
+import { isUuid } from "@/lib/ids";
 import type { Instrument } from "@/lib/instruments";
 import { keyLabel, type SongRow } from "@/lib/songs";
 import { supabaseWithSession } from "@/lib/supabase-server";
@@ -20,7 +22,7 @@ type Mode = "view" | "edit" | "karaoke";
 type Step = "lyrics" | "audio";
 
 const getSong = cache(async (songId: string) => {
-  if (!/^[0-9a-f-]{36}$/i.test(songId)) return null;
+  if (!isUuid(songId)) return null;
   const supabase = await supabaseWithSession();
   const { data } = await supabase
     .from("songs")
@@ -117,10 +119,7 @@ export default async function SongPage({
     <div className="flex flex-col items-center rounded-[18px] border border-dashed border-edge-2 bg-surface-3 px-5 py-[60px] text-center">
       <h3 className="mb-2 text-lg font-bold">{t("emptyTitle")}</h3>
       <p className="mb-[22px] max-w-[380px] text-sm text-tert">{t("emptyDesc")}</p>
-      <Link
-        href={`${songUrl}?mode=edit`}
-        className="yk-gradient inline-flex items-center gap-2 rounded-xl px-[22px] py-3 text-sm font-bold"
-      >
+      <Link href={`${songUrl}?mode=edit`} className={buttonClass("primary")}>
         <Pencil size={15} strokeWidth={2.2} />
         {t("emptyCta")}
       </Link>
@@ -199,17 +198,14 @@ export default async function SongPage({
         {/* ACCIONES: Tocar es la principal; Editar, la secundaria */}
         {mode === "view" ? (
           <div className="flex gap-2.5">
-            <Link
-              href={`${songUrl}?mode=edit`}
-              className="inline-flex items-center gap-2 rounded-xl border border-edge-2 bg-surface-2 px-[18px] py-3 text-sm font-semibold"
-            >
+            <Link href={`${songUrl}?mode=edit`} className={buttonClass("secondary")}>
               <Pencil size={16} strokeWidth={2} />
               {t("edit")}
             </Link>
             {parsed.sections.length > 0 && (
               <Link
                 href={`${songUrl}?mode=karaoke`}
-                className="yk-gradient inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[15px] font-bold shadow-[0_8px_30px_rgba(46,107,240,0.32)]"
+                className={`${buttonClass("primary", "lg")} shadow-[0_8px_30px_rgba(46,107,240,0.32)]`}
               >
                 <Play size={17} fill="currentColor" strokeWidth={0} />
                 {t("play")}
@@ -242,10 +238,7 @@ export default async function SongPage({
                 </Link>
               ))}
             </div>
-            <Link
-              href={songUrl}
-              className="inline-flex items-center gap-2 rounded-xl border border-edge-2 bg-surface-2 px-[18px] py-[11px] text-sm font-semibold"
-            >
+            <Link href={songUrl} className={buttonClass("secondary")}>
               <Check size={16} strokeWidth={2.4} className="text-accent" />
               {t("done")}
             </Link>
