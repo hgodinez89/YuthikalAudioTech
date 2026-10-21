@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowRight, CloudCheck, CloudOff, RotateCcw } from "lucide-react";
 import { useLocale } from "next-intl";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Link } from "@/i18n/navigation";
 import {
   INSTRUMENT_COOKIE,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/instruments";
 import { LAST_PAGE_COOKIE, lastPageParts, safeLastPage } from "@/lib/last-page";
 import { sectionHref } from "@/lib/sections";
+import { parseOfflineHash, useOfflineInstruments } from "@/lib/use-offline-instruments";
 import { InstrumentIcon } from "./instrument-icons";
 import { SECTION_ICONS } from "./instrument-nav";
 import { OfflineDownload, type DownloadLabels } from "./offline-download";
@@ -43,6 +44,7 @@ export type HomeLabels = {
   sections: Record<Section, string>;
   descs: Record<Section, string> & { basicsPiano: string };
   download: DownloadLabels;
+  offline: { ready: string; missing: string };
 };
 
 /**
@@ -57,28 +59,91 @@ export function HomeLauncher({ labels }: { labels: HomeLabels }) {
   const current =
     picked ?? (isInstrument(savedInstrument) ? savedInstrument : INSTRUMENTS[0]);
   const lastParts = last ? lastPageParts(last) : null;
+  const saved = useOfflineInstruments(locale);
+  const [highlight, setHighlight] = useState(false);
+
+  // «Descargar» del menú de instrumento: /home#offline-piano elige ese
+  // instrumento y lleva a su tarjeta de descarga.
+  useEffect(() => {
+    const onHash = () => {
+      const target = parseOfflineHash(window.location.hash);
+      if (!target) return;
+      setPicked(target);
+      setHighlight(true);
+      history.replaceState(history.state, "", window.location.pathname);
+    };
+    const frame = requestAnimationFrame(onHash);
+    window.addEventListener("hashchange", onHash);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("hashchange", onHash);
+    };
+  }, []);
+
+  const cardShown = saved !== null;
+  useEffect(() => {
+    if (!highlight || !cardShown) return;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document
+      .getElementById(`offline-${current}`)
+      ?.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    const timer = setTimeout(() => setHighlight(false), 2500);
+    return () => clearTimeout(timer);
+  }, [highlight, cardShown, current]);
 
   return (
     <div className="flex flex-col gap-8">
-      <div
-        role="group"
-        aria-label={labels.instrument}
-        className="flex w-fit flex-wrap rounded-[14px] border border-edge bg-surface-3 p-[5px]"
-      >
-        {INSTRUMENTS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setPicked(id)}
-            aria-pressed={id === current}
-            className={`flex cursor-pointer items-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold ${
-              id === current ? "yk-gradient" : "text-sub hover:text-ink"
-            }`}
+      <div className="flex flex-col gap-3">
+        <div
+          role="group"
+          aria-label={labels.instrument}
+          className="flex w-fit flex-wrap rounded-[14px] border border-edge bg-surface-3 p-[5px]"
+        >
+          {INSTRUMENTS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setPicked(id)}
+              aria-pressed={id === current}
+              className={`relative flex cursor-pointer items-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold ${
+                id === current ? "yk-gradient" : "text-sub hover:text-ink"
+              }`}
+            >
+              <InstrumentIcon name={id} size={22} />
+              {labels.instruments[id]}
+              {saved?.[id] !== undefined && (
+                <span
+                  title={saved[id] ? labels.offline.ready : labels.offline.missing}
+                  className="absolute -right-[7px] -top-[7px] grid size-5 place-items-center rounded-full border border-edge-2 bg-surface-3"
+                >
+                  {saved[id] ? (
+                    <CloudCheck size={12} strokeWidth={2.4} className="text-accent" />
+                  ) : (
+                    <CloudOff size={12} strokeWidth={2.4} className="text-mute" />
+                  )}
+                  <span className="sr-only">
+                    {saved[id] ? labels.offline.ready : labels.offline.missing}
+                  </span>
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        {saved && (
+          <div
+            aria-hidden
+            className="flex flex-wrap gap-x-[18px] gap-y-1 text-[12.5px] text-sub"
           >
-            <InstrumentIcon name={id} size={22} />
-            {labels.instruments[id]}
-          </button>
-        ))}
+            <span className="inline-flex items-center gap-1.5">
+              <CloudCheck size={14} strokeWidth={2} className="text-accent" />
+              {labels.offline.ready}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CloudOff size={14} strokeWidth={2} className="text-mute" />
+              {labels.offline.missing}
+            </span>
+          </div>
+        )}
       </div>
 
       {last && lastParts && (
@@ -119,7 +184,15 @@ export function HomeLauncher({ labels }: { labels: HomeLabels }) {
         })}
       </div>
 
-      <OfflineDownload locale={locale} instrument={current} labels={labels.download} />
+      {saved && (
+        <OfflineDownload
+          locale={locale}
+          instrument={current}
+          saved={saved}
+          highlight={highlight}
+          labels={labels.download}
+        />
+      )}
 
       <Link href="/?tour=1" className="self-center text-[13px] text-tert hover:text-ink">
         {labels.replay}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isOfflineCacheable, staticAssets } from "./offline-cache";
 import { instrumentDownloadUrls } from "./offline-download";
+import { offlineHash, parseOfflineHash } from "./use-offline-instruments";
 
 describe("instrumentDownloadUrls", () => {
   it("guitarra: básicos, afinador, acordes, 144 escalas y catálogo", () => {
@@ -37,5 +38,15 @@ describe("staticAssets", () => {
       "/_next/static/chunks/b2.js",
       "/_next/static/media/f.woff2",
     ]);
+  });
+});
+
+describe("parseOfflineHash", () => {
+  it("lee el instrumento del enlace a la descarga y rechaza lo demás", () => {
+    expect(parseOfflineHash(offlineHash("piano"))).toBe("piano");
+    expect(parseOfflineHash("#offline-ukulele")).toBe("ukulele");
+    expect(parseOfflineHash("#offline-bass")).toBeNull();
+    expect(parseOfflineHash("#offline-guitar/x")).toBeNull();
+    expect(parseOfflineHash("")).toBeNull();
   });
 });

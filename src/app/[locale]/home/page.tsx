@@ -62,7 +62,9 @@ export default async function HomePage({
       error: t("download.error"),
       retry: t("download.retry"),
       hint: t("download.hint"),
+      needsConnection: t("download.needsConnection"),
     },
+    offline: { ready: t("offline.ready"), missing: t("offline.missing") },
   };
 
   return (

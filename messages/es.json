@@ -15,7 +15,11 @@
       "dark": "Oscuro",
       "system": "Sistema"
     },
-    "themeNext": "Tema: {current} · cambiar a {next}"
+    "themeNext": "Tema: {current} · cambiar a {next}",
+    "offlineReady": "Disponible sin conexión",
+    "download": "Descargar {instrument} para usar sin conexión",
+    "needsConnection": "Descargar necesita conexión",
+    "legendDownload": "Descargar"
   },
   "tour": {
     "skip": "Saltar recorrido",
@@ -104,7 +108,12 @@
       "update": "Actualizar",
       "error": "No se pudo completar la descarga. Revisa tu conexión.",
       "retry": "Reintentar",
-      "hint": "Si pasas un tiempo sin abrir el sitio, el navegador podría borrar la copia. Instalarlo en la pantalla de inicio la conserva."
+      "hint": "Si pasas un tiempo sin abrir el sitio, el navegador podría borrar la copia. Instalarlo en la pantalla de inicio la conserva.",
+      "needsConnection": "Conéctate a internet para descargarlo."
+    },
+    "offline": {
+      "ready": "Disponible sin conexión",
+      "missing": "No descargado"
     }
   },
   "nav": {

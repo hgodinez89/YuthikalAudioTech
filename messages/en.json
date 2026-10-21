@@ -15,7 +15,11 @@
       "dark": "Dark",
       "system": "System"
     },
-    "themeNext": "Theme: {current} · switch to {next}"
+    "themeNext": "Theme: {current} · switch to {next}",
+    "offlineReady": "Available offline",
+    "download": "Download {instrument} to use offline",
+    "needsConnection": "Downloading needs a connection",
+    "legendDownload": "Download"
   },
   "tour": {
     "skip": "Skip tour",
@@ -104,7 +108,12 @@
       "update": "Update",
       "error": "The download couldn't finish. Check your connection.",
       "retry": "Try again",
-      "hint": "If you go a while without opening the site, the browser may delete the copy. Installing it on your home screen keeps it."
+      "hint": "If you go a while without opening the site, the browser may delete the copy. Installing it on your home screen keeps it.",
+      "needsConnection": "Connect to the internet to download it."
+    },
+    "offline": {
+      "ready": "Available offline",
+      "missing": "Not downloaded"
     }
   },
   "nav": {
