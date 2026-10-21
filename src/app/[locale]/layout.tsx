@@ -3,6 +3,8 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
+import { ConnectionBanner } from "@/components/connection-banner";
+import { OfflineProvider } from "@/components/offline-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SkipLink } from "@/components/skip-link";
@@ -66,11 +68,14 @@ export default async function LocaleLayout({
           {/* Idioma explícito: en rutas dinámicas con streaming el de
               setRequestLocale no siempre llega a los componentes hijos. */}
           <NextIntlClientProvider locale={locale} messages={messages}>
-            <SkipLink />
-            <SiteHeader />
-            {/* Cada pantalla pone su único <main id="main"> (la portada deja
-                su pie fuera de él). */}
-            <div className="flex flex-1 flex-col">{children}</div>
+            <OfflineProvider>
+              <SkipLink />
+              <SiteHeader />
+              <ConnectionBanner />
+              {/* Cada pantalla pone su único <main id="main"> (la portada deja
+                  su pie fuera de él). */}
+              <div className="flex flex-1 flex-col">{children}</div>
+            </OfflineProvider>
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

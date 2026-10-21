@@ -45,6 +45,7 @@ import { updateSongContent } from "@/lib/song-actions";
 import { MAX_CONTENT_LENGTH, type SongRow } from "@/lib/songs";
 import { useAutosave, type SaveState } from "@/lib/use-autosave";
 import { useDeleteSong } from "@/lib/use-delete-song";
+import { useOnline } from "@/lib/use-online";
 import { useLinkedScroll } from "@/lib/use-linked-scroll";
 import { useSectionTitle } from "@/lib/use-section-title";
 import { useStoredFlag } from "@/lib/use-stored-flag";
@@ -113,7 +114,11 @@ export function SongEditor({
   customChords: CustomChordRow[];
 }) {
   const t = useTranslations("editor");
+  const tOffline = useTranslations("offline");
   const sectionTitle = useSectionTitle();
+  /* Sin conexión el editor es de solo lectura (no se podría guardar). */
+  const offline = !useOnline();
+  const offlineTitle = offline ? tOffline("unavailable") : undefined;
 
   const [content, setContent] = useState(song.content);
   const [subMode, setSubMode] = useState<"text" | "visual">("text");
@@ -337,11 +342,22 @@ export function SongEditor({
               {t("retry")}
             </button>
           )}
-          <Button size="sm" variant="accentSoft" onClick={() => setPasteOpen(true)}>
+          <Button
+            size="sm"
+            variant="accentSoft"
+            onClick={() => setPasteOpen(true)}
+            disabled={offline}
+            title={offlineTitle}
+          >
             <ClipboardPaste size={15} strokeWidth={2} />
             {t("paste.button")}
           </Button>
-          <Button size="sm" onClick={() => setMetaOpen(true)}>
+          <Button
+            size="sm"
+            onClick={() => setMetaOpen(true)}
+            disabled={offline}
+            title={offlineTitle}
+          >
             <Settings size={15} strokeWidth={2} />
             {t("songData")}
           </Button>
@@ -349,12 +365,14 @@ export function SongEditor({
       </div>
 
       {/* ACORDES DE LA CANCIÓN: los que no tienen diagrama se crean aquí */}
-      <SongChordsStrip
-        names={chordNames}
-        chords={known}
-        checked={checked}
-        onCreate={setBuilderFor}
-      />
+      <div inert={offline}>
+        <SongChordsStrip
+          names={chordNames}
+          chords={known}
+          checked={checked}
+          onCreate={setBuilderFor}
+        />
+      </div>
 
       {/* MODO TEXTO: editor + preview, cada panel con su propio scroll y cabecera fija;
           lado a lado, el botón del centro vincula ambos scrolls */}
@@ -365,11 +383,17 @@ export function SongEditor({
               <span className="text-xs font-bold uppercase tracking-[0.14em] text-tert">
                 ChordPro
               </span>
-              <ChordproInsert
-                onInsert={insert}
-                onChord={(x, y) => setTextChord({ x, y })}
-                onStrum={openTextStrum}
-              />
+              {offline ? (
+                <span className="text-[11px] font-semibold text-warn">
+                  {tOffline("unavailable")}
+                </span>
+              ) : (
+                <ChordproInsert
+                  onInsert={insert}
+                  onChord={(x, y) => setTextChord({ x, y })}
+                  onStrum={openTextStrum}
+                />
+              )}
             </div>
             <div className="relative min-h-0 flex-1">
               <pre
@@ -382,6 +406,7 @@ export function SongEditor({
               <textarea
                 ref={textareaRef}
                 value={content}
+                readOnly={offline}
                 onChange={(e) => setContent(e.target.value)}
                 onScroll={(e) => {
                   if (highlightRef.current) {
@@ -458,14 +483,16 @@ export function SongEditor({
 
       {/* MODO VISUAL */}
       {subMode === "visual" && (
-        <VisualEditor
-          sections={visualModel}
-          sectionTitle={sectionTitle}
-          onPick={setPicker}
-          onStrum={(headerLineIndex, strum) =>
-            setStrumTarget({ headerLineIndex, strum, text: false })
-          }
-        />
+        <div inert={offline}>
+          <VisualEditor
+            sections={visualModel}
+            sectionTitle={sectionTitle}
+            onPick={setPicker}
+            onStrum={(headerLineIndex, strum) =>
+              setStrumTarget({ headerLineIndex, strum, text: false })
+            }
+          />
+        </div>
       )}
 
       {/* PICKER DE ACORDES */}

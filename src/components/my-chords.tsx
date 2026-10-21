@@ -4,6 +4,7 @@ import { ChevronLeft, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
+import { useOnline } from "@/lib/use-online";
 import { Button } from "./button";
 import { ChordBuilder } from "./chord-builder";
 import { ChordVisual } from "./chord-visual";
@@ -27,6 +28,9 @@ export function MyChords({
   chords: CustomChordRow[];
 }) {
   const t = useTranslations("myChords");
+  const tOffline = useTranslations("offline");
+  /* Sin conexión la biblioteca es solo consulta: crear, editar y borrar, no. */
+  const offline = !useOnline();
   const tInstruments = useTranslations("instruments");
   const router = useRouter();
   const toast = useToast();
@@ -73,7 +77,12 @@ export function MyChords({
             })}
           </p>
         </div>
-        <Button variant="primary" onClick={() => setBuilder("new")}>
+        <Button
+          variant="primary"
+          onClick={() => setBuilder("new")}
+          disabled={offline}
+          title={offline ? tOffline("unavailable") : undefined}
+        >
           <Plus size={16} strokeWidth={2.4} />
           {t("new")}
         </Button>
@@ -101,7 +110,10 @@ export function MyChords({
       )}
 
       {visible.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3.5">
+        <div
+          inert={offline}
+          className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3.5"
+        >
           {visible.map((chord) => (
             <article
               key={chord.id}
@@ -163,7 +175,12 @@ export function MyChords({
         <div className="flex flex-col items-center rounded-[18px] border border-dashed border-edge-2 bg-surface-3 px-5 py-[60px] text-center">
           <h2 className="mb-2 text-lg font-bold">{t("emptyTitle")}</h2>
           <p className="mb-[22px] max-w-[420px] text-sm text-tert">{t("emptyDesc")}</p>
-          <Button variant="primary" onClick={() => setBuilder("new")}>
+          <Button
+            variant="primary"
+            onClick={() => setBuilder("new")}
+            disabled={offline}
+            title={offline ? tOffline("unavailable") : undefined}
+          >
             <Plus size={16} strokeWidth={2.4} />
             {t("new")}
           </Button>

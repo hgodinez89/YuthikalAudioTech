@@ -29,6 +29,7 @@ import { DB_KEYS, NOTE_LABELS, ROOT_SHORT_ES, type ChordCategory } from "@/lib/c
 import type { Instrument } from "@/lib/instruments";
 import { smoothBehavior } from "@/lib/motion";
 import { useAtBottom } from "@/lib/use-at-bottom";
+import { useOnline } from "@/lib/use-online";
 import { useStoredFlag } from "@/lib/use-stored-flag";
 
 const NO_PICKS: ChordPicks = { keys: [], suffixes: [] };
@@ -125,6 +126,7 @@ export function ChordFinder({
   initial: ChordPage;
 }) {
   const t = useTranslations("finder");
+  const tOffline = useTranslations("offline");
   const tInstruments = useTranslations("instruments");
   const locale = useLocale() as "es" | "en";
 
@@ -156,7 +158,9 @@ export function ChordFinder({
     () => "ssr",
   );
   const showVoice = status !== "ios"; // en iOS no se muestra nada de voz
-  const voiceDisabled = status === "unsupported";
+  // El reconocimiento de voz del navegador necesita red: sin conexión, desactivado.
+  const online = useOnline();
+  const voiceDisabled = status === "unsupported" || !online;
   const voiceReady = status === "ok";
 
   const picking = picks.keys.length > 0 || picks.suffixes.length > 0;
@@ -465,7 +469,13 @@ export function ChordFinder({
               onClick={toggleMic}
               disabled={voiceDisabled}
               aria-label={t("micLabel")}
-              title={voiceDisabled ? t("micTitleUnsupported") : t("micTitle")}
+              title={
+                !online
+                  ? tOffline("unavailable")
+                  : voiceDisabled
+                    ? t("micTitleUnsupported")
+                    : t("micTitle")
+              }
               className={
                 voiceDisabled
                   ? "relative grid size-[54px] cursor-not-allowed place-items-center rounded-[14px] border border-edge bg-surface-3 text-disabled"

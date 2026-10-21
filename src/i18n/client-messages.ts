@@ -16,6 +16,7 @@ export const COMMON_NAMESPACES = [
   "loading",
   "errorPage",
   "notFound",
+  "offline",
 ];
 
 /** Además de los comunes, por sección del instrumento (su layout los agrega). */

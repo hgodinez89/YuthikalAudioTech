@@ -61,12 +61,15 @@ export function PlaylistFilter({
   activeListId,
   onSelect,
   onNewList,
+  canCreate = true,
 }: {
   base: string;
   playlists: PlaylistWithCount[];
   activeListId: string | null;
   onSelect: (id: string | null) => void;
   onNewList: () => void;
+  /** Sin conexión no se crean playlists (solo consulta). */
+  canCreate?: boolean;
 }) {
   const t = useTranslations("songs");
   const tPlaylists = useTranslations("playlists");
@@ -131,7 +134,8 @@ export function PlaylistFilter({
           <button
             type="button"
             onClick={onNewList}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-edge-2 px-3.5 py-[7px] text-[13px] font-semibold text-sub hover:text-ink"
+            disabled={!canCreate}
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-edge-2 px-3.5 py-[7px] text-[13px] font-semibold text-sub hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Plus size={14} strokeWidth={2.4} />
             {tPlaylists("newPlaylist")}
@@ -148,6 +152,7 @@ export function PlaylistFilter({
           onClose={() => setAnchor(null)}
           onSelect={onSelect}
           onNewList={onNewList}
+          canCreate={canCreate}
         />
       )}
     </>
@@ -166,7 +171,9 @@ function PlaylistPanel({
   onClose,
   onSelect,
   onNewList,
+  canCreate,
 }: {
+  canCreate: boolean;
   anchor: DOMRect;
   base: string;
   playlists: PlaylistWithCount[];
@@ -290,6 +297,7 @@ function PlaylistPanel({
               onClose();
               onNewList();
             }}
+            disabled={!canCreate}
             className={`${buttonClass("secondary", "sm")} w-full`}
           >
             <Plus size={15} strokeWidth={2.4} />

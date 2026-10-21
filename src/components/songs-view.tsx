@@ -47,6 +47,7 @@ import {
   type SortDir,
 } from "@/lib/songs";
 import { useDeleteSong } from "@/lib/use-delete-song";
+import { useOnline } from "@/lib/use-online";
 import { useStoredValue } from "@/lib/use-stored-flag";
 
 /* Se descargan al abrirlos, no al entrar a la lista. */
@@ -149,7 +150,11 @@ export function SongsView({
 }) {
   const t = useTranslations("songs");
   const tPlaylists = useTranslations("playlists");
+  const tOffline = useTranslations("offline");
   const locale = useLocale();
+  /* Sin conexión la lista es solo consulta: crear, ordenar, editar y borrar, no. */
+  const offline = !useOnline();
+  const offlineTitle = offline ? tOffline("unavailable") : undefined;
   // Una ?list= ajena, borrada o inválida no coincide: se muestran todas.
   const listParam = useSearchParams().get("list");
   const activeList = playlists.find((p) => p.id === listParam) ?? null;
@@ -333,7 +338,12 @@ export function SongsView({
             </PendingIcon>
             {t("myChords")}
           </Link>
-          <Button variant="primary" onClick={() => setNewSongOpen(true)}>
+          <Button
+            variant="primary"
+            onClick={() => setNewSongOpen(true)}
+            disabled={offline}
+            title={offlineTitle}
+          >
             <Plus size={16} strokeWidth={2.4} />
             {t("newSong")}
           </Button>
@@ -347,6 +357,7 @@ export function SongsView({
         activeListId={activeListId}
         onSelect={selectList}
         onNewList={() => setNewListOpen(true)}
+        canCreate={!offline}
       />
 
       {/* CABECERA DE LA PLAYLIST SELECCIONADA */}
@@ -388,12 +399,19 @@ export function SongsView({
                   setOrderError(null);
                   setOrderingId(activeList.id);
                 }}
+                disabled={offline}
+                title={offlineTitle}
               >
                 <ArrowUpDown size={15} strokeWidth={2} />
                 {t("setlist.order")}
               </Button>
             )}
-            <Button size="sm" onClick={() => setEditListOpen(true)}>
+            <Button
+              size="sm"
+              onClick={() => setEditListOpen(true)}
+              disabled={offline}
+              title={offlineTitle}
+            >
               <Pencil size={15} strokeWidth={2} />
               {t("edit")}
             </Button>
@@ -401,7 +419,9 @@ export function SongsView({
               type="button"
               onClick={() => setDeleteListOpen(true)}
               aria-label={tPlaylists("delete")}
-              className="grid size-[38px] cursor-pointer place-items-center rounded-[10px] border border-edge-2 bg-surface-2 text-sub hover:text-ink"
+              disabled={offline}
+              title={offlineTitle}
+              className="grid size-[38px] cursor-pointer place-items-center rounded-[10px] border border-edge-2 bg-surface-2 text-sub hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Trash2 size={16} strokeWidth={2} />
             </button>
@@ -590,7 +610,12 @@ export function SongsView({
             {activeList ? t("emptyListTitle") : t("emptyTitle")}
           </h2>
           <p className="mb-[22px] max-w-[360px] text-sm text-tert">{t("emptyDesc")}</p>
-          <Button variant="primary" onClick={() => setNewSongOpen(true)}>
+          <Button
+            variant="primary"
+            onClick={() => setNewSongOpen(true)}
+            disabled={offline}
+            title={offlineTitle}
+          >
             <Plus size={16} strokeWidth={2.4} />
             {t("newSong")}
           </Button>

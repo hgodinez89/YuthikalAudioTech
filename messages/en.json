@@ -971,5 +971,17 @@
     "tunedState": "(in tune)",
     "matchesString": "String {n}",
     "announce": "{note}, {cents} cents {dir, select, sharp {sharp} other {flat}}, {advice}"
+  },
+  "offline": {
+    "title": "You're offline",
+    "pageTitle": "Offline — Yuthikal AudioTech",
+    "desc": "This page isn't saved on this device. What you've already visited in Basics, Chords and Scales is still available offline.",
+    "retry": "Try again",
+    "home": "Go to home",
+    "banner": "Offline · view only. Editing and audio aren't available.",
+    "back": "Back online",
+    "refresh": "Refresh",
+    "dismiss": "Dismiss",
+    "unavailable": "Not available offline"
   }
 }

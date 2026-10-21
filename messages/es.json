@@ -971,5 +971,17 @@
     "tunedState": "(afinada)",
     "matchesString": "Cuerda {n}",
     "announce": "{note}, {cents} cents {dir, select, sharp {alto} other {bajo}}, {advice}"
+  },
+  "offline": {
+    "title": "Sin conexión",
+    "pageTitle": "Sin conexión — Yuthikal AudioTech",
+    "desc": "Esta página no está guardada en este dispositivo. Lo que ya visitaste de Básicos, Acordes y Escalas sigue disponible sin conexión.",
+    "retry": "Reintentar",
+    "home": "Ir al inicio",
+    "banner": "Sin conexión · solo consulta. Editar y el audio no están disponibles.",
+    "back": "Conexión restablecida",
+    "refresh": "Actualizar",
+    "dismiss": "Cerrar aviso",
+    "unavailable": "No disponible sin conexión"
   }
 }

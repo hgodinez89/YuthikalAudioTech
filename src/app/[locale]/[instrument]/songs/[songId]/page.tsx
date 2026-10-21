@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Link, redirect } from "@/i18n/navigation";
 import { buttonClass } from "@/components/button";
 import { PendingIcon } from "@/components/link-pending";
+import { OnlineLink } from "@/components/online-link";
 import { SongInstruments } from "@/components/song-instruments";
 import { YouTubeHints } from "@/components/youtube-hints";
 import {
@@ -238,12 +239,16 @@ export default async function SongPage({
             botón pulsado muestra que está cargando. */}
         {mode === "view" ? (
           <div className="flex gap-2.5">
-            <Link href={`${songUrl}?mode=edit`} className={buttonClass("secondary")}>
+            {/* Editar necesita conexión: sin red se ve desactivado. */}
+            <OnlineLink
+              href={`${songUrl}?mode=edit`}
+              className={buttonClass("secondary")}
+            >
               <PendingIcon size={16}>
                 <Pencil size={16} strokeWidth={2} />
               </PendingIcon>
               {t("edit")}
-            </Link>
+            </OnlineLink>
             {parsed.sections.length > 0 && (
               <Link
                 href={`${songUrl}?mode=karaoke`}
