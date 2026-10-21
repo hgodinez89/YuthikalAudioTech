@@ -18,8 +18,8 @@ const TAB = "whitespace-nowrap rounded-[9px] px-[15px] py-[7px] transition-color
 const IDLE = `${TAB} text-sub hover:text-ink`;
 
 /**
- * Barra fija «Ir a»: las anclas resaltan la sección que se está leyendo;
- * una pestaña con otra URL usa el degradado de «estás aquí».
+ * Barra fija «Ir a»: el degradado marca la sección que se está leyendo o,
+ * si la pestaña es otra URL (el afinador), la página actual.
  */
 export function SectionNav({
   label,
@@ -71,11 +71,7 @@ export function SectionNav({
                 key={tab.href}
                 href={tab.href}
                 aria-current={visible === tab.section ? "location" : undefined}
-                className={
-                  visible === tab.section
-                    ? `${TAB} bg-surface-3 text-ink shadow-[inset_0_-2px_0_var(--accent)]`
-                    : IDLE
-                }
+                className={visible === tab.section ? `${TAB} yk-gradient` : IDLE}
               >
                 {tab.label}
               </a>
