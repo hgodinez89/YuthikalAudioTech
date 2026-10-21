@@ -95,10 +95,11 @@ const runtimeCaching: RuntimeCaching[] = [
 ];
 
 const serwist = new Serwist({
-  // Solo se precargan las páginas sin conexión: el resto se guarda al usarlo,
-  // así la primera visita no descarga el sitio entero.
+  // Solo se precargan la página sin conexión y el inicio de regreso (el
+  // destino de «Ir al inicio» y del logo): el resto se guarda al usarlo, así
+  // la primera visita no descarga el sitio entero.
   precacheEntries: (self.__SW_MANIFEST ?? []).filter((entry) =>
-    (typeof entry === "string" ? entry : entry.url).endsWith("/offline"),
+    /\/(?:offline|home)$/.test(typeof entry === "string" ? entry : entry.url),
   ),
   skipWaiting: true,
   clientsClaim: true,

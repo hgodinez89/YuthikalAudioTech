@@ -12,10 +12,11 @@ const revision =
 export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
   createSerwistRoute({
     swSrc: "src/app/sw.ts",
-    additionalPrecacheEntries: ["es", "en"].map((locale) => ({
-      url: `/${locale}/offline`,
-      revision,
-    })),
+    // Siempre disponibles sin conexión: la página de respaldo y el inicio de
+    // regreso (si no, «Ir al inicio» volvería a la página de respaldo).
+    additionalPrecacheEntries: ["es", "en"].flatMap((locale) =>
+      ["offline", "home"].map((page) => ({ url: `/${locale}/${page}`, revision })),
+    ),
     // esbuild nativo (dependencia instalada). Por defecto Serwist usa el nativo
     // solo en Windows y esbuild-wasm en el resto: en Vercel (Linux) fallaba.
     useNativeEsbuild: true,

@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { buttonClass } from "@/components/button";
 import { ReloadButton } from "@/components/connection-banner";
-import { Link } from "@/i18n/navigation";
 
 export async function generateMetadata({
   params,
@@ -41,9 +40,11 @@ export default async function OfflinePage({
       <p className="leading-relaxed text-sub">{t("desc")}</p>
       <div className="flex flex-wrap justify-center gap-3">
         <ReloadButton label={t("retry")} />
-        <Link href="/home" className={buttonClass("secondary")}>
+        {/* Enlace normal (no navegación de Next): sin red, la página completa
+            la sirve el service worker desde la precarga. */}
+        <a href={`/${locale}/home`} className={buttonClass("secondary")}>
           {t("home")}
-        </Link>
+        </a>
       </div>
     </main>
   );
