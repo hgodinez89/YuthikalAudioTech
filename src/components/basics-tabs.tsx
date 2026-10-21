@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
 import { isFretted, type Instrument } from "@/lib/instruments";
+import { SectionNav, type SectionTab } from "./section-nav";
 
 /**
  * Pestañas de Básicos: las secciones de la página (anclas) y, en guitarra y
@@ -15,49 +15,18 @@ export async function BasicsTabs({
 }) {
   const t = await getTranslations("basics");
   const base = `/${instrument}/basics`;
-  // Desde el afinador, las secciones vuelven a la página de Básicos.
-  const anchor = (id: string) => (current === "page" ? `#${id}` : `${base}#${id}`);
-  const tabs = isFretted(instrument)
+  // En la página son anclas; desde el afinador vuelven a la página de Básicos.
+  const anchor = (id: string): SectionTab =>
+    current === "page"
+      ? { href: `#${id}`, label: t(id), section: id }
+      : { href: `${base}#${id}`, label: t(id) };
+  const tabs: SectionTab[] = isFretted(instrument)
     ? [
-        { href: anchor("strings"), label: t("strings"), active: false },
-        { href: anchor("notes"), label: t("notes"), active: false },
-        { href: `${base}/tuner`, label: t("tuner"), active: current === "tuner" },
+        anchor("strings"),
+        anchor("notes"),
+        { href: `${base}/tuner`, label: t("tuner"), current: current === "tuner" },
       ]
-    : [
-        { href: anchor("keyboard"), label: t("keyboard"), active: false },
-        { href: anchor("fingers"), label: t("fingers"), active: false },
-        { href: anchor("notes"), label: t("notes"), active: false },
-      ];
+    : ["keyboard", "octaves", "fingers", "tones", "notes"].map(anchor);
 
-  return (
-    <nav
-      aria-label={t("title")}
-      className="flex w-fit rounded-xl border border-edge bg-surface-2 p-1 text-[13px] font-semibold"
-    >
-      {tabs.map((tab) =>
-        tab.href.startsWith("#") ? (
-          <a
-            key={tab.href}
-            href={tab.href}
-            className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
-          >
-            {tab.label}
-          </a>
-        ) : (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            aria-current={tab.active ? "page" : undefined}
-            className={
-              tab.active
-                ? "yk-gradient rounded-[9px] px-[15px] py-[7px]"
-                : "rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
-            }
-          >
-            {tab.label}
-          </Link>
-        ),
-      )}
-    </nav>
-  );
+  return <SectionNav label={t("title")} jumpTo={t("jumpTo")} tabs={tabs} />;
 }

@@ -35,13 +35,11 @@ export default async function TunerPage({
 
   return (
     <div className="mx-auto max-w-[980px] px-5 pb-[90px] pt-10 sm:px-7">
-      <div className="mb-8">
-        <div className="mb-2.5 text-xs font-bold uppercase tracking-[0.22em] text-accent">
-          {t("eyebrow", { instrument: tInstruments(`${instrument}.name`) })}
-        </div>
-        <h1 className="mb-5 text-4xl font-extrabold tracking-[-0.025em]">{t("title")}</h1>
-        <BasicsTabs instrument={instrument} current="tuner" />
+      <div className="mb-2.5 text-xs font-bold uppercase tracking-[0.22em] text-accent">
+        {t("eyebrow", { instrument: tInstruments(`${instrument}.name`) })}
       </div>
+      <h1 className="mb-3 text-4xl font-extrabold tracking-[-0.025em]">{t("title")}</h1>
+      <BasicsTabs instrument={instrument} current="tuner" />
       <Tuner instrument={instrument} />
     </div>
   );

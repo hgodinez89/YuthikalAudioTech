@@ -148,7 +148,7 @@ export async function InstrumentStrings({
   const strings = TUNINGS[instrument];
 
   return (
-    <section id="strings" className="scroll-mt-24">
+    <section id="strings" className="scroll-mt-36">
       <h2 className="mb-3 text-[28px] font-extrabold tracking-[-0.02em]">
         {t("title", { instrument })}
       </h2>

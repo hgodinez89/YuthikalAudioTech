@@ -85,7 +85,8 @@
       "db": "No se pudo guardar. Intenta de nuevo.",
       "id": "Identificador inválido.",
       "missing": "La playlist ya no existe o no tienes acceso."
-    }
+    },
+    "filterLabel": "Playlists"
   },
   "loading": {
     "eyebrow": "Yuthikal AudioTech",
@@ -509,7 +510,10 @@
     "notes": "Notas",
     "keyboard": "Teclado",
     "fingers": "Dedos",
-    "tuner": "Afinador"
+    "tuner": "Afinador",
+    "jumpTo": "Ir a",
+    "octaves": "Octavas",
+    "tones": "Tonos"
   },
   "notes": {
     "title": "Las notas musicales",
@@ -751,7 +755,8 @@
     "position": "Posición {n}",
     "positionFrets": "Trastes {from}–{to}",
     "chordsTitle": "Acordes de la escala",
-    "chordsIntro": "Los acordes que se forman con sus notas (terceras apiladas). Toca uno para ver todas sus formas."
+    "chordsIntro": "Los acordes que se forman con sus notas (terceras apiladas). Toca uno para ver todas sus formas.",
+    "filterBy": "Filtrar por"
   },
   "chordBuilder": {
     "newTitle": "Nuevo acorde",

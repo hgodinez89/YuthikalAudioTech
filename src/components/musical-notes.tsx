@@ -41,7 +41,7 @@ export async function MusicalNotes({ instrument }: { instrument: string }) {
   const t = await getTranslations("notes");
 
   return (
-    <section id="notes" className="scroll-mt-24">
+    <section id="notes" className="scroll-mt-36">
       <div className="mb-[30px]">
         <h2 className="mb-3 text-[28px] font-extrabold tracking-[-0.02em]">
           {t("title")}

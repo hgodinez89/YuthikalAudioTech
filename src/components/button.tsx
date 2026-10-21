@@ -73,6 +73,10 @@ export function chipClass({
   return `yk-hit-y relative inline-flex shrink-0 cursor-pointer items-center gap-1.5 ${base} ${state}`;
 }
 
+/** Etiqueta de un grupo de filtros o pestañas ("Filtro rápido", "Ir a"…). */
+export const labelClass =
+  "shrink-0 text-[11px] font-bold uppercase tracking-[0.2em] text-sub";
+
 /** Insignia pequeña en mayúsculas ("Próximamente", "Actual"…). */
 export function Badge({ children }: { children: ReactNode }) {
   return (

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { chipClass } from "./button";
+import { chipClass, labelClass } from "./button";
 import { ChordCard } from "./chord-card";
 import { FadeRow } from "./fade-row";
 import {
@@ -324,9 +324,7 @@ export function ChordFinder({
       {/* SELECTOR RÁPIDO: NOTA → TIPO */}
       <div className="mb-4 flex flex-col gap-2.5">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-sub">
-            {t("quickPick")}
-          </span>
+          <span className={labelClass}>{t("quickPick")}</span>
           <button
             type="button"
             role="switch"

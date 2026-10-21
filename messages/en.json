@@ -85,7 +85,8 @@
       "db": "Could not save. Try again.",
       "id": "Invalid identifier.",
       "missing": "The playlist no longer exists or you don't have access."
-    }
+    },
+    "filterLabel": "Playlists"
   },
   "loading": {
     "eyebrow": "Yuthikal AudioTech",
@@ -509,7 +510,10 @@
     "notes": "Notes",
     "keyboard": "Keyboard",
     "fingers": "Fingers",
-    "tuner": "Tuner"
+    "tuner": "Tuner",
+    "jumpTo": "Jump to",
+    "octaves": "Octaves",
+    "tones": "Steps"
   },
   "notes": {
     "title": "The musical notes",
@@ -751,7 +755,8 @@
     "position": "Position {n}",
     "positionFrets": "Frets {from}–{to}",
     "chordsTitle": "Chords in the scale",
-    "chordsIntro": "The chords built from its notes (stacked thirds). Tap one to see all its shapes."
+    "chordsIntro": "The chords built from its notes (stacked thirds). Tap one to see all its shapes.",
+    "filterBy": "Filter by"
   },
   "chordBuilder": {
     "newTitle": "New chord",

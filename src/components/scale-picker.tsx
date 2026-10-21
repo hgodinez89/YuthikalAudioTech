@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/navigation";
-import { chipClass } from "./button";
+import { chipClass, labelClass } from "./button";
 import { FadeRow } from "./fade-row";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DB_KEYS, ROOT_SHORT_ES } from "@/lib/chords";
@@ -33,7 +33,8 @@ export async function ScalePicker({
   return (
     <div className="flex flex-col gap-3">
       <nav aria-label={t("pickNote")}>
-        <FadeRow className="-mx-5 -my-1.5 flex gap-1.5 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:flex-wrap">
+        <FadeRow className="-mx-5 -my-1.5 flex items-center gap-1.5 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:flex-wrap">
+          <span className={`${labelClass} w-[150px]`}>{t("filterBy")}</span>
           {DB_KEYS.map((key) => (
             <Link
               key={key}

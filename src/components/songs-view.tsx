@@ -17,7 +17,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
-import { Button, buttonClass, chipClass } from "./button";
+import { Button, buttonClass, chipClass, labelClass } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DuplicateSongModal } from "./duplicate-song-modal";
 import { FadeRow } from "./fade-row";
@@ -329,8 +329,12 @@ export function SongsView({
       <FadeRow
         role="group"
         aria-label={tPlaylists("title")}
-        className="-mx-5 -mt-1.5 mb-[18px] flex gap-2 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
+        className="-mx-5 -mt-1.5 mb-[18px] flex items-center gap-2 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
       >
+        {/* El grupo ya se anuncia con su aria-label. */}
+        <span aria-hidden className={`${labelClass} mr-1`}>
+          {tPlaylists("filterLabel")}
+        </span>
         <Link
           href={base}
           aria-current={!activeList ? "page" : undefined}
