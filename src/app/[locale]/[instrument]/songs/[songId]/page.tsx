@@ -217,6 +217,18 @@ export default async function SongPage({
                 <span className="text-ink">{keyLabel(song.key_note)}</span>
               </span>
             )}
+            {/* {capo:} y {tempo:} de la letra, junto a la tonalidad */}
+            {parsed.capo && (
+              <span className="inline-flex items-center rounded-full border border-edge-2 bg-surface-2 px-3 py-[5px] text-[12.5px] font-semibold text-ink">
+                {t("capo", { n: parsed.capo })}
+              </span>
+            )}
+            {parsed.tempo && (
+              <span className="inline-flex items-center gap-[7px] rounded-full border border-edge-2 bg-surface-2 px-3 py-[5px] text-[12.5px] font-semibold text-ink">
+                <span className="text-accent">♩</span>
+                {t("tempo", { bpm: parsed.tempo })}
+              </span>
+            )}
             <SongInstruments instruments={song.instruments} />
           </div>
         </div>
@@ -320,6 +332,8 @@ export default async function SongPage({
             chords={chordData}
             exitHref={songUrl}
             syncHref={`${songUrl}?mode=edit&step=audio`}
+            capo={parsed.capo}
+            tempo={parsed.tempo}
           />
         ) : (
           emptyState

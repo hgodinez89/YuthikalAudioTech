@@ -360,6 +360,42 @@
       "missing": "No diagram",
       "create": "Create",
       "createHint": "Create your own diagram for {name}"
+    },
+    "insert": {
+      "label": "Insert into ChordPro",
+      "chord": "Insert chord",
+      "directive": "Insert directive",
+      "section": "Insert section",
+      "note": "Insert note",
+      "strum": "Strumming",
+      "strumHint": "Pattern with ↓ ↑ – for the section",
+      "instrumental": "Instrumental line",
+      "instrumentalHint": "Bars and repeats",
+      "artist": "Artist",
+      "artistHint": "Shown under the title",
+      "capo": "Capo",
+      "capoHint": "Capo fret (1–12)",
+      "tempo": "Tempo",
+      "tempoHint": "Beats per minute (BPM)",
+      "names": {
+        "intro": "Intro",
+        "verse": "Verse",
+        "chorus": "Chorus",
+        "bridge": "Bridge",
+        "solo": "Solo",
+        "outro": "Outro"
+      },
+      "customName": "Other name…",
+      "blockVerse": "Verse block",
+      "blockChorus": "Chorus block",
+      "blockBridge": "Bridge block",
+      "blockHint": "Wraps the selected lines",
+      "placeholder": {
+        "note": "note",
+        "lyrics": "Lyrics",
+        "name": "Name",
+        "artist": "Artist"
+      }
     }
   },
   "player": {
@@ -505,7 +541,9 @@
     "stepLyrics": "Lyrics",
     "stepAudio": "Audio",
     "breadcrumb": "Breadcrumb",
-    "backToLyrics": "Back to the lyrics"
+    "backToLyrics": "Back to the lyrics",
+    "capo": "Capo {n}",
+    "tempo": "{bpm} BPM"
   },
   "concert": {
     "title": "Concert mode",

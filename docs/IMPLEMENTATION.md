@@ -165,7 +165,11 @@ src/components/           UI (fieles al handoff):
                           `playlist-form-modal` y menú ⋯ `song-menu`
   song-editor/-picker     Editor ChordPro (texto con highlight + visual por offsets).
                           Piezas: `chordpro-highlight`, `visual-editor`, `strum-builder`,
-                          `paste-chords-modal` ("Pegar cifrado"), `song-meta-drawer`
+                          `paste-chords-modal` ("Pegar cifrado"), `chordpro-insert` (la leyenda
+                          del modo texto es una botonera: + acorde, + directiva —rasgueo,
+                          línea instrumental, artista, capo, tempo—, + sección y + nota;
+                          inserta con el marcador seleccionado, envuelve la selección y
+                          entra al historial de Ctrl+Z), `song-meta-drawer`
                           (datos de la canción). Borrar la canción vuelve a la
                           lista con el aviso «Deshacer» (`lib/use-delete-song.ts`).
                           Lado a lado (lg+), el botón entre paneles vincula el scroll
@@ -184,7 +188,9 @@ src/components/           UI (fieles al handoff):
   skip-link               «Saltar al contenido» (primer Tab, hacia `#main`)
   instrument-toggles      Instrumentos de una canción: selector múltiple e iconos
 src/lib/                  Lógica y acceso a datos:
-  chordpro.ts             Parser/edición ChordPro (+tests)
+  chordpro.ts             Parser/edición ChordPro (+tests): `{capo:}` (1–12) y `{tempo:}`/`{bpm:}`
+                          (20–300) se muestran en la canción, el karaoke y el concierto;
+                          `insertSnippet` y `sectionHeaderAt` sirven a la botonera del editor
   chord-search.ts         Parser de búsqueda ES/EN, slugs y selector rápido (+tests)
   chord-query.ts          Página del buscador de acordes (servidor y cliente)
   db-error.ts             Error de consulta con digest de "base inaccesible" (+tests)

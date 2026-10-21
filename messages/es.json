@@ -360,6 +360,42 @@
       "missing": "Sin diagrama",
       "create": "Crear",
       "createHint": "Crear un diagrama propio para {name}"
+    },
+    "insert": {
+      "label": "Insertar en ChordPro",
+      "chord": "Insertar acorde",
+      "directive": "Insertar directiva",
+      "section": "Insertar sección",
+      "note": "Insertar nota",
+      "strum": "Rasgueo",
+      "strumHint": "Patrón con ↓ ↑ – para la sección",
+      "instrumental": "Línea instrumental",
+      "instrumentalHint": "Compases y repeticiones",
+      "artist": "Artista",
+      "artistHint": "Se muestra bajo el título",
+      "capo": "Capo",
+      "capoHint": "Traste de la cejilla (1–12)",
+      "tempo": "Tempo",
+      "tempoHint": "Pulsos por minuto (BPM)",
+      "names": {
+        "intro": "Intro",
+        "verse": "Verso",
+        "chorus": "Coro",
+        "bridge": "Puente",
+        "solo": "Solo",
+        "outro": "Final"
+      },
+      "customName": "Otro nombre…",
+      "blockVerse": "Bloque de verso",
+      "blockChorus": "Bloque de coro",
+      "blockBridge": "Bloque de puente",
+      "blockHint": "Envuelve las líneas seleccionadas",
+      "placeholder": {
+        "note": "nota",
+        "lyrics": "Letra",
+        "name": "Nombre",
+        "artist": "Artista"
+      }
     }
   },
   "player": {
@@ -505,7 +541,9 @@
     "breadcrumb": "Ruta de navegación",
     "backToLyrics": "Volver a la letra",
     "mine": "Mío",
-    "bass": "bajo {note}"
+    "bass": "bajo {note}",
+    "capo": "Capo {n}",
+    "tempo": "{bpm} BPM"
   },
   "concert": {
     "title": "Modo concierto",

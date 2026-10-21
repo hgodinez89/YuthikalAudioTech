@@ -21,6 +21,7 @@ import { ChordBuilder } from "./chord-builder";
 import { ChordPicker } from "./chord-picker";
 import { ChordSheet, type ChordDataMap } from "./chord-sheet";
 import { highlightLine } from "./chordpro-highlight";
+import { ChordproInsert } from "./chordpro-insert";
 import { PasteChordsModal } from "./paste-chords-modal";
 import { SongChordsStrip } from "./song-chords-strip";
 import { SongMetaDrawer, type PlaylistOption } from "./song-meta-drawer";
@@ -29,10 +30,14 @@ import { VisualEditor, type PickerTarget } from "./visual-editor";
 import {
   buildVisualModel,
   collectChords,
+  insertSnippet,
   parseChordPro,
   replaceInstrumentalToken,
+  sectionHeaderAt,
   setChordAtUnit,
   setSectionStrum,
+  type EditResult,
+  type Snippet,
 } from "@/lib/chordpro";
 import { customChordData, type CustomChordRow } from "@/lib/custom-chords";
 import type { Instrument } from "@/lib/instruments";
@@ -46,6 +51,51 @@ import { useStoredFlag } from "@/lib/use-stored-flag";
 
 /* El contador de caracteres aparece al acercarse al límite. */
 const COUNTER_FROM = MAX_CONTENT_LENGTH * 0.9;
+
+/**
+ * Aplica una edición al textarea como si se tecleara (insertText): así entra
+ * en el historial y Ctrl+Z la deshace. Solo se reemplaza el tramo que cambió;
+ * si el navegador no lo admite, se fija el texto directamente.
+ */
+function applyEdit(
+  textarea: HTMLTextAreaElement,
+  current: string,
+  next: EditResult,
+  fallback: (content: string) => void,
+) {
+  let start = 0;
+  while (
+    start < current.length &&
+    start < next.content.length &&
+    current[start] === next.content[start]
+  ) {
+    start += 1;
+  }
+  let tail = 0;
+  while (
+    tail < current.length - start &&
+    tail < next.content.length - start &&
+    current[current.length - 1 - tail] === next.content[next.content.length - 1 - tail]
+  ) {
+    tail += 1;
+  }
+  const replacement = next.content.slice(start, next.content.length - tail);
+  textarea.focus();
+  textarea.setSelectionRange(start, current.length - tail);
+  const ok = document.execCommand(
+    replacement ? "insertText" : "delete",
+    false,
+    replacement,
+  );
+  if (!ok || textarea.value !== next.content) fallback(next.content);
+  requestAnimationFrame(() => textarea.setSelectionRange(next.selStart, next.selEnd));
+}
+
+/** Posición del final de una línea (para dejar el cursor tras lo insertado). */
+function lineEndOffset(content: string, lineIndex: number): number {
+  const lines = content.split("\n");
+  return lines.slice(0, lineIndex + 1).join("\n").length;
+}
 
 export function SongEditor({
   song,
@@ -77,10 +127,15 @@ export function SongEditor({
   const [myChords, setMyChords] = useState(customChords);
   const [builderFor, setBuilderFor] = useState<string | null>(null);
   const [checked] = useState(() => new Set(collectChords(parseChordPro(song.content))));
+  /* Rasgueo a definir: de una sección (encabezado) o, en modo texto sin
+     sección, en la línea del cursor (headerLineIndex null). */
   const [strumTarget, setStrumTarget] = useState<{
-    headerLineIndex: number;
+    headerLineIndex: number | null;
     strum: string | null;
+    text: boolean;
   } | null>(null);
+  /* Selector de acordes del modo texto: se abre junto al botón «+ acorde». */
+  const [textChord, setTextChord] = useState<{ x: number; y: number } | null>(null);
 
   const highlightRef = useRef<HTMLPreElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -133,6 +188,72 @@ export function SongEditor({
       setContent(setChordAtUnit(content, picker.lineIndex, picker.unit, chord));
     }
     setPicker(null);
+  };
+
+  /* Botonera del modo texto: inserta en la selección actual del textarea. */
+  const insert = (snippet: Snippet) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const { value, selectionStart, selectionEnd } = textarea;
+    applyEdit(
+      textarea,
+      value,
+      insertSnippet(value, selectionStart, selectionEnd, snippet),
+      setContent,
+    );
+  };
+  /* Tras cerrar un modal (que devuelve el foco a su botón), en el cuadro siguiente. */
+  const afterModal = (fn: () => void) => requestAnimationFrame(fn);
+
+  const openTextStrum = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const cursorLine = content.slice(0, textarea.selectionStart).split("\n").length - 1;
+    const section = sectionHeaderAt(content, cursorLine);
+    setStrumTarget({
+      headerLineIndex: section?.headerLineIndex ?? null,
+      strum: section?.strum ?? null,
+      text: true,
+    });
+  };
+
+  const saveStrum = (strum: string | null) => {
+    if (!strumTarget) return;
+    const { headerLineIndex, text } = strumTarget;
+    setStrumTarget(null);
+    const textarea = textareaRef.current;
+    if (!text || !textarea) {
+      if (headerLineIndex !== null)
+        setContent(setSectionStrum(content, headerLineIndex, strum));
+      return;
+    }
+    afterModal(() => {
+      const current = textarea.value;
+      if (headerLineIndex !== null) {
+        // Reemplaza (o crea, o quita) el {strum} bajo el encabezado de la sección.
+        const next = setSectionStrum(current, headerLineIndex, strum);
+        const caret = lineEndOffset(next, strum ? headerLineIndex + 1 : headerLineIndex);
+        applyEdit(
+          textarea,
+          current,
+          { content: next, selStart: caret, selEnd: caret },
+          setContent,
+        );
+      } else if (strum) {
+        const r = insertSnippet(
+          current,
+          textarea.selectionStart,
+          textarea.selectionStart,
+          {
+            before: `{strum: ${strum}}`,
+            placeholder: "",
+            after: "",
+            line: true,
+          },
+        );
+        applyEdit(textarea, current, { ...r, selStart: r.selEnd }, setContent);
+      }
+    });
   };
 
   const SAVE_UI: Record<SaveState, { icon: ReactNode; label: string; cls: string }> = {
@@ -244,28 +365,11 @@ export function SongEditor({
               <span className="text-xs font-bold uppercase tracking-[0.14em] text-tert">
                 ChordPro
               </span>
-              <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-[11px] text-mute">
-                <span className="inline-flex items-center gap-[5px]">
-                  <span className="size-[9px] rounded-[2px] bg-accent" />[
-                  {t("legendChord")}]
-                </span>
-                <span className="inline-flex items-center gap-[5px]">
-                  <span className="size-[9px] rounded-[2px] bg-directive" />
-                  {"{"}
-                  {t("legendDirective")}
-                  {"}"}
-                </span>
-                <span className="inline-flex items-center gap-[5px] font-bold">
-                  <span className="size-[9px] rounded-[2px] bg-directive" />
-                  [[{t("legendSection")}]]
-                </span>
-                <span className="inline-flex items-center gap-[5px] italic">
-                  <span className="size-[9px] rounded-[2px] bg-tert" />
-                  {"{c: "}
-                  {t("legendNote")}
-                  {"}"}
-                </span>
-              </div>
+              <ChordproInsert
+                onInsert={insert}
+                onChord={(x, y) => setTextChord({ x, y })}
+                onStrum={openTextStrum}
+              />
             </div>
             <div className="relative min-h-0 flex-1">
               <pre
@@ -358,7 +462,9 @@ export function SongEditor({
           sections={visualModel}
           sectionTitle={sectionTitle}
           onPick={setPicker}
-          onStrum={(headerLineIndex, strum) => setStrumTarget({ headerLineIndex, strum })}
+          onStrum={(headerLineIndex, strum) =>
+            setStrumTarget({ headerLineIndex, strum, text: false })
+          }
         />
       )}
 
@@ -373,6 +479,25 @@ export function SongEditor({
           onPick={applyChord}
           onRemove={() => applyChord(null)}
           onClose={() => setPicker(null)}
+        />
+      )}
+
+      {/* PICKER DEL MODO TEXTO: inserta [acorde] en el cursor */}
+      {textChord && (
+        <ChordPicker
+          instrument={instrument}
+          x={textChord.x}
+          y={textChord.y}
+          currentChord={null}
+          customChords={myChords}
+          onPick={(chord) => {
+            setTextChord(null);
+            afterModal(() =>
+              insert({ before: `[${chord}]`, placeholder: "", after: "", line: false }),
+            );
+          }}
+          onRemove={() => setTextChord(null)}
+          onClose={() => setTextChord(null)}
         />
       )}
 
@@ -395,10 +520,7 @@ export function SongEditor({
         <StrumBuilder
           initial={strumTarget.strum}
           onClose={() => setStrumTarget(null)}
-          onSave={(strum) => {
-            setContent(setSectionStrum(content, strumTarget.headerLineIndex, strum));
-            setStrumTarget(null);
-          }}
+          onSave={saveStrum}
         />
       )}
 

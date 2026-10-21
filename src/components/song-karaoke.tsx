@@ -231,8 +231,13 @@ export function SongKaraoke({
   exitHref,
   syncHref,
   syncMissing = 0,
+  capo = null,
+  tempo = null,
 }: {
   song: SongRow;
+  /** {capo:} y {tempo:} de la letra (informativos: el ritmo lo marca el audio). */
+  capo?: number | null;
+  tempo?: number | null;
   audio: SongAudioRow | null;
   sync: SongSyncRow | null;
   /** Líneas nuevas sin marca (la letra cambió después de sincronizar). */
@@ -802,6 +807,18 @@ export function SongKaraoke({
             <span className="text-sub">
               {tSongView("keyPrefix")} {song.key_note}
             </span>
+          </>
+        )}
+        {capo && (
+          <>
+            {" · "}
+            <span className="text-sub">{tSongView("capo", { n: capo })}</span>
+          </>
+        )}
+        {tempo && (
+          <>
+            {" · "}
+            <span className="text-sub">♩ {tSongView("tempo", { bpm: tempo })}</span>
           </>
         )}
       </div>

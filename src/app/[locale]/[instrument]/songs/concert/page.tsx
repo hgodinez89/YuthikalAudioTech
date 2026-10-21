@@ -74,6 +74,8 @@ export default async function ConcertPage({
     id: row.id,
     name: row.name,
     keyNote: row.key_note,
+    capo: parsed[i].capo,
+    tempo: parsed[i].tempo,
     sections: parsed[i].sections,
   }));
   // Diagramas de todo el setlist en una consulta (acordes sin repetir).

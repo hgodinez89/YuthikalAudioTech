@@ -47,6 +47,10 @@ export type ParsedSong = {
   title: string | null;
   artist: string | null;
   key: string | null;
+  /** Traste de la cejilla ({capo: 3}); fuera de 1–12, null. */
+  capo: number | null;
+  /** Pulsos por minuto ({tempo: 92} o {bpm: 92}); fuera de 20–300, null. */
+  tempo: number | null;
   sections: SheetSection[];
 };
 
@@ -212,8 +216,22 @@ function instrumentalSegments(line: InstrumentalLine): SheetLine {
   );
 }
 
+/** Entero dentro del rango ("92", " 3 "), o null: un valor raro no rompe la canción. */
+function wholeInRange(value: string, min: number, max: number): number | null {
+  if (!/^\d+$/.test(value)) return null;
+  const n = Number(value);
+  return n >= min && n <= max ? n : null;
+}
+
 export function parseChordPro(content: string): ParsedSong {
-  const song: ParsedSong = { title: null, artist: null, key: null, sections: [] };
+  const song: ParsedSong = {
+    title: null,
+    artist: null,
+    key: null,
+    capo: null,
+    tempo: null,
+    sections: [],
+  };
   const counters: Record<SectionType, number> = {
     verse: 0,
     chorus: 0,
@@ -254,6 +272,9 @@ export function parseChordPro(content: string): ParsedSong {
       else if (name === "artist" || name === "subtitle" || name === "st") {
         song.artist = value || null;
       } else if (name === "key") song.key = value || null;
+      else if (name === "capo") song.capo = wholeInRange(value, 1, 12);
+      else if (name === "tempo" || name === "bpm")
+        song.tempo = wholeInRange(value, 20, 300);
       else if (name === "strum") {
         if (!current) current = open("plain", null, i);
         current.strum = value || null;
@@ -264,7 +285,7 @@ export function parseChordPro(content: string): ParsedSong {
         if (!current) current = open("plain", null, i);
         current.lines.push([{ chord: null, text: value, note: true }]);
       }
-      // directivas desconocidas (capo…) se ignoran sin fallar
+      // directivas desconocidas se ignoran sin fallar
       continue;
     }
 
@@ -706,4 +727,110 @@ export function collectChords(song: ParsedSong): string[] {
     }
   }
   return chords;
+}
+
+/* ------------------------------------------------------------------ */
+/* Insertar en el editor de texto: fragmentos con marcador seleccionado */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Fragmento a insertar. `line`: va en su propia línea ({c: …}, [[…]],
+ * bloques); si no, en el cursor ([Am]). `wrap`: con texto seleccionado, lo
+ * envuelve como «lines» (líneas completas: bloques) o «text» (una frase: notas).
+ */
+export type Snippet = {
+  before: string;
+  placeholder: string;
+  after: string;
+  line: boolean;
+  wrap?: "lines" | "text";
+};
+
+/** Texto resultante y qué queda seleccionado (el marcador, para escribir encima). */
+export type EditResult = { content: string; selStart: number; selEnd: number };
+
+/** Inserta un fragmento en la selección del editor (ver `Snippet`). */
+export function insertSnippet(
+  content: string,
+  selStart: number,
+  selEnd: number,
+  snippet: Snippet,
+): EditResult {
+  const start = Math.max(0, Math.min(selStart, selEnd, content.length));
+  const end = Math.min(Math.max(selStart, selEnd), content.length);
+
+  if (!snippet.line) {
+    const body = content.slice(start, end) || snippet.placeholder;
+    const bodyStart = start + snippet.before.length;
+    return {
+      content:
+        content.slice(0, start) +
+        snippet.before +
+        body +
+        snippet.after +
+        content.slice(end),
+      selStart: bodyStart,
+      selEnd: bodyStart + body.length,
+    };
+  }
+
+  const lineStart = content.lastIndexOf("\n", start - 1) + 1;
+  const nextBreak = content.indexOf("\n", end > start ? end - 1 : end);
+  const lineEnd = nextBreak === -1 ? content.length : nextBreak;
+  const selected = end > start ? content.slice(lineStart, lineEnd) : "";
+  const wrapped = selected.trim() !== "" && snippet.wrap !== undefined;
+
+  let body = snippet.placeholder;
+  if (wrapped && snippet.wrap === "lines") body = selected;
+  else if (wrapped) {
+    body = selected
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  // Con selección: reemplaza esas líneas. Sin ella: ocupa la línea del cursor
+  // si está vacía; si no, va en una línea nueva debajo.
+  const lineEmpty = content.slice(lineStart, lineEnd).trim() === "";
+  const from = wrapped || lineEmpty ? lineStart : lineEnd;
+  const to = lineEnd;
+  const prefix = wrapped || lineEmpty ? "" : "\n";
+  const bodyStart = from + prefix.length + snippet.before.length;
+  return {
+    content:
+      content.slice(0, from) +
+      prefix +
+      snippet.before +
+      body +
+      snippet.after +
+      content.slice(to),
+    selStart: bodyStart,
+    selEnd: bodyStart + body.length,
+  };
+}
+
+/**
+ * Sección del cursor: índice de su encabezado ([[…]] o {start_of_…}) y su
+ * rasgueo actual, o null si el cursor no está dentro de una sección con
+ * encabezado (antes del primero o tras un {end_of_…}).
+ */
+export function sectionHeaderAt(
+  content: string,
+  lineIndex: number,
+): { headerLineIndex: number; strum: string | null } | null {
+  const lines = content.split("\n");
+  for (let i = Math.min(lineIndex, lines.length - 1); i >= 0; i--) {
+    const trimmed = lines[i].trim();
+    const name = trimmed
+      .match(/^\{([^:}]+)(?::[\s\S]*)?\}$/)?.[1]
+      .trim()
+      .toLowerCase();
+    if (name && SECTION_ENDS.has(name) && i < lineIndex) return null;
+    if (sectionHeaderLabel(trimmed) || (name && name in SECTION_STARTS)) {
+      const strum = (lines[i + 1] ?? "").trim().match(/^\{strum:\s*([\s\S]*?)\s*\}$/);
+      return { headerLineIndex: i, strum: strum?.[1] || null };
+    }
+  }
+  return null;
 }

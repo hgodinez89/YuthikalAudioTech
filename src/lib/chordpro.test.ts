@@ -3,12 +3,14 @@ import {
   arrowsToStrum,
   buildVisualModel,
   collectChords,
+  insertSnippet,
   isInstrumental,
   lineRepeat,
   parseChordPro,
   parseInstrumentalLine,
   parseLyricUnits,
   replaceInstrumentalToken,
+  sectionHeaderAt,
   sectionHeaderLabel,
   setChordAtUnit,
   setSectionStrum,
@@ -502,5 +504,105 @@ describe("syncPlan — calibración y karaoke comparten índices", () => {
       .filter((l) => l.length && !l[0].note);
     const plan = syncPlan(song, "line");
     expect(new Set(plan.map((p) => p.line)).size).toBe(lyricLines.length);
+  });
+});
+
+describe("parseChordPro — capo y tempo", () => {
+  it("lee capo, tempo y bpm dentro de rango", () => {
+    const song = parseChordPro("{capo: 3}\n{tempo: 92}\n[Am]Hola");
+    expect(song.capo).toBe(3);
+    expect(song.tempo).toBe(92);
+    expect(parseChordPro("{bpm: 120}").tempo).toBe(120);
+  });
+
+  it("ignora valores inválidos o fuera de rango", () => {
+    for (const bad of [
+      "{capo: 0}",
+      "{capo: 13}",
+      "{capo: III}",
+      "{capo: 2.5}",
+      "{capo:}",
+    ]) {
+      expect(parseChordPro(bad).capo).toBeNull();
+    }
+    for (const bad of ["{tempo: 10}", "{tempo: 400}", "{tempo: rápido}"]) {
+      expect(parseChordPro(bad).tempo).toBeNull();
+    }
+  });
+});
+
+describe("insertSnippet", () => {
+  const note = {
+    before: "{c: ",
+    placeholder: "nota",
+    after: "}",
+    line: true,
+    wrap: "text" as const,
+  };
+  const chorus = {
+    before: "{start_of_chorus}\n",
+    placeholder: "Letra",
+    after: "\n{end_of_chorus}",
+    line: true,
+    wrap: "lines" as const,
+  };
+
+  it("en una línea vacía la ocupa y deja el marcador seleccionado", () => {
+    const r = insertSnippet("a\n\nb", 2, 2, note);
+    expect(r.content).toBe("a\n{c: nota}\nb");
+    expect(r.content.slice(r.selStart, r.selEnd)).toBe("nota");
+  });
+
+  it("con el cursor a mitad de una línea, va en una línea nueva debajo", () => {
+    const r = insertSnippet("hola mundo\nfin", 3, 3, note);
+    expect(r.content).toBe("hola mundo\n{c: nota}\nfin");
+    expect(r.content.slice(r.selStart, r.selEnd)).toBe("nota");
+  });
+
+  it("al final del texto también funciona", () => {
+    const r = insertSnippet("hola", 4, 4, note);
+    expect(r.content).toBe("hola\n{c: nota}");
+  });
+
+  it("envuelve la selección: una nota toma la frase", () => {
+    const r = insertSnippet("x\nCapo en el 3\ny", 3, 8, note);
+    expect(r.content).toBe("x\n{c: Capo en el 3}\ny");
+  });
+
+  it("envuelve la selección: un bloque toma las líneas completas", () => {
+    const text = "intro\nla la\nle le\nfin";
+    const r = insertSnippet(text, 8, 14, chorus);
+    expect(r.content).toBe(
+      "intro\n{start_of_chorus}\nla la\nle le\n{end_of_chorus}\nfin",
+    );
+  });
+
+  it("una selección de líneas que termina en el salto no se come la siguiente", () => {
+    const text = "la la\nle le\nfin";
+    const r = insertSnippet(text, 0, 12, chorus);
+    expect(r.content).toBe("{start_of_chorus}\nla la\nle le\n{end_of_chorus}\nfin");
+  });
+
+  it("en línea (acorde): en el cursor, sin saltos", () => {
+    const r = insertSnippet("Hola amor", 5, 5, {
+      before: "[Am]",
+      placeholder: "",
+      after: "",
+      line: false,
+    });
+    expect(r.content).toBe("Hola [Am]amor");
+  });
+});
+
+describe("sectionHeaderAt", () => {
+  const text =
+    "[[Intro]]\n{strum: D U}\nla\n{start_of_chorus}\nle\n{end_of_chorus}\nfuera";
+  it("encuentra el encabezado y su rasgueo", () => {
+    expect(sectionHeaderAt(text, 2)).toEqual({ headerLineIndex: 0, strum: "D U" });
+    expect(sectionHeaderAt(text, 4)).toEqual({ headerLineIndex: 3, strum: null });
+  });
+  it("fuera de una sección (tras {end_of_…} o antes del primer encabezado), null", () => {
+    expect(sectionHeaderAt(text, 6)).toBeNull();
+    expect(sectionHeaderAt("letra suelta\n[[Coro]]", 0)).toBeNull();
   });
 });

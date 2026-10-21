@@ -27,6 +27,9 @@ export type ConcertSong = {
   id: string;
   name: string;
   keyNote: string;
+  /** {capo:} y {tempo:} de la letra: dónde va la cejilla y el pulso, a la vista. */
+  capo: number | null;
+  tempo: number | null;
   sections: SheetSection[];
 };
 
@@ -57,6 +60,7 @@ export function ConcertView({
   exitHref: string;
 }) {
   const t = useTranslations("concert");
+  const tSongView = useTranslations("songView");
   const router = useRouter();
   const canBook = useSyncExternalStore(
     subscribeMedia,
@@ -164,9 +168,15 @@ export function ConcertView({
               {t("position", { n: current.index + 1, total: songs.length })}
             </span>
             <h1 className="truncate text-[17px] font-extrabold">{song.name}</h1>
-            {song.keyNote && (
+            {(song.keyNote || song.capo || song.tempo) && (
               <span className="hidden shrink-0 text-[13px] text-tert sm:inline">
-                {keyLabel(song.keyNote)}
+                {[
+                  song.keyNote && keyLabel(song.keyNote),
+                  song.capo && tSongView("capo", { n: song.capo }),
+                  song.tempo && `♩ ${tSongView("tempo", { bpm: song.tempo })}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </span>
             )}
           </div>
