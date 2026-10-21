@@ -30,6 +30,8 @@ import type { Instrument } from "@/lib/instruments";
 import { smoothBehavior } from "@/lib/motion";
 import { useAtBottom } from "@/lib/use-at-bottom";
 import { useOnline } from "@/lib/use-online";
+import { searchCatalog } from "@/lib/chord-catalog";
+import { loadCatalog, warmCatalog } from "@/lib/chord-catalog-client";
 import { useStoredFlag } from "@/lib/use-stored-flag";
 
 const NO_PICKS: ChordPicks = { keys: [], suffixes: [] };
@@ -94,7 +96,8 @@ function voiceErrorKey(error: string): string {
 }
 
 /* supabase-js solo se descarga al buscar o paginar: la primera página viene
-   del servidor. */
+   del servidor. Sin conexión (o si la red falla) se busca en el catálogo
+   local, con las mismas reglas. */
 async function fetchPage(
   instrument: Instrument,
   query: string,
@@ -102,8 +105,25 @@ async function fetchPage(
   offset: number,
   picks: ChordPicks,
 ): Promise<ChordPage> {
-  const { supabaseBrowser } = await import("@/lib/supabase");
-  return fetchChords(supabaseBrowser(), instrument, query, grouping, offset, picks);
+  const local = async () =>
+    searchCatalog(await loadCatalog(instrument), query, grouping, offset, picks);
+  if (!navigator.onLine) return local();
+  try {
+    const { supabaseBrowser } = await import("@/lib/supabase");
+    return await fetchChords(
+      supabaseBrowser(),
+      instrument,
+      query,
+      grouping,
+      offset,
+      picks,
+    );
+  } catch (error) {
+    // Con el catálogo guardado, una red caída no deja la búsqueda en blanco.
+    return local().catch(() => {
+      throw error;
+    });
+  }
 }
 
 function groupRows(rows: ChordRow[], grouping: ChordGrouping) {
@@ -150,6 +170,10 @@ export function ChordFinder({
   const requestId = useRef(0);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  /* Con red, se guarda el catálogo en un momento libre: así el buscador
+     sigue funcionando sin conexión. */
+  useEffect(() => warmCatalog(instrument), [instrument]);
 
   /* "ssr" durante hidratación; luego ios/unsupported/ok ya montado. */
   const status = useSyncExternalStore<VoiceStatus>(

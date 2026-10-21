@@ -94,6 +94,17 @@
       "chords": "Search by voice or text and save your own.",
       "scales": "Major, pentatonic and modes.",
       "songs": "Your lyrics, playlists and karaoke."
+    },
+    "download": {
+      "action": "Download",
+      "cta": "Use {instrument} offline",
+      "done": "{instrument} available offline",
+      "size": "Basics, chords and scales · ≈ {mb} MB",
+      "progress": "Downloading… {percent}%",
+      "update": "Update",
+      "error": "The download couldn't finish. Check your connection.",
+      "retry": "Try again",
+      "hint": "If you go a while without opening the site, the browser may delete the copy. Installing it on your home screen keeps it."
     }
   },
   "nav": {

@@ -94,6 +94,17 @@
       "chords": "Busca por voz o texto y guarda los tuyos.",
       "scales": "Mayores, pentatónicas y modos.",
       "songs": "Tus letras, playlists y karaoke."
+    },
+    "download": {
+      "action": "Descargar",
+      "cta": "Usar {instrument} sin conexión",
+      "done": "{instrument} disponible sin conexión",
+      "size": "Básicos, acordes y escalas · ≈ {mb} MB",
+      "progress": "Descargando… {percent} %",
+      "update": "Actualizar",
+      "error": "No se pudo completar la descarga. Revisa tu conexión.",
+      "retry": "Reintentar",
+      "hint": "Si pasas un tiempo sin abrir el sitio, el navegador podría borrar la copia. Instalarlo en la pantalla de inicio la conserva."
     }
   },
   "nav": {

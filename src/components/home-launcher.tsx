@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, RotateCcw } from "lucide-react";
+import { useLocale } from "next-intl";
 import { useState, useSyncExternalStore } from "react";
 import { Link } from "@/i18n/navigation";
 import {
@@ -16,6 +17,7 @@ import { LAST_PAGE_COOKIE, lastPageParts, safeLastPage } from "@/lib/last-page";
 import { sectionHref } from "@/lib/sections";
 import { InstrumentIcon } from "./instrument-icons";
 import { SECTION_ICONS } from "./instrument-nav";
+import { OfflineDownload, type DownloadLabels } from "./offline-download";
 
 function readCookie(name: string): string | null {
   const entry = document.cookie.split("; ").find((c) => c.startsWith(`${name}=`));
@@ -40,6 +42,7 @@ export type HomeLabels = {
   instruments: Record<Instrument, string>;
   sections: Record<Section, string>;
   descs: Record<Section, string> & { basicsPiano: string };
+  download: DownloadLabels;
 };
 
 /**
@@ -47,6 +50,7 @@ export type HomeLabels = {
  * sección, o seguir en la última página visitada.
  */
 export function HomeLauncher({ labels }: { labels: HomeLabels }) {
+  const locale = useLocale();
   const savedInstrument = useCookie(INSTRUMENT_COOKIE);
   const last = safeLastPage(useCookie(LAST_PAGE_COOKIE));
   const [picked, setPicked] = useState<Instrument | null>(null);
@@ -114,6 +118,8 @@ export function HomeLauncher({ labels }: { labels: HomeLabels }) {
           );
         })}
       </div>
+
+      <OfflineDownload locale={locale} instrument={current} labels={labels.download} />
 
       <Link href="/?tour=1" className="self-center text-[13px] text-tert hover:text-ink">
         {labels.replay}

@@ -29,3 +29,13 @@ export async function keepForOffline(pathname: string): Promise<void> {
   }
   controller.postMessage({ type: "CACHE_URLS", payload: { urlsToCache: [pathname] } });
 }
+
+/**
+ * Archivos de Next (JS, CSS, fuentes) que usa una página: sin ellos la copia
+ * guardada se vería sin estilos. Con «skew protection» llevan ?dpl=…
+ * (Sin imports: también lo usa el service worker.)
+ */
+export function staticAssets(html: string): string[] {
+  const found = html.match(/\/_next\/static\/[\w\-./~%]+(?:\?dpl=[\w-]+)?/g) ?? [];
+  return [...new Set(found)];
+}

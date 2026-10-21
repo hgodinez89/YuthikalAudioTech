@@ -21,7 +21,7 @@ export const COMMON_NAMESPACES = [
 
 /** Además de los comunes, por sección del instrumento (su layout los agrega). */
 export const SECTION_NAMESPACES = {
-  chords: ["finder", "piano"],
+  chords: ["finder", "piano", "chordDetail"],
   scales: ["scales"],
   basics: ["pianoBasics", "tuner"],
   songs: [

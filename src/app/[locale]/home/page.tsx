@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { HomeLauncher, type HomeLabels } from "@/components/home-launcher";
-import { INSTRUMENTS, SECTIONS } from "@/lib/instruments";
+import { INSTRUMENTS, SECTIONS, type Instrument } from "@/lib/instruments";
+import { DOWNLOAD_MB } from "@/lib/offline-download";
 
 export async function generateMetadata({
   params,
@@ -26,6 +27,14 @@ export default async function HomePage({
   const tInstruments = await getTranslations("instruments");
   const tNav = await getTranslations("nav");
 
+  const perInstrument = (key: "cta" | "done") =>
+    Object.fromEntries(
+      INSTRUMENTS.map((id) => [
+        id,
+        t(`download.${key}`, { instrument: tInstruments(`${id}.name`) }),
+      ]),
+    ) as Record<Instrument, string>;
+
   const labels: HomeLabels = {
     instrument: t("instrument"),
     resume: t("resume"),
@@ -42,6 +51,17 @@ export default async function HomePage({
       chords: t("desc.chords"),
       scales: t("desc.scales"),
       songs: t("desc.songs"),
+    },
+    download: {
+      action: t("download.action"),
+      cta: perInstrument("cta"),
+      done: perInstrument("done"),
+      size: t("download.size", { mb: DOWNLOAD_MB }),
+      progress: t.raw("download.progress"),
+      update: t("download.update"),
+      error: t("download.error"),
+      retry: t("download.retry"),
+      hint: t("download.hint"),
     },
   };
 

@@ -11,6 +11,7 @@ import {
   type SerwistPlugin,
   type SerwistGlobalConfig,
 } from "serwist";
+import { staticAssets } from "@/lib/offline-cache";
 
 /*
  * Service worker: consulta sin conexión de lo público ya visitado.
@@ -59,9 +60,11 @@ const runtimeCaching: RuntimeCaching[] = [
   },
   {
     matcher: ({ url }) => url.pathname.startsWith("/_next/static/"),
+    // Sin caducidad por tiempo: una página guardada los necesita aunque
+    // pasen semanas sin abrir el sitio (con hash, nunca quedan viejos).
     handler: new CacheFirst({
       cacheName: "yk-static",
-      plugins: [new ExpirationPlugin({ maxEntries: 300, maxAgeSeconds: 30 * DAY })],
+      plugins: [new ExpirationPlugin({ maxEntries: 500 })],
     }),
   },
   {
@@ -81,15 +84,15 @@ const runtimeCaching: RuntimeCaching[] = [
     }),
   },
   {
-    // Páginas (al abrirlas o al pedir guardarlas desde la app, CACHE_URLS).
+    // Páginas y el catálogo (al abrirlas, al pedir guardarlas desde la app
+    // con CACHE_URLS o con «Descargar [instrumento]»). Sin caducidad por
+    // tiempo: con red siempre se piden de nuevo; sin ella, la copia sirve
+    // aunque sea vieja. El tope alcanza para los 3 instrumentos en 2 idiomas.
     matcher: ({ request }) => request.method === "GET",
     handler: new NetworkFirst({
       cacheName: "yk-pages",
       networkTimeoutSeconds: 5,
-      plugins: [
-        new ExpirationPlugin({ maxEntries: 300, maxAgeSeconds: 30 * DAY }),
-        offlineRedirect,
-      ],
+      plugins: [new ExpirationPlugin({ maxEntries: 1000 }), offlineRedirect],
     }),
   },
 ];
@@ -108,3 +111,25 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+/*
+ * Los JS/CSS de las páginas precargadas: la página sin conexión pinta la
+ * ficha de un acorde y el inicio elige instrumento con su propio código, que
+ * quizá nunca se cargó con red. Pasan por la regla de los archivos de Next.
+ */
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      const assets = new Set<string>();
+      for (const url of ["/es/offline", "/es/home"]) {
+        const page = await serwist.matchPrecache(url);
+        if (page) for (const asset of staticAssets(await page.text())) assets.add(asset);
+      }
+      await Promise.allSettled(
+        [...assets].map((asset) =>
+          serwist.handleRequest({ request: new Request(asset), event }),
+        ),
+      );
+    })(),
+  );
+});
