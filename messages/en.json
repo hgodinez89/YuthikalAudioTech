@@ -86,7 +86,11 @@
       "id": "Invalid identifier.",
       "missing": "The playlist no longer exists or you don't have access."
     },
-    "filterLabel": "Playlists"
+    "filterLabel": "Playlists",
+    "moreLabel": "See all playlists ({n} more)",
+    "allTitle": "All playlists",
+    "search": "Search playlists…",
+    "noResults": "No results"
   },
   "loading": {
     "eyebrow": "Yuthikal AudioTech",

@@ -35,8 +35,11 @@ export function Modal({
    * anchored: el panel se posiciona solo (absolute), junto a lo que lo abrió.
    */
   variant?: "center" | "drawer" | "anchored";
-  /** light: velo más suave para selectores rápidos sobre el contenido. */
-  backdrop?: "dim" | "light";
+  /**
+   * light: velo más suave para selectores rápidos sobre el contenido.
+   * mobile: velo suave solo en móvil (hoja inferior); en escritorio, sin velo.
+   */
+  backdrop?: "dim" | "light" | "mobile";
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -83,9 +86,11 @@ export function Modal({
         downOnBackdrop.current = false;
       }}
       className={`fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overscroll-contain border-0 text-ink backdrop:bg-transparent ${
-        backdrop === "light"
-          ? "bg-page/55 backdrop-blur-[3px]"
-          : "bg-page/70 backdrop-blur-[6px]"
+        backdrop === "dim"
+          ? "bg-page/70 backdrop-blur-[6px]"
+          : backdrop === "light"
+            ? "bg-page/55 backdrop-blur-[3px]"
+            : "bg-page/55 backdrop-blur-[3px] sm:bg-transparent sm:backdrop-blur-none"
       } ${
         variant === "drawer"
           ? "justify-end p-0 open:flex"

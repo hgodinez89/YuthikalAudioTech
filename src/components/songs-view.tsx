@@ -17,13 +17,13 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
-import { Button, buttonClass, chipClass, labelClass } from "./button";
+import { Button, buttonClass } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DuplicateSongModal } from "./duplicate-song-modal";
-import { FadeRow } from "./fade-row";
 import { SongInstruments } from "./song-instruments";
 import { MoveSongModal } from "./move-song-modal";
 import { NewSongModal } from "./new-song-modal";
+import { PlaylistFilter } from "./playlist-filter";
 import { FIELD_CLASS, PlaylistFormModal } from "./playlist-form-modal";
 import { SetlistOrder } from "./setlist-order";
 import { SongMenu } from "./song-menu";
@@ -326,42 +326,12 @@ export function SongsView({
       </div>
 
       {/* PLAYLISTS COMO FILTROS */}
-      <FadeRow
-        role="group"
-        aria-label={tPlaylists("title")}
-        className="-mx-5 -mt-1.5 mb-[18px] flex items-center gap-2 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
-      >
-        {/* El grupo ya se anuncia con su aria-label. */}
-        <span aria-hidden className={`${labelClass} mr-1`}>
-          {tPlaylists("filterLabel")}
-        </span>
-        <Link
-          href={base}
-          aria-current={!activeList ? "page" : undefined}
-          className={chipClass({ active: !activeList })}
-        >
-          {t("all")}
-        </Link>
-        {playlists.map((p) => (
-          <Link
-            key={p.id}
-            href={`${base}?list=${p.id}`}
-            aria-current={p.id === activeListId ? "page" : undefined}
-            className={chipClass({ active: p.id === activeListId })}
-          >
-            {p.name}
-            <span className="text-[11.5px] opacity-70">{p.songs_count}</span>
-          </Link>
-        ))}
-        <button
-          type="button"
-          onClick={() => setNewListOpen(true)}
-          className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-edge-2 px-3.5 py-[7px] text-[13px] font-semibold text-sub hover:text-ink"
-        >
-          <Plus size={14} strokeWidth={2.4} />
-          {tPlaylists("newPlaylist")}
-        </button>
-      </FadeRow>
+      <PlaylistFilter
+        base={base}
+        playlists={playlists}
+        activeListId={activeListId}
+        onNewList={() => setNewListOpen(true)}
+      />
 
       {/* CABECERA DE LA PLAYLIST SELECCIONADA */}
       {activeList && (
