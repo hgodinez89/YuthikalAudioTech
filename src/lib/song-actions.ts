@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateSongList } from "./revalidate";
 import { sessionUserId, supabaseWithSession } from "./supabase-server";
 import {
   MP3_ENABLED,
@@ -21,9 +21,6 @@ import {
 } from "./songs";
 
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
-
-/* Las canciones se ven en /[instrument]/songs para cualquier instrumento. */
-const revalidateSongs = () => revalidatePath("/[locale]/[instrument]/songs", "page");
 
 export async function createSong(input: SongInput): Promise<ActionResult> {
   const invalid = validateSong(input);
@@ -47,7 +44,7 @@ export async function createSong(input: SongInput): Promise<ActionResult> {
     .single();
   if (error || !data) return { ok: false, error: "db" };
 
-  revalidateSongs();
+  revalidateSongList();
   return { ok: true, id: data.id as string };
 }
 
@@ -77,7 +74,7 @@ export async function updateSongMeta(
   // Sin filas: la canción ya no existe o no es del usuario (RLS).
   if (!data?.length) return { ok: false, error: "missing" };
 
-  revalidateSongs();
+  revalidateSongList();
   return { ok: true };
 }
 
@@ -104,7 +101,7 @@ export async function moveSongToPlaylist(
   if (error) return { ok: false, error: "db" };
   if (!data?.length) return { ok: false, error: "missing" };
 
-  revalidateSongs();
+  revalidateSongList();
   return { ok: true };
 }
 
@@ -146,7 +143,7 @@ export async function deleteSong(id: string): Promise<ActionResult> {
   // Sin la fila, el archivo quedaría huérfano ocupando Storage.
   if (audio?.file_path) await supabase.storage.from("audio").remove([audio.file_path]);
 
-  revalidateSongs();
+  revalidateSongList();
   return { ok: true };
 }
 
@@ -257,6 +254,6 @@ export async function duplicateSong(
     if (error) return undo("db");
   }
 
-  revalidateSongs();
+  revalidateSongList();
   return { ok: true, id: newId };
 }

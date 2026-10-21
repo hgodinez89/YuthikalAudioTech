@@ -119,9 +119,12 @@ src/app/                  Rutas (App Router)
                           y detalle por slug
     scales/[slug]         Escalas: selector nota + tipo, mástil/teclado, posiciones y
                           acordes de la escala (/scales → Do mayor)
-    songs/[songId]        Mis canciones (lista plana, ?list= filtra por playlist) y
-                          canción con ?mode=view|edit|karaoke y &step=lyrics|audio
-                          (única ruta con loading.tsx)
+    songs/(list)          Mis canciones: lista plana, ?list= filtra por playlist en el
+                          cliente (única ruta con loading.tsx; el route group evita
+                          que cubra la canción; revalidar con revalidateSongList)
+    songs/[songId]        Canción con ?mode=view|edit|karaoke y &step=lyrics|audio;
+                          sin loading.tsx: el enlace pulsado muestra que carga
+                          (link-pending)
     basics/               Cuerdas (o teclado en piano) + notas musicales
   [locale]/login/         Login con Google; ?next= (con idioma) regresa a la página de origen
 src/components/           UI (fieles al handoff):
@@ -229,7 +232,11 @@ src/i18n/                 next-intl con el idioma en la URL: `routing.ts`, `navi
 | `@tombatossals/chords-db` | ^0.5 | Fuente del catálogo (solo para el script de seed) |
 | dev: `tailwindcss` ^4, `typescript` ^5, `eslint`+`eslint-config-next`, `prettier` ^3.9, `vitest` ^4.1 | | Estilos, tipos, calidad y tests |
 
-Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del postcss anidado de Next). `npm audit --omit=dev`: 0 vulnerabilidades. En dev queda un aviso de `braces` (vía `eslint-config-next` → `fast-glob`) sin versión corregida publicada; solo afecta al lint.
+Override en `package.json`: `postcss ^8.5.10` (parchea un aviso de seguridad del postcss anidado de Next). `npm audit --omit=dev`: 0 vulnerabilidades (es el criterio de `CLAUDE.md`).
+
+**Avisos de desarrollo aceptados** (revisar en cada actualización y quitar cuando haya parche):
+
+- `braces` (GHSA-vfj7-8cjw-p6xm, alta, DoS por patrones anidados): `eslint-config-next 16.4.2` → `@next/eslint-plugin-next` → `fast-glob 3.3.1` (versión fija) → `micromatch 4.0.8` → `braces 3.0.3`. Afecta a todas las versiones publicadas (≤ 3.0.3); un `override` no sirve porque todas las de `fast-glob`/`micromatch` dependen de `braces`. El «fix» que propone `npm audit fix --force` es bajar `eslint-config-next` a 14.2.35, incompatible con Next 16: no aplicarlo. Riesgo real: solo corre en el lint, con patrones del propio repo; no llega a producción.
 
 ## 8. Operación y decisiones conocidas
 
@@ -265,7 +272,7 @@ where o.bucket_id = 'audio'
 - *Orden de "Mis canciones"*: en el cliente sobre la lista ya cargada (Fecha, Nombre, Instrumento, Playlist; asc/desc) y recordado por navegador en localStorage (`yk-song-sort`). "Instrumento" pone primero las preparadas para el instrumento actual, luego las de otros y al final las sin definir; las canciones sin playlist van siempre al final. Con una playlist filtrada, "Playlist" se oculta y se ordena por nombre.
 - *Lista plana de canciones*: las playlists son filtros opcionales; borrar una playlist conserva sus canciones. Las playlists mantienen género y doble calificación.
 - *Canción*: Ver (con **Tocar** como acción principal) y Editar en dos pasos, **Letra → Audio** (la antigua "Calibración", ahora "Sincronizar audio"; `?mode=calibrate` sigue funcionando).
-- *Sin pantalla de carga global* (rendimiento/Lighthouse): el título y el contenido se pintan en el primer render, sin el cambio desde "Afinando tu sesión…". Solo `[locale]/[instrument]/songs` tiene `loading.tsx` (sesión + BD). Por eso las URLs inexistentes responden 404 real; bajo `/songs`, por el streaming, siguen respondiendo HTTP 200 con la UI correcta (404 visual / redirect a login). Los datos jamás se filtran (los guards corren antes de cualquier query).
+- *Sin pantalla de carga global* (rendimiento/Lighthouse): el título y el contenido se pintan en el primer render, sin el cambio desde "Afinando tu sesión…". Solo la lista de canciones (`[locale]/[instrument]/songs/(list)`) tiene `loading.tsx` (sesión + BD); la canción y sus modos no, para que cambiar de modo no muestre la pantalla de carga. Por eso las URLs inexistentes responden 404 real, y la canción sin sesión redirige a login con un 307 real; solo la lista, por el streaming de su `loading.tsx`, responde HTTP 200 (con la tarjeta de login embebida). Los datos jamás se filtran (los guards corren antes de cualquier query).
 - *Autoguardado* (`lib/use-autosave.ts`, editor y sincronización): debounce, guardados en fila (uno lento nunca pisa a uno más nuevo), lo pendiente se guarda al salir de la pantalla, el navegador avisa al cerrar o recargar con cambios sin guardar y un fallo de red o BD queda en error con **Reintentar**. El editor muestra un contador al acercarse a los 20 000 caracteres. Las server actions de actualizar/borrar confirman que se modificó una fila (si no, error `missing`) y los diálogos de borrar muestran el error sin cerrarse.
 - *Componentes base* (`modal`, `menu`, `button`): todos los modales usan `<dialog>` con `showModal()` (el resto de la página queda inerte, Escape y clic fuera cierran, el foco inicial va a `data-autofocus` y vuelve a quien abrió el modal); los menús de acciones (canción, instrumento, velocidad) son `role="menu"` con flechas, Inicio/Fin y Escape; los paneles con controles (cuenta, atajos) son `Popover`. Botones y chips comparten radio y relleno por tamaño (`buttonClass`, `chipClass`).
 - *MP3 en reproducción*: la URL firmada dura 1 h y se renueva 5 min antes; el motor de audio identifica el MP3 por su ruta y cambia la URL sin cortar (conserva posición, velocidad y estado). Si no se puede obtener, Sincronizar y el karaoke lo avisan.

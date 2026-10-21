@@ -10,7 +10,7 @@ App web para guitarristas (Next.js App Router + TypeScript + Supabase): referenc
 - `npm test` — Vitest (solo lógica crítica pura)
 - `npm run lint` — ESLint (reglas React 19 estrictas) · `npm run format` — Prettier
 
-Antes de dar por terminado un cambio: `npm run lint && npm test && npm run build` deben pasar, y `npm audit` sin vulnerabilidades.
+Antes de dar por terminado un cambio: `npm run lint && npm test && npm run build` deben pasar, y `npm audit --omit=dev` sin vulnerabilidades. Los avisos de dependencias de desarrollo sin parche publicado se documentan en `docs/IMPLEMENTATION.md` (sección de dependencias) y se revisan en cada actualización.
 
 ## Principios que no se rompen
 

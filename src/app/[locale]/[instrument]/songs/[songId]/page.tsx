@@ -5,7 +5,9 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { Link, redirect } from "@/i18n/navigation";
 import { buttonClass } from "@/components/button";
+import { PendingIcon } from "@/components/link-pending";
 import { SongInstruments } from "@/components/song-instruments";
+import { YouTubeHints } from "@/components/youtube-hints";
 import {
   SongBook,
   SongCalibration,
@@ -140,7 +142,9 @@ export default async function SongPage({
       <h2 className="mb-2 text-lg font-bold">{t("emptyTitle")}</h2>
       <p className="mb-[22px] max-w-[380px] text-sm text-tert">{t("emptyDesc")}</p>
       <Link href={`${songUrl}?mode=edit`} className={buttonClass("primary")}>
-        <Pencil size={15} strokeWidth={2.2} />
+        <PendingIcon size={15}>
+          <Pencil size={15} strokeWidth={2.2} />
+        </PendingIcon>
         {t("emptyCta")}
       </Link>
     </div>
@@ -175,7 +179,9 @@ export default async function SongPage({
           href={`/${instrument}/songs`}
           className="inline-flex shrink-0 items-center gap-2 hover:text-ink"
         >
-          <ChevronLeft size={15} strokeWidth={2} />
+          <PendingIcon size={15}>
+            <ChevronLeft size={15} strokeWidth={2} />
+          </PendingIcon>
           {t("backToSongs")}
         </Link>
         {mode === "edit" && (
@@ -215,11 +221,15 @@ export default async function SongPage({
           </div>
         </div>
 
-        {/* ACCIONES: Tocar es la principal; Editar, la secundaria */}
+        {/* ACCIONES: Tocar es la principal; Editar, la secundaria. Sin
+            loading.tsx aquí: la pantalla sigue hasta que llega el modo y el
+            botón pulsado muestra que está cargando. */}
         {mode === "view" ? (
           <div className="flex gap-2.5">
             <Link href={`${songUrl}?mode=edit`} className={buttonClass("secondary")}>
-              <Pencil size={16} strokeWidth={2} />
+              <PendingIcon size={16}>
+                <Pencil size={16} strokeWidth={2} />
+              </PendingIcon>
               {t("edit")}
             </Link>
             {parsed.sections.length > 0 && (
@@ -227,7 +237,9 @@ export default async function SongPage({
                 href={`${songUrl}?mode=karaoke`}
                 className={`${buttonClass("primary", "lg")} shadow-fab`}
               >
-                <Play size={17} fill="currentColor" strokeWidth={0} />
+                <PendingIcon size={17}>
+                  <Play size={17} fill="currentColor" strokeWidth={0} />
+                </PendingIcon>
                 {t("play")}
               </Link>
             )}
@@ -252,14 +264,16 @@ export default async function SongPage({
                       s.key === step ? "bg-black/15" : "border border-edge-2"
                     }`}
                   >
-                    {i + 1}
+                    <PendingIcon size={12}>{i + 1}</PendingIcon>
                   </span>
                   {s.label}
                 </Link>
               ))}
             </div>
             <Link href={songUrl} className={buttonClass("secondary")}>
-              <Check size={16} strokeWidth={2.4} className="text-accent" />
+              <PendingIcon size={16}>
+                <Check size={16} strokeWidth={2.4} className="text-accent" />
+              </PendingIcon>
               {t("done")}
             </Link>
           </div>
@@ -267,6 +281,7 @@ export default async function SongPage({
       </div>
 
       {/* CONTENIDO SEGÚN MODO */}
+      {needsAudio && audio?.source === "youtube" && <YouTubeHints />}
       {mode === "view" &&
         (parsed.sections.length > 0 ? (
           <SongBook songId={songId} sections={parsed.sections} chords={chordData} />

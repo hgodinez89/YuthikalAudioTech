@@ -21,6 +21,7 @@ import { useState, useTransition } from "react";
 import { Link } from "@/i18n/navigation";
 import { Button, buttonClass } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
+import { PendingIcon, PendingOutline } from "./link-pending";
 import { SongInstruments } from "./song-instruments";
 import { PlaylistFilter } from "./playlist-filter";
 import { FIELD_CLASS, PlaylistFormModal } from "./playlist-form-modal";
@@ -327,7 +328,9 @@ export function SongsView({
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href={`${base}/chords`} className={buttonClass("secondary")}>
-            <LayoutGrid size={16} strokeWidth={2} />
+            <PendingIcon size={16}>
+              <LayoutGrid size={16} strokeWidth={2} />
+            </PendingIcon>
             {t("myChords")}
           </Link>
           <Button variant="primary" onClick={() => setNewSongOpen(true)}>
@@ -372,7 +375,9 @@ export function SongsView({
                 href={`${base}/concert?list=${activeList.id}`}
                 className={buttonClass("primary", "sm")}
               >
-                <MonitorPlay size={15} strokeWidth={2} />
+                <PendingIcon size={15}>
+                  <MonitorPlay size={15} strokeWidth={2} />
+                </PendingIcon>
                 {t("setlist.concert")}
               </Link>
             )}
@@ -493,15 +498,17 @@ export function SongsView({
                     : "border-edge hover:border-edge-2"
                 }`}
               >
-                {/* Toda la fila abre la canción. Sin precarga: serían dos
-                    peticiones al servidor por fila al hacer scroll, y la
-                    pantalla de carga de la canción ya está en caché. */}
+                {/* Toda la fila abre la canción. Sin precarga (serían dos
+                    peticiones por fila al hacer scroll): al pulsar, la fila
+                    late hasta que llega la canción. */}
                 <Link
                   href={url()}
                   prefetch={false}
                   className="absolute inset-0"
                   aria-label={song.name}
-                />
+                >
+                  <PendingOutline className="rounded-[14px]" />
+                </Link>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2.5">
                     <span className="truncate text-[15.5px] font-bold">{song.name}</span>
@@ -557,12 +564,14 @@ export function SongsView({
                     title={t("play")}
                     className="yk-gradient grid size-11 place-items-center rounded-xl shadow-fab"
                   >
-                    <Play
-                      size={19}
-                      fill="currentColor"
-                      strokeWidth={0}
-                      className="ml-0.5"
-                    />
+                    <PendingIcon size={19}>
+                      <Play
+                        size={19}
+                        fill="currentColor"
+                        strokeWidth={0}
+                        className="ml-0.5"
+                      />
+                    </PendingIcon>
                   </Link>
                 </div>
               </article>

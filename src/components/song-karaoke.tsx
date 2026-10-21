@@ -15,6 +15,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { ChordVisual } from "./chord-visual";
 import type { ChordDataMap } from "./chord-sheet";
 import { FloatingVideo, type VideoInsets } from "./floating-video";
+import { PendingIcon } from "./link-pending";
 import { Menu, MenuItem, MenuSeparator } from "./menu";
 import {
   COUNTDOWN_OPTIONS,
@@ -767,7 +768,9 @@ export function SongKaraoke({
           title={`${t("exit")} (Esc)`}
           className="grid size-11 shrink-0 place-items-center rounded-[11px] border border-edge bg-surface-3 text-sub hover:text-ink"
         >
-          <X size={19} strokeWidth={2} />
+          <PendingIcon size={19}>
+            <X size={19} strokeWidth={2} />
+          </PendingIcon>
         </Link>
       </div>
 

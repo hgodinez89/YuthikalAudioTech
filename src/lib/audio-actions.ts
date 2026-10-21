@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateSongList } from "./revalidate";
 import {
   MP3_ENABLED,
   validateStamps,
@@ -76,7 +76,7 @@ export async function setYouTubeAudio(
     }
   }
 
-  revalidatePath("/[locale]/[instrument]/songs", "page");
+  revalidateSongList();
   return { ok: true };
 }
 
@@ -105,7 +105,7 @@ export async function setFileAudio(
   });
   if (error) return { ok: false, error: "db" };
 
-  revalidatePath("/[locale]/[instrument]/songs", "page");
+  revalidateSongList();
   return { ok: true };
 }
 

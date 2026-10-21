@@ -1,14 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateSongList } from "./revalidate";
 import { isUuid } from "./ids";
 import { sessionUserId, supabaseWithSession } from "./supabase-server";
 import { validatePlaylist, type PlaylistInput } from "./playlists";
 
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
-
-/* Las playlists son filtros de la lista de canciones de cada instrumento. */
-const revalidateSongs = () => revalidatePath("/[locale]/[instrument]/songs", "page");
 
 export async function createPlaylist(input: PlaylistInput): Promise<ActionResult> {
   // Re-validación en servidor: nunca confiar solo en el cliente.
@@ -33,7 +30,7 @@ export async function createPlaylist(input: PlaylistInput): Promise<ActionResult
     .single();
   if (error || !data) return { ok: false, error: "db" };
 
-  revalidateSongs();
+  revalidateSongList();
   return { ok: true, id: data.id as string };
 }
 
@@ -63,7 +60,7 @@ export async function updatePlaylist(
   // Sin filas: la playlist ya no existe o no es del usuario (RLS).
   if (!data?.length) return { ok: false, error: "missing" };
 
-  revalidateSongs();
+  revalidateSongList();
   return { ok: true };
 }
 
@@ -81,7 +78,7 @@ export async function deletePlaylist(id: string): Promise<ActionResult> {
   if (error) return { ok: false, error: "db" };
   if (!data?.length) return { ok: false, error: "missing" };
 
-  revalidateSongs();
+  revalidateSongList();
   return { ok: true };
 }
 
@@ -119,6 +116,6 @@ export async function reorderPlaylist(
   if (error) return { ok: false, error: "db" };
   if (data !== songIds.length) return { ok: false, error: "missing" };
 
-  revalidateSongs();
+  revalidateSongList();
   return { ok: true };
 }

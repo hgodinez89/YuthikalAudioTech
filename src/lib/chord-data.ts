@@ -8,6 +8,16 @@ import { supabaseServer } from "./supabase";
 
 export const CUSTOM_CHORD_COLUMNS = "id,instrument,name,base_fret,frets,barres,keys";
 
+type CatalogChord = {
+  nameEs: string;
+  position: { base_fret: number; frets: number[]; barres: number[] };
+};
+
+/* El catálogo es público y no cambia entre deploys: lo ya consultado queda en
+   la memoria de la instancia y abrir una canción no repite esa consulta
+   (la segunda en serie, tras leer la letra). null = no está en el catálogo. */
+const catalogCache = new Map<string, CatalogChord | null>();
+
 /** Acordes propios del usuario para un instrumento (RLS: solo los suyos). */
 export async function loadCustomChords(
   supabase: SupabaseClient,
@@ -70,29 +80,38 @@ export async function loadChordData(
   }
   if (idByName.size === 0) return map;
 
-  // Catálogo público: sin cookies, así las páginas de escalas pueden ser estáticas.
-  const supabase = supabaseServer();
-  const { data } = await supabase
-    .from("chords")
-    .select("id,name_es,positions:chord_positions!inner(base_fret,frets,barres,position)")
-    .eq("instrument", catalogInstrument(instrument))
-    .in("id", [...new Set(idByName.values())])
-    .eq("positions.position", 1);
-
-  const byId = new Map(
-    (data ?? []).map((row) => [
-      row.id as string,
-      {
-        nameEs: row.name_es as string,
-        position: (
-          row.positions as { base_fret: number; frets: number[]; barres: number[] }[]
-        )[0],
-      },
-    ]),
+  const catalog = catalogInstrument(instrument);
+  const key = (id: string) => `${catalog}:${id}`;
+  const missing = [...new Set(idByName.values())].filter(
+    (id) => !catalogCache.has(key(id)),
   );
+  if (missing.length > 0) {
+    // Catálogo público: sin cookies, así las páginas de escalas pueden ser estáticas.
+    const { data, error } = await supabaseServer()
+      .from("chords")
+      .select(
+        "id,name_es,positions:chord_positions!inner(base_fret,frets,barres,position)",
+      )
+      .eq("instrument", catalog)
+      .in("id", missing)
+      .eq("positions.position", 1);
+    // Con error no se guarda nada: la próxima vez se vuelve a consultar.
+    if (!error) {
+      const rows = new Map(
+        (data ?? []).map((row) => [
+          row.id as string,
+          {
+            nameEs: row.name_es as string,
+            position: (row.positions as CatalogChord["position"][])[0],
+          },
+        ]),
+      );
+      for (const id of missing) catalogCache.set(key(id), rows.get(id) ?? null);
+    }
+  }
 
   for (const [name, id] of idByName) {
-    const found = byId.get(id);
+    const found = catalogCache.get(key(id));
     if (!found) continue;
     const { lookup, bass } = pending.get(name)!;
     if (isFretted(instrument)) {
