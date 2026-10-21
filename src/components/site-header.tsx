@@ -92,16 +92,19 @@ export function SiteHeader() {
   const songsPrefetch = useIntentPrefetch(
     instrument !== null && !pathname.startsWith(`/${instrument}/songs`),
   );
+  // Recorrido e inicio: header y página se ven como una sola superficie.
+  const seamless = pathname === "/" || pathname === "/home";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-edge bg-page/85 backdrop-blur-[14px]">
+    <header
+      className={`sticky top-0 z-40 bg-page/85 backdrop-blur-[14px] ${
+        seamless ? "" : "border-b border-edge"
+      }`}
+    >
       <div className="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <Link
-            href={instrument ? `/${instrument}` : "/"}
-            aria-label="Yuthikal AudioTech"
-            className="shrink-0"
-          >
+          {/* El logo abre el inicio de regreso (cambiar de instrumento, seguir donde quedaste). */}
+          <Link href="/home" aria-label="Yuthikal AudioTech" className="shrink-0">
             <BrandLogo />
           </Link>
           {instrument && <InstrumentSwitcher instrument={instrument} />}

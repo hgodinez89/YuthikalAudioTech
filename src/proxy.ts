@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "@/i18n/config";
 import { INSTRUMENT_COOKIE, isInstrument } from "@/lib/instruments";
+import { LAST_PAGE_COOKIE, safeLastPage } from "@/lib/last-page";
 
 const YEAR = 60 * 60 * 24 * 365;
 
@@ -51,20 +52,20 @@ export async function proxy(request: NextRequest) {
   const remembered = request.cookies.get(INSTRUMENT_COOKIE)?.value;
 
   // Sin idioma (enlaces viejos, "/"): al preferido del navegador o al español.
-  // El inicio lleva directo al último instrumento visitado.
   if (!isLocale(locale)) {
     const saved = request.cookies.get(LOCALE_COOKIE)?.value;
     const target = isLocale(saved) ? saved : defaultLocale;
-    const rest =
-      pathname === "/"
-        ? isInstrument(remembered)
-          ? `/${remembered}/chords`
-          : ""
-        : pathname;
+    const rest = pathname === "/" ? "" : pathname;
     return NextResponse.redirect(new URL(`/${target}${rest}${search}`, request.url));
   }
-  if (!section && isInstrument(remembered)) {
-    return NextResponse.redirect(new URL(`/${locale}/${remembered}/chords`, request.url));
+  // El inicio es el recorrido de bienvenida solo la primera vez: quien ya
+  // eligió instrumento vuelve a la última página que vio (o a sus Básicos).
+  // ?tour lo muestra de nuevo («Ver el recorrido otra vez»).
+  if (!section && isInstrument(remembered) && !request.nextUrl.searchParams.has("tour")) {
+    const last =
+      safeLastPage(request.cookies.get(LAST_PAGE_COOKIE)?.value) ??
+      `/${remembered}/basics`;
+    return NextResponse.redirect(new URL(`/${locale}${last}`, request.url));
   }
 
   // La sesión solo se lee en las rutas privadas y el login: el catálogo

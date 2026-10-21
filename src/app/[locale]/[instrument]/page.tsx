@@ -1,10 +1,11 @@
 import { redirect } from "@/i18n/navigation";
 
+/* La página por defecto de cada instrumento es Básicos. */
 export default async function InstrumentHome({
   params,
 }: {
   params: Promise<{ locale: string; instrument: string }>;
 }) {
   const { locale, instrument } = await params;
-  redirect({ href: `/${instrument}/chords`, locale });
+  redirect({ href: `/${instrument}/basics`, locale });
 }

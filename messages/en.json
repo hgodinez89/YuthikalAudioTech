@@ -17,6 +17,85 @@
     },
     "themeNext": "Theme: {current} · switch to {next}"
   },
+  "tour": {
+    "skip": "Skip tour",
+    "nowPlaying": "Now playing · Your tour",
+    "progress": "Tour sections",
+    "segments": {
+      "intro": "Intro",
+      "verse1": "Verse 1",
+      "verse2": "Verse 2",
+      "bridge": "Bridge",
+      "chorus": "Chorus",
+      "solo": "Solo",
+      "outro": "Outro"
+    },
+    "giant": {
+      "intro": "INTRO",
+      "verse": "VERSE",
+      "bridge": "BRIDGE",
+      "chorus": "CHORUS",
+      "solo": "SOLO",
+      "outro": "OUTRO"
+    },
+    "intro": {
+      "title": "Your music, your chords, <accent>your stage</accent>",
+      "subtitle": "This site plays like a song. Scroll to hear it from start to finish."
+    },
+    "basics": {
+      "kicker": "Basics",
+      "title": "Get to know your instrument",
+      "desc": "Keys, strings, notes and a tuner that listens through your microphone."
+    },
+    "chords": {
+      "kicker": "Chords",
+      "title": "Find any chord",
+      "desc": "By voice or text, with every position and your own library."
+    },
+    "scales": {
+      "kicker": "Scales",
+      "title": "Explore the scales",
+      "desc": "From major to the modes, on your fretboard or keyboard."
+    },
+    "songs": {
+      "kicker": "Songs",
+      "title": "Write your songs",
+      "desc": "Lyrics with each chord over its syllable, in playlists and setlists."
+    },
+    "karaoke": {
+      "kicker": "Karaoke",
+      "title": "Play them with the real audio",
+      "desc": "Sync with YouTube and follow lyrics and chords in time."
+    },
+    "for": "For",
+    "strings": "{n} strings",
+    "keys": "Keys",
+    "lyrics": {
+      "l1": "Tonight I sing for you",
+      "l2": "beneath the ocean blue",
+      "l3": "in every note it’s you"
+    },
+    "final": {
+      "title": "Which instrument do you want to start with?",
+      "cta": "Start with {instrument} in Basics"
+    },
+    "footer": "© 2026 Yuthikal AudioTech"
+  },
+  "home": {
+    "metaTitle": "Choose your instrument — Yuthikal AudioTech",
+    "title": "Choose your instrument",
+    "subtitle": "Pick what you want to practice.",
+    "instrument": "Instrument",
+    "resume": "Pick up where you left off:",
+    "replay": "Replay the welcome tour",
+    "desc": {
+      "basicsFretted": "Strings, notes and tuner.",
+      "basicsPiano": "Keyboard, octaves, fingers and notes.",
+      "chords": "Search by voice or text and save your own.",
+      "scales": "Major, pentatonic and modes.",
+      "songs": "Your lyrics, playlists and karaoke."
+    }
+  },
   "nav": {
     "skipToContent": "Skip to content",
     "chords": "Chords",
@@ -116,21 +195,6 @@
     "title": "Page not found",
     "description": "The page you are looking for does not exist or was moved.",
     "back": "Back to home"
-  },
-  "landing": {
-    "badge": "Your digital music stand",
-    "title": "Your music, your chords, <accent>your stage</accent>",
-    "subtitle": "Learn chords, write your songs with lyrics and chords, and play them with real synchronized audio.",
-    "features": {
-      "finderTitle": "Chord finder",
-      "finderDesc": "Search by voice or text and browse every position of each chord on the neck.",
-      "songsTitle": "Your songs",
-      "songsDesc": "Lyrics with chords anchored to each syllable, in the classic chord-sheet format.",
-      "karaokeTitle": "Karaoke mode",
-      "karaokeDesc": "Play the real audio and follow the lyrics and chords in perfect sync."
-    },
-    "footerCopy": "© 2026 Yuthikal AudioTech",
-    "chooseInstrument": "Pick your instrument to start"
   },
   "songs": {
     "newSong": "New song",

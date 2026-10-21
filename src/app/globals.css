@@ -339,3 +339,284 @@ body {
     transform: translateY(0);
   }
 }
+
+/* ---------- Recorrido de bienvenida (portada) ----------
+   La página es una canción: Intro → Final. Sin soporte de animaciones por
+   scroll, o con «reducir movimiento», todo se ve completo y estático (los
+   tres instrumentos en fila); con soporte, la barra avanza con el scroll y
+   el Verso 1 pasa de un instrumento al siguiente. */
+
+.yk-tour {
+  timeline-scope: --yk-s1, --yk-s2, --yk-s3, --yk-s4, --yk-s5, --yk-s6, --yk-s7;
+}
+.yk-tour-s1 {
+  view-timeline-name: --yk-s1;
+}
+.yk-tour-s2 {
+  view-timeline-name: --yk-s2;
+}
+.yk-tour-s3 {
+  view-timeline-name: --yk-s3;
+}
+.yk-tour-s4 {
+  view-timeline-name: --yk-s4;
+}
+.yk-tour-s5 {
+  view-timeline-name: --yk-s5;
+}
+.yk-tour-s6 {
+  view-timeline-name: --yk-s6;
+}
+.yk-tour-s7 {
+  view-timeline-name: --yk-s7;
+}
+
+/* Palabra gigante de fondo: solo contorno, visible en ambos temas. */
+.yk-tour-giant {
+  font-weight: 900;
+  font-size: clamp(96px, 17vw, 230px);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--edge-2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+.dark .yk-tour-giant {
+  -webkit-text-stroke-color: var(--edge);
+}
+
+.yk-tour-played,
+.yk-tour-dot {
+  display: none;
+}
+.yk-tour-slides {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .yk-tour-played {
+      display: block;
+      animation: yk-tour-play linear both;
+      animation-timeline: scroll(root);
+    }
+    .yk-tour-seg {
+      animation: yk-tour-seg linear both;
+    }
+    .yk-tour-seg-1 {
+      animation-timeline: --yk-s1;
+    }
+    .yk-tour-seg-2 {
+      animation-timeline: --yk-s2;
+    }
+    .yk-tour-seg-3 {
+      animation-timeline: --yk-s3;
+    }
+    .yk-tour-seg-4 {
+      animation-timeline: --yk-s4;
+    }
+    .yk-tour-seg-5 {
+      animation-timeline: --yk-s5;
+    }
+    .yk-tour-seg-6 {
+      animation-timeline: --yk-s6;
+    }
+    .yk-tour-seg-7 {
+      animation-timeline: --yk-s7;
+    }
+
+    .yk-tour-giant {
+      animation: yk-tour-slide linear both;
+      animation-timeline: view();
+    }
+    .yk-tour-reveal {
+      animation: yk-tour-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 40%;
+    }
+    .yk-tour-glow {
+      animation: yk-tour-glow linear both;
+      animation-timeline: view();
+      animation-range: cover 35% cover 60%;
+    }
+
+    /* Verso 1: el bloque se queda fijo y recorre guitarra → ukelele → piano. */
+    .yk-tour-v1 {
+      height: 300svh;
+      /* Dos líneas de tiempo: la de la barra (--yk-s2) y la de los instrumentos. */
+      view-timeline-name: --yk-s2, --yk-v1;
+    }
+    .yk-tour-v1-stage {
+      position: sticky;
+      top: 71px;
+      height: calc(100svh - 71px);
+    }
+    .yk-tour-slides {
+      position: relative;
+      display: block;
+      height: 300px;
+    }
+    .yk-tour-slide,
+    .yk-tour-dot {
+      animation: linear both;
+      animation-timeline: --yk-v1;
+      animation-range: contain 0% contain 100%;
+    }
+    .yk-tour-slide {
+      position: absolute;
+      inset: 0;
+    }
+    .yk-tour-dot {
+      display: inline;
+      color: var(--mute);
+    }
+    .yk-tour-slide-1 {
+      animation-name: yk-tour-p1;
+    }
+    .yk-tour-slide-2 {
+      animation-name: yk-tour-p2;
+    }
+    .yk-tour-slide-3 {
+      animation-name: yk-tour-p3;
+    }
+    .yk-tour-dot-1 {
+      animation-name: yk-tour-d1;
+    }
+    .yk-tour-dot-2 {
+      animation-name: yk-tour-d2;
+    }
+    .yk-tour-dot-3 {
+      animation-name: yk-tour-d3;
+    }
+  }
+}
+
+@keyframes yk-tour-play {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+@keyframes yk-tour-seg {
+  0%,
+  30% {
+    color: var(--mute);
+  }
+  40%,
+  60% {
+    color: var(--accent);
+  }
+  70%,
+  100% {
+    color: var(--mute);
+  }
+}
+@keyframes yk-tour-slide {
+  from {
+    transform: translateX(18%);
+  }
+  to {
+    transform: translateX(-18%);
+  }
+}
+@keyframes yk-tour-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(48px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes yk-tour-glow {
+  from {
+    color: var(--ink);
+    text-shadow: none;
+  }
+  to {
+    color: var(--accent);
+    text-shadow: var(--glow);
+  }
+}
+@keyframes yk-tour-p1 {
+  0%,
+  26% {
+    opacity: 1;
+    transform: none;
+  }
+  36%,
+  100% {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+}
+@keyframes yk-tour-p2 {
+  0%,
+  26% {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  36%,
+  62% {
+    opacity: 1;
+    transform: none;
+  }
+  72%,
+  100% {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+}
+@keyframes yk-tour-p3 {
+  0%,
+  62% {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  72%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes yk-tour-d1 {
+  0%,
+  30% {
+    color: var(--accent);
+  }
+  32%,
+  100% {
+    color: var(--mute);
+  }
+}
+@keyframes yk-tour-d2 {
+  0%,
+  30% {
+    color: var(--mute);
+  }
+  32%,
+  66% {
+    color: var(--accent);
+  }
+  68%,
+  100% {
+    color: var(--mute);
+  }
+}
+@keyframes yk-tour-d3 {
+  0%,
+  66% {
+    color: var(--mute);
+  }
+  68%,
+  100% {
+    color: var(--accent);
+  }
+}

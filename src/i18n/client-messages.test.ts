@@ -36,6 +36,6 @@ describe("textos de cliente", () => {
     expect(Object.keys(clientMessages(es, "chords")).sort()).toEqual(
       [...COMMON_NAMESPACES, ...SECTION_NAMESPACES.chords].sort(),
     );
-    expect(clientMessages(es)).not.toHaveProperty("landing");
+    expect(clientMessages(es)).not.toHaveProperty("tour");
   });
 });

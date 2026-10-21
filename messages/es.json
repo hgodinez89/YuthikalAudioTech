@@ -17,6 +17,85 @@
     },
     "themeNext": "Tema: {current} · cambiar a {next}"
   },
+  "tour": {
+    "skip": "Saltar recorrido",
+    "nowPlaying": "Ahora sonando · Tu recorrido",
+    "progress": "Secciones del recorrido",
+    "segments": {
+      "intro": "Intro",
+      "verse1": "Verso 1",
+      "verse2": "Verso 2",
+      "bridge": "Puente",
+      "chorus": "Coro",
+      "solo": "Solo",
+      "outro": "Final"
+    },
+    "giant": {
+      "intro": "INTRO",
+      "verse": "VERSO",
+      "bridge": "PUENTE",
+      "chorus": "CORO",
+      "solo": "SOLO",
+      "outro": "FINAL"
+    },
+    "intro": {
+      "title": "Tu música, tus acordes, <accent>tu escenario</accent>",
+      "subtitle": "Este sitio suena como una canción. Desliza para escucharla de principio a fin."
+    },
+    "basics": {
+      "kicker": "Básicos",
+      "title": "Conoce tu instrumento",
+      "desc": "Teclas, cuerdas, notas y un afinador que escucha por tu micrófono."
+    },
+    "chords": {
+      "kicker": "Acordes",
+      "title": "Encuentra cualquier acorde",
+      "desc": "Por voz o texto, con todas sus posiciones y tu propia biblioteca."
+    },
+    "scales": {
+      "kicker": "Escalas",
+      "title": "Recorre las escalas",
+      "desc": "De la mayor a los modos, en tu mástil o teclado."
+    },
+    "songs": {
+      "kicker": "Canciones",
+      "title": "Escribe tus canciones",
+      "desc": "Letra con cada acorde sobre su sílaba, en playlists y setlists."
+    },
+    "karaoke": {
+      "kicker": "Karaoke",
+      "title": "Tócalas con el audio real",
+      "desc": "Sincroniza con YouTube y sigue letra y acordes al ritmo."
+    },
+    "for": "Para",
+    "strings": "{n} cuerdas",
+    "keys": "Teclas",
+    "lyrics": {
+      "l1": "Hoy te quiero cantar",
+      "l2": "bajo la luz del mar",
+      "l3": "y en cada nota estás"
+    },
+    "final": {
+      "title": "¿Con cuál instrumento quieres empezar?",
+      "cta": "Iniciar con {instrument} en Básicos"
+    },
+    "footer": "© 2026 Yuthikal AudioTech"
+  },
+  "home": {
+    "metaTitle": "Elige el instrumento — Yuthikal AudioTech",
+    "title": "Elige el instrumento",
+    "subtitle": "Selecciona qué quieres practicar.",
+    "instrument": "Instrumento",
+    "resume": "Seguir donde quedaste:",
+    "replay": "Ver el recorrido de bienvenida otra vez",
+    "desc": {
+      "basicsFretted": "Cuerdas, notas y afinador.",
+      "basicsPiano": "Teclado, octavas, dedos y notas.",
+      "chords": "Busca por voz o texto y guarda los tuyos.",
+      "scales": "Mayores, pentatónicas y modos.",
+      "songs": "Tus letras, playlists y karaoke."
+    }
+  },
   "nav": {
     "chords": "Acordes",
     "scales": "Escalas",
@@ -116,21 +195,6 @@
     "title": "Página no encontrada",
     "description": "La página que buscas no existe o fue movida.",
     "back": "Volver al inicio"
-  },
-  "landing": {
-    "badge": "Tu atril digital",
-    "title": "Tu música, tus acordes, <accent>tu escenario</accent>",
-    "subtitle": "Aprende acordes, escribe tus canciones con letra y cifrado, y tócalas con audio real sincronizado.",
-    "features": {
-      "finderTitle": "Buscador de acordes",
-      "finderDesc": "Busca por voz o texto y consulta todas las posiciones de cada acorde en el mástil.",
-      "songsTitle": "Tus canciones",
-      "songsDesc": "Letra con acordes anclados a cada sílaba, en el clásico formato de cifrado.",
-      "karaokeTitle": "Modo karaoke",
-      "karaokeDesc": "Reproduce el audio real y sigue la letra y los acordes perfectamente sincronizados."
-    },
-    "footerCopy": "© 2026 Yuthikal AudioTech",
-    "chooseInstrument": "Elige tu instrumento para empezar"
   },
   "songs": {
     "newSong": "Nueva canción",
