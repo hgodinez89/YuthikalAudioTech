@@ -16,6 +16,9 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
       url: `/${locale}/offline`,
       revision,
     })),
+    // esbuild nativo (dependencia instalada). Por defecto Serwist usa el nativo
+    // solo en Windows y esbuild-wasm en el resto: en Vercel (Linux) fallaba.
+    useNativeEsbuild: true,
     // Script clásico (no módulo): lo admiten todos los navegadores con service worker.
     esbuildOptions: { format: "iife" },
   });
