@@ -3,7 +3,6 @@
 import { Check, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { Badge, Button } from "./button";
 import { Modal, ModalFooter, ModalHeader } from "./modal";
 import type { PlaylistWithCount } from "@/lib/playlists";
@@ -26,7 +25,6 @@ export function MoveSongModal({
   onCreateNew: () => void;
 }) {
   const t = useTranslations("songs");
-  const router = useRouter();
   const titleId = useId();
   const [target, setTarget] = useState<string>(song.playlist_id ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +39,8 @@ export function MoveSongModal({
         setError(t(`errors.${result?.error ?? "db"}`));
         return;
       }
+      // La acción revalidó la lista: la canción ya llega en su playlist nueva.
       onClose();
-      router.refresh();
       onMoved(target || null, options.find((o) => o.id === target)?.name ?? "");
     });
   };

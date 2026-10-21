@@ -15,17 +15,15 @@ import {
   Trash2,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { Button, buttonClass } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
-import { DuplicateSongModal } from "./duplicate-song-modal";
 import { SongInstruments } from "./song-instruments";
-import { MoveSongModal } from "./move-song-modal";
-import { NewSongModal } from "./new-song-modal";
 import { PlaylistFilter } from "./playlist-filter";
 import { FIELD_CLASS, PlaylistFormModal } from "./playlist-form-modal";
-import { SetlistOrder } from "./setlist-order";
 import { SongMenu } from "./song-menu";
 import { StarsRow } from "./stars";
 import { useToast } from "./toast";
@@ -49,6 +47,18 @@ import {
 } from "@/lib/songs";
 import { useDeleteSong } from "@/lib/use-delete-song";
 import { useStoredValue } from "@/lib/use-stored-flag";
+
+/* Se descargan al abrirlos, no al entrar a la lista. */
+const DuplicateSongModal = dynamic(() =>
+  import("./duplicate-song-modal").then((m) => m.DuplicateSongModal),
+);
+const MoveSongModal = dynamic(() =>
+  import("./move-song-modal").then((m) => m.MoveSongModal),
+);
+const NewSongModal = dynamic(() =>
+  import("./new-song-modal").then((m) => m.NewSongModal),
+);
+const SetlistOrder = dynamic(() => import("./setlist-order").then((m) => m.SetlistOrder));
 
 const EMPTY_PLAYLIST: PlaylistInput = {
   name: "",
@@ -124,23 +134,28 @@ function EmptyArt() {
 
 /**
  * Mis canciones: lista plana con las playlists como filtros opcionales
- * (?list=<id>). Las playlists conservan género y calificaciones.
+ * (?list=<id>). Llegan todas las canciones y el filtro se aplica aquí:
+ * cambiar de playlist solo cambia la URL, sin ir al servidor.
  */
 export function SongsView({
   instrument,
   songs,
   playlists,
-  activeListId,
 }: {
   instrument: Instrument;
   songs: SongListRow[];
   playlists: PlaylistWithCount[];
-  activeListId: string | null;
 }) {
   const t = useTranslations("songs");
   const tPlaylists = useTranslations("playlists");
-  const router = useRouter();
   const locale = useLocale();
+  // Una ?list= ajena, borrada o inválida no coincide: se muestran todas.
+  const listParam = useSearchParams().get("list");
+  const activeList = playlists.find((p) => p.id === listParam) ?? null;
+  const activeListId = activeList?.id ?? null;
+  /* pushState se integra con el router de Next (useSearchParams, atrás/adelante). */
+  const selectList = (id: string | null) =>
+    window.history.pushState(null, "", id ? `?list=${id}` : window.location.pathname);
   const [search, setSearch] = useState("");
   /* Antes de montar, el orden por defecto (el del servidor): sin desajuste de hidratación. */
   const [allSort, saveAllSort] = useStoredValue(
@@ -155,8 +170,9 @@ export function SongsView({
     parseListSort,
     JSON.stringify,
   );
-  /* Ordenar el setlist (con una playlist filtrada). */
-  const [ordering, setOrdering] = useState(false);
+  /* Ordenar el setlist de esta playlist; al cambiar de playlist se cancela solo. */
+  const [orderingId, setOrderingId] = useState<string | null>(null);
+  const ordering = activeListId !== null && orderingId === activeListId;
   const [savingOrder, startSaveOrder] = useTransition();
   const [orderError, setOrderError] = useState<string | null>(null);
   const toast = useToast();
@@ -168,8 +184,8 @@ export function SongsView({
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const onDuplicated = (newId: string, playlistId: string | null) => {
+    // La acción ya revalidó la lista: la copia llega con su respuesta.
     setSongToDuplicate(null);
-    router.refresh();
     setHighlightId(newId);
     setTimeout(() => setHighlightId((id) => (id === newId ? null : id)), 4000);
     const where =
@@ -194,7 +210,6 @@ export function SongsView({
             if (!result.ok) {
               toast.show({ message: t(`errors.${result.error}`), tone: "error" });
             }
-            router.refresh();
           })
           .catch(() => toast.show({ message: t("toast.error"), tone: "error" }));
       },
@@ -209,7 +224,6 @@ export function SongsView({
   const [deleting, startDelete] = useTransition();
 
   const base = `/${instrument}/songs`;
-  const activeList = playlists.find((p) => p.id === activeListId) ?? null;
   const playlistName = new Map(playlists.map((p) => [p.id, p.name]));
 
   const songUrl = (song: SongListRow) => (mode?: string) =>
@@ -227,8 +241,10 @@ export function SongsView({
   const sortBy = sort.by;
   const sortDir = sort.dir;
 
-  // Las que se están borrando (con «Deshacer» pendiente) ya no se muestran.
-  const listed = songs.filter((s) => !toast.hidden.has(s.id));
+  // Las de la playlist filtrada, sin las que se están borrando (con «Deshacer» pendiente).
+  const listed = songs.filter(
+    (s) => (!activeList || s.playlist_id === activeList.id) && !toast.hidden.has(s.id),
+  );
   const needle = search.trim().toLowerCase();
   const visible = sortSongs(
     needle ? listed.filter((s) => s.name.toLowerCase().includes(needle)) : listed,
@@ -252,10 +268,9 @@ export function SongsView({
         setOrderError(t(`errors.${result?.error ?? "db"}`));
         return;
       }
-      // La lista se cambia cuando llega el orden nuevo del servidor.
+      // El orden nuevo llegó con la respuesta (revalidatePath); se cierra a la vez.
       startSaveOrder(() => {
-        router.refresh();
-        setOrdering(false);
+        setOrderingId(null);
         if (sortBy !== "setlist") saveSort(DEFAULT_LIST_SORT);
       });
     });
@@ -264,16 +279,14 @@ export function SongsView({
   const createList = async (input: PlaylistInput) => {
     const result = await createPlaylist(input);
     if (!result.ok) return result.error;
-    router.push(`${base}?list=${result.id}`);
+    selectList(result.id ?? null);
     return null;
   };
 
   const editList = async (input: PlaylistInput) => {
     if (!activeList) return null;
     const result = await updatePlaylist(activeList.id, input);
-    if (!result.ok) return result.error;
-    router.refresh();
-    return null;
+    return result.ok ? null : result.error;
   };
 
   /* Nueva playlist desde "Mover a playlist": se crea y la canción se mueve a ella. */
@@ -284,7 +297,6 @@ export function SongsView({
     // El formulario muestra errores de "playlists.errors": un fallo al mover es de BD.
     const moved = await moveSongToPlaylist(createForSong.id, created.id);
     if (!moved.ok) return "db";
-    router.refresh();
     announceMove(createForSong, created.id, input.name.trim());
     return null;
   };
@@ -299,7 +311,7 @@ export function SongsView({
         return;
       }
       setDeleteListOpen(false);
-      router.push(base);
+      selectList(null);
     });
   };
 
@@ -330,6 +342,7 @@ export function SongsView({
         base={base}
         playlists={playlists}
         activeListId={activeListId}
+        onSelect={selectList}
         onNewList={() => setNewListOpen(true)}
       />
 
@@ -368,7 +381,7 @@ export function SongsView({
                 size="sm"
                 onClick={() => {
                   setOrderError(null);
-                  setOrdering(true);
+                  setOrderingId(activeList.id);
                 }}
               >
                 <ArrowUpDown size={15} strokeWidth={2} />
@@ -397,7 +410,7 @@ export function SongsView({
           songs={setlist}
           pending={savingOrder}
           error={orderError}
-          onCancel={() => setOrdering(false)}
+          onCancel={() => setOrderingId(null)}
           onSave={saveOrder}
         />
       )}
@@ -480,8 +493,15 @@ export function SongsView({
                     : "border-edge hover:border-edge-2"
                 }`}
               >
-                {/* Toda la fila abre la canción */}
-                <Link href={url()} className="absolute inset-0" aria-label={song.name} />
+                {/* Toda la fila abre la canción. Sin precarga: serían dos
+                    peticiones al servidor por fila al hacer scroll, y la
+                    pantalla de carga de la canción ya está en caché. */}
+                <Link
+                  href={url()}
+                  prefetch={false}
+                  className="absolute inset-0"
+                  aria-label={song.name}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2.5">
                     <span className="truncate text-[15.5px] font-bold">{song.name}</span>
@@ -532,6 +552,7 @@ export function SongsView({
                   />
                   <Link
                     href={url("karaoke")}
+                    prefetch={false}
                     aria-label={t("play")}
                     title={t("play")}
                     className="yk-gradient grid size-11 place-items-center rounded-xl shadow-fab"

@@ -91,7 +91,8 @@ Tests cubren: parser de búsqueda de acordes ES/EN, parser/render ChordPro, edic
 1. Push a `main` → despliegue automático (proyecto importado desde GitHub, framework autodetectado).
 2. Variables de entorno de la sección 2 configuradas en el proyecto.
 3. **Cron keepalive**: `vercel.json` registra `GET /api/keepalive` diario (`0 8 * * *`); verificar en Settings → Cron Jobs. Esto evita la pausa por inactividad del free tier de Supabase. Requiere `CRON_SECRET` configurado (si falta, el endpoint responde 503 y la BD podría pausarse).
-4. OAuth: la URL de producción debe estar en Google Cloud (JavaScript origins) y en Supabase (Site URL); `http://localhost:3000/**` como redirect adicional para desarrollo. Detalle en `SETUP.md` — Manual 3.
+4. **Región de las funciones**: `vercel.json` fija `"regions": ["pdx1"]` (Portland), junto al proyecto de Supabase en `us-west-2` (Oregon). Cada render encadena varias idas a la BD; desde la región por defecto (`iad1`, Virginia) cada una cruzaba el país (~70 ms). Si el proyecto de Supabase cambia de región, cambiar esta también. Verificar en Deployments → Functions.
+5. OAuth: la URL de producción debe estar en Google Cloud (JavaScript origins) y en Supabase (Site URL); `http://localhost:3000/**` como redirect adicional para desarrollo. Detalle en `SETUP.md` — Manual 3.
 
 ## 6. Estructura del proyecto
 

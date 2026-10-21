@@ -10,6 +10,7 @@ import {
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { SECTIONS, type Instrument, type Section } from "@/lib/instruments";
+import { useIntentPrefetch } from "@/lib/use-intent-prefetch";
 
 export const SECTION_ICONS: Record<Section, LucideIcon> = {
   chords: LayoutGrid,
@@ -22,6 +23,8 @@ export const SECTION_ICONS: Record<Section, LucideIcon> = {
 export function InstrumentNav({ instrument }: { instrument: Instrument }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
+  // Canciones se precarga al tocarla, salvo si ya se está dentro.
+  const songsPrefetch = useIntentPrefetch(!pathname.startsWith(`/${instrument}/songs`));
 
   // Dentro de una canción hay transporte/tabs propios abajo: se oculta.
   if (/^\/[^/]+\/songs\/[^/]+/.test(pathname)) return null;
@@ -36,6 +39,7 @@ export function InstrumentNav({ instrument }: { instrument: Instrument }) {
           <Link
             key={section}
             href={href}
+            {...(section === "songs" ? songsPrefetch : {})}
             aria-current={active ? "page" : undefined}
             className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11.5px] font-semibold ${
               active ? "text-accent" : "text-tert"

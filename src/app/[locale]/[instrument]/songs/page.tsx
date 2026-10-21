@@ -3,7 +3,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LoginCard } from "@/components/login-card";
 import { SongsView } from "@/components/songs-view";
 import { dbError } from "@/lib/db-error";
-import { isUuid } from "@/lib/ids";
 import type { Instrument } from "@/lib/instruments";
 import type { PlaylistRow } from "@/lib/playlists";
 import type { SongListRow } from "@/lib/songs";
@@ -33,13 +32,11 @@ type SongWithMeta = Omit<
 
 export default async function SongsPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ locale: string; instrument: string }>;
-  searchParams: Promise<{ list?: string }>;
 }) {
   // El layout del instrumento ya validó el segmento.
-  const [{ locale, instrument }, { list }] = await Promise.all([params, searchParams]);
+  const { locale, instrument } = await params;
   setRequestLocale(locale);
 
   const supabase = await supabaseWithSession();
@@ -57,15 +54,8 @@ export default async function SongsPage({
     );
   }
 
-  // Playlists y canciones a la vez. Una ?list= que no sea del usuario no
-  // devuelve canciones (RLS) y cae en "Todas" más abajo.
-  const listId = list && isUuid(list) ? list : null;
-  let songsQuery = supabase
-    .from("songs")
-    .select(SONG_COLUMNS)
-    .order("created_at", { ascending: false });
-  if (listId) songsQuery = songsQuery.eq("playlist_id", listId);
-
+  // Playlists y TODAS las canciones a la vez: el filtro ?list= se aplica en el
+  // cliente, así cambiar de playlist no vuelve al servidor.
   // song_audio y song_sync son relaciones uno-a-uno (song_id es su PK),
   // así que PostgREST las devuelve como objeto o null, no como array.
   const [playlistsRes, songsRes] = await Promise.all([
@@ -74,24 +64,17 @@ export default async function SongsPage({
       .select("id,name,description,genre,genre_other,rating_like,created_at,songs(count)")
       .order("created_at", { ascending: false })
       .returns<(PlaylistRow & { songs: { count: number }[] })[]>(),
-    songsQuery.returns<SongWithMeta[]>(),
+    supabase
+      .from("songs")
+      .select(SONG_COLUMNS)
+      .order("created_at", { ascending: false })
+      .returns<SongWithMeta[]>(),
   ]);
   if (playlistsRes.error) throw dbError(playlistsRes.error, playlistsRes.status);
   if (songsRes.error) throw dbError(songsRes.error, songsRes.status);
 
   const playlists = playlistsRes.data ?? [];
-  const activeList = playlists.find((p) => p.id === listId) ?? null;
-  // Una ?list= ajena o borrada: se muestran todas, sin filtro.
-  const songs =
-    listId && !activeList
-      ? ((
-          await supabase
-            .from("songs")
-            .select(SONG_COLUMNS)
-            .order("created_at", { ascending: false })
-            .returns<SongWithMeta[]>()
-        ).data ?? [])
-      : (songsRes.data ?? []);
+  const songs = songsRes.data ?? [];
 
   const rows: SongListRow[] = songs.map(({ audio, sync, ...song }) => ({
     ...song,
@@ -110,7 +93,6 @@ export default async function SongsPage({
         ...p,
         songs_count: count[0]?.count ?? 0,
       }))}
-      activeListId={activeList?.id ?? null}
     />
   );
 }

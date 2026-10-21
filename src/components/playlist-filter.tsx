@@ -2,7 +2,13 @@
 
 import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useId, useState, type CSSProperties, type KeyboardEvent } from "react";
+import {
+  useId,
+  useState,
+  type ComponentProps,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
 import { Link } from "@/i18n/navigation";
 import type { PlaylistWithCount } from "@/lib/playlists";
 import { buttonClass, chipClass, labelClass } from "./button";
@@ -17,6 +23,35 @@ const SEARCH_FROM = 8;
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /**
+ * Enlace a un filtro (null: «Todas»). Un clic normal cambia la playlist sin
+ * ir al servidor; Ctrl/⌘/clic medio siguen abriendo otra pestaña. Sin
+ * precarga: todas las canciones ya están en la página.
+ */
+function FilterLink({
+  base,
+  listId,
+  onPick,
+  ...props
+}: Omit<ComponentProps<typeof Link>, "href" | "prefetch" | "onClick"> & {
+  base: string;
+  listId: string | null;
+  onPick: (id: string | null) => void;
+}) {
+  return (
+    <Link
+      {...props}
+      href={listId ? `${base}?list=${listId}` : base}
+      prefetch={false}
+      onClick={(e) => {
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        onPick(listId);
+      }}
+    />
+  );
+}
+
+/**
  * Playlists como filtros: «Todas» + las de más canciones (y la activa, si no
  * está entre ellas). Las demás, y «Nuevo playlist», en el panel «+N».
  */
@@ -24,11 +59,13 @@ export function PlaylistFilter({
   base,
   playlists,
   activeListId,
+  onSelect,
   onNewList,
 }: {
   base: string;
   playlists: PlaylistWithCount[];
   activeListId: string | null;
+  onSelect: (id: string | null) => void;
   onNewList: () => void;
 }) {
   const t = useTranslations("songs");
@@ -55,24 +92,28 @@ export function PlaylistFilter({
         <span aria-hidden className={`${labelClass} mr-1`}>
           {tPlaylists("filterLabel")}
         </span>
-        <Link
-          href={base}
+        <FilterLink
+          base={base}
+          listId={null}
+          onPick={onSelect}
           aria-current={!active ? "page" : undefined}
           className={chipClass({ active: !active })}
         >
           {t("all")}
-        </Link>
+        </FilterLink>
         {featured.map((p) => (
-          <Link
+          <FilterLink
             key={p.id}
-            href={`${base}?list=${p.id}`}
+            base={base}
+            listId={p.id}
+            onPick={onSelect}
             title={p.name}
             aria-current={p === active ? "page" : undefined}
             className={chipClass({ active: p === active })}
           >
             <span className="max-w-[160px] truncate">{p.name}</span>
             <span className="text-[11.5px] opacity-70">{p.songs_count}</span>
-          </Link>
+          </FilterLink>
         ))}
         {hidden > 0 ? (
           <button
@@ -105,6 +146,7 @@ export function PlaylistFilter({
           playlists={playlists}
           activeId={active?.id ?? null}
           onClose={() => setAnchor(null)}
+          onSelect={onSelect}
           onNewList={onNewList}
         />
       )}
@@ -122,6 +164,7 @@ function PlaylistPanel({
   playlists,
   activeId,
   onClose,
+  onSelect,
   onNewList,
 }: {
   anchor: DOMRect;
@@ -129,6 +172,7 @@ function PlaylistPanel({
   playlists: PlaylistWithCount[];
   activeId: string | null;
   onClose: () => void;
+  onSelect: (id: string | null) => void;
   onNewList: () => void;
 }) {
   const t = useTranslations("songs");
@@ -162,12 +206,16 @@ function PlaylistPanel({
     items[next].focus();
   };
 
-  const row = (href: string, name: string, current: boolean, count?: number) => (
-    <Link
-      key={href}
+  const row = (listId: string | null, name: string, current: boolean, count?: number) => (
+    <FilterLink
+      key={listId ?? "all"}
       data-row
-      href={href}
-      onClick={onClose}
+      base={base}
+      listId={listId}
+      onPick={(id) => {
+        onClose();
+        onSelect(id);
+      }}
       aria-current={current ? "page" : undefined}
       className="flex items-center gap-3 rounded-[10px] px-3 py-3 text-[14px] hover:bg-edge sm:py-2"
     >
@@ -180,7 +228,7 @@ function PlaylistPanel({
       {count !== undefined && (
         <span className="text-[12px] tabular-nums text-tert">{count}</span>
       )}
-    </Link>
+    </FilterLink>
   );
 
   return (
@@ -226,10 +274,8 @@ function PlaylistPanel({
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5">
-          {!needle && row(base, t("all"), activeId === null)}
-          {rows.map((p) =>
-            row(`${base}?list=${p.id}`, p.name, p.id === activeId, p.songs_count),
-          )}
+          {!needle && row(null, t("all"), activeId === null)}
+          {rows.map((p) => row(p.id, p.name, p.id === activeId, p.songs_count))}
           {rows.length === 0 && (
             <p className="px-3 py-6 text-center text-[13px] text-tert">
               {tPlaylists("noResults")}

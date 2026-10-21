@@ -16,6 +16,7 @@ import {
   switchInstrumentPath,
   type Instrument,
 } from "@/lib/instruments";
+import { useIntentPrefetch } from "@/lib/use-intent-prefetch";
 
 /** Pastilla para cambiar de instrumento conservando la sección actual. */
 function InstrumentSwitcher({ instrument }: { instrument: Instrument }) {
@@ -87,6 +88,10 @@ export function SiteHeader() {
   const pathname = usePathname();
   const segment = pathname.split("/")[1];
   const instrument = isInstrument(segment) ? segment : null;
+  // Canciones se precarga al pasar el cursor, salvo si ya se está dentro.
+  const songsPrefetch = useIntentPrefetch(
+    instrument !== null && !pathname.startsWith(`/${instrument}/songs`),
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-edge bg-page/85 backdrop-blur-[14px]">
@@ -113,6 +118,7 @@ export function SiteHeader() {
                 <Link
                   key={section}
                   href={href}
+                  {...(section === "songs" ? songsPrefetch : {})}
                   aria-current={active ? "page" : undefined}
                   className={`flex items-center gap-2 rounded-[10px] px-3 py-2 ${
                     active ? "bg-edge text-ink" : "hover:text-ink"
