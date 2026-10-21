@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ConcertView, type ConcertSong } from "@/components/concert-view";
 import { redirect } from "@/i18n/navigation";
-import { loadChordData } from "@/lib/chord-data";
+import { loadChordData, loadCustomChords } from "@/lib/chord-data";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
 import { dbError } from "@/lib/db-error";
 import { isUuid } from "@/lib/ids";
@@ -49,7 +49,7 @@ export default async function ConcertPage({
   }
 
   // RLS: solo la playlist y las canciones del usuario.
-  const [playlistRes, songsRes] = await Promise.all([
+  const [playlistRes, songsRes, customChords] = await Promise.all([
     supabase.from("playlists").select("id,name").eq("id", list).maybeSingle<{
       id: string;
       name: string;
@@ -61,6 +61,7 @@ export default async function ConcertPage({
       .order("playlist_position", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true })
       .returns<{ id: string; name: string; key_note: string; content: string }[]>(),
+    loadCustomChords(supabase, instrument),
   ]);
   if (playlistRes.error) throw dbError(playlistRes.error, playlistRes.status);
   if (songsRes.error) throw dbError(songsRes.error, songsRes.status);
@@ -77,7 +78,7 @@ export default async function ConcertPage({
   }));
   // Diagramas de todo el setlist en una consulta (acordes sin repetir).
   const names = [...new Set(parsed.flatMap(collectChords))];
-  const chords = await loadChordData(instrument, names);
+  const chords = await loadChordData(instrument, names, customChords);
 
   return (
     <ConcertView

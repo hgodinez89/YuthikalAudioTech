@@ -235,7 +235,8 @@
       "undo": "Undo",
       "dismiss": "Dismiss",
       "error": "Couldn't complete that. Check your connection and try again."
-    }
+    },
+    "myChords": "My chords"
   },
   "editor": {
     "textMode": "Text editor",
@@ -282,7 +283,15 @@
     "saveErrorMissing": "Couldn't save: the song no longer exists",
     "retry": "Retry",
     "charCount": "{count, number} / {max, number} characters",
-    "strumBackspace": "Delete the last stroke"
+    "strumBackspace": "Delete the last stroke",
+    "pickerMine": "My chords",
+    "chords": {
+      "title": "Chords",
+      "mine": "Mine",
+      "missing": "No diagram",
+      "create": "Create",
+      "createHint": "Create your own diagram for {name}"
+    }
   },
   "player": {
     "toStart": "Go to start",
@@ -407,6 +416,8 @@
     "connecting": "Connecting…"
   },
   "songView": {
+    "mine": "Mine",
+    "bass": "{note} bass",
     "keyPrefix": "Key:",
     "strum": "Strumming",
     "verse": "Verse",
@@ -497,7 +508,8 @@
     "strings": "Strings",
     "notes": "Notes",
     "keyboard": "Keyboard",
-    "fingers": "Fingers"
+    "fingers": "Fingers",
+    "tuner": "Tuner"
   },
   "notes": {
     "title": "The musical notes",
@@ -740,5 +752,113 @@
     "positionFrets": "Frets {from}–{to}",
     "chordsTitle": "Chords in the scale",
     "chordsIntro": "The chords built from its notes (stacked thirds). Tap one to see all its shapes."
+  },
+  "chordBuilder": {
+    "newTitle": "New chord",
+    "editTitle": "Edit chord",
+    "hint": {
+      "fretted": "Tap the frets you press; above the nut, switch between open (○) and muted (×).",
+      "piano": "Tap 3 to 6 keys of the chord."
+    },
+    "close": "Close",
+    "name": "Name (as written in the chart)",
+    "namePlaceholder": "e.g. Cadd9, C/E, Am7b5",
+    "grid": "Strings and frets",
+    "nut": "{string} string: {state} (tap to change)",
+    "open": "open",
+    "muted": "muted",
+    "cell": "{string} string, fret {fret}",
+    "baseFret": "Starting fret",
+    "baseFretDown": "Lower the starting fret",
+    "baseFretUp": "Raise the starting fret",
+    "barre": "Barre",
+    "barreFret": "Fret",
+    "barreFrom": "From",
+    "barreTo": "To",
+    "barreAdd": "Add barre",
+    "barreClear": "Remove",
+    "listen": "Listen",
+    "keysCount": "{count} of {max} keys",
+    "cancel": "Cancel",
+    "save": "Save chord",
+    "saving": "Saving…",
+    "errors": {
+      "instrument": "Invalid instrument.",
+      "name": "The name can't contain spaces (24 characters max).",
+      "baseFret": "The starting fret goes from 1 to 20.",
+      "frets": "Mark at least one string that sounds.",
+      "barres": "A barre must press at least two strings on its fret.",
+      "keys": "Pick 3 to 6 different keys.",
+      "duplicate": "You already have a chord with that name on this instrument.",
+      "auth": "Your session expired. Please sign in again.",
+      "db": "Couldn't save. Please try again.",
+      "id": "Invalid identifier.",
+      "missing": "That chord no longer exists."
+    }
+  },
+  "myChords": {
+    "title": "My chords",
+    "back": "My songs",
+    "count": "{count, plural, =0 {No custom chords} one {1 custom chord} other {# custom chords}} · {instrument}",
+    "new": "New chord",
+    "search": "Search my chords…",
+    "actions": "Actions for {name}",
+    "edit": "Edit",
+    "editNamed": "Edit {name}",
+    "delete": "Delete",
+    "deleted": "“{name}” deleted",
+    "saved": "“{name}” saved",
+    "noResults": "No results for “{query}”",
+    "emptyTitle": "You don't have custom chords yet",
+    "emptyDesc": "Create the chords that aren't in the catalog, or your own fingering. Your songs use them before the catalog ones.",
+    "errors": {
+      "db": "Couldn't delete. Please try again.",
+      "id": "Invalid identifier.",
+      "missing": "That chord no longer exists."
+    }
+  },
+  "tuner": {
+    "title": "Tuner",
+    "intro": "Turn on the microphone and play an open string. Pick the string, or leave AUTO on to detect it.",
+    "view": "Tuner view",
+    "views": {
+      "headstock": "Headstock",
+      "needle": "Needle"
+    },
+    "auto": "Auto",
+    "autoHint": "Detect which string you're playing",
+    "chromatic": "Chromatic",
+    "tuning": "Tuning",
+    "tunings": {
+      "standard": "Standard",
+      "dropD": "Drop D",
+      "halfDown": "Half step down",
+      "openG": "Open G",
+      "dadgad": "DADGAD",
+      "lowG": "Low G",
+      "d": "D (ADF#B)"
+    },
+    "shiftDown": "Lower the whole tuning a semitone",
+    "shiftUp": "Raise the whole tuning a semitone",
+    "micIntro": "The tuner listens through your device's microphone. Nothing is recorded or leaves your browser.",
+    "enableMic": "Turn on microphone",
+    "starting": "Turning on…",
+    "denied": "Microphone permission is blocked. Allow it for this site in your browser settings and try again.",
+    "unavailable": "No microphone was found on this device.",
+    "error": "Couldn't open the microphone. Please try again.",
+    "stopMic": "Turn off microphone",
+    "listening": "Listening…",
+    "silence": "Play a string",
+    "playString": "Play a string",
+    "listen": "Listen",
+    "reference": "Play {note} (reference tone)",
+    "inTune": "In tune!",
+    "loosen": "Loosen",
+    "tighten": "Tighten",
+    "semitones": "{count, plural, one {1 semitone} other {# semitones}} {dir, select, up {high} other {low}}",
+    "chooseString": "Tune {note} {state}",
+    "tunedState": "(in tune)",
+    "matchesString": "String {n}",
+    "announce": "{note}, {cents} cents {dir, select, sharp {sharp} other {flat}}, {advice}"
   }
 }

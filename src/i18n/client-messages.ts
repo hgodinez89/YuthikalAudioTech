@@ -22,7 +22,7 @@ export const COMMON_NAMESPACES = [
 export const SECTION_NAMESPACES = {
   chords: ["finder", "piano"],
   scales: ["scales"],
-  basics: ["pianoBasics"],
+  basics: ["pianoBasics", "tuner"],
   songs: [
     "songs",
     "playlists",
@@ -33,6 +33,8 @@ export const SECTION_NAMESPACES = {
     "karaoke",
     "book",
     "concert",
+    "chordBuilder",
+    "myChords",
   ],
 } as const;
 

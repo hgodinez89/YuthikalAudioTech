@@ -6,6 +6,7 @@ import { useEffect, useId, useState } from "react";
 import { ChordVisual } from "./chord-visual";
 import { Modal } from "./modal";
 import { escapeLike, parseChordQuery } from "@/lib/chord-search";
+import type { CustomChordRow } from "@/lib/custom-chords";
 import { catalogInstrument, isFretted, type Instrument } from "@/lib/instruments";
 import { PIANO_SUFFIXES, pianoRootKeys } from "@/lib/piano";
 
@@ -66,6 +67,7 @@ export function ChordPicker({
   x,
   y,
   currentChord,
+  customChords = [],
   onPick,
   onRemove,
   onClose,
@@ -74,6 +76,8 @@ export function ChordPicker({
   x: number;
   y: number;
   currentChord: string | null;
+  /** Biblioteca del usuario: grupo "Mis acordes" arriba del catálogo. */
+  customChords?: CustomChordRow[];
   onPick: (name: string) => void;
   onRemove: () => void;
   onClose: () => void;
@@ -106,6 +110,11 @@ export function ChordPicker({
       clearTimeout(timer);
     };
   }, [instrument, query, attempt]);
+
+  const needle = query.trim().toLowerCase();
+  const mine = customChords
+    .filter((c) => c.name.toLowerCase().includes(needle))
+    .slice(0, 8);
 
   // Mantener el popover dentro del viewport (ancho fijo de 300px).
   const left = Math.min(Math.max(x - 150, 12), window.innerWidth - 312);
@@ -170,6 +179,35 @@ export function ChordPicker({
               </span>
             </button>
           ))}
+          {mine.length > 0 && (
+            <div role="group" aria-label={t("pickerMine")} className="mb-1">
+              <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-accent">
+                {t("pickerMine")}
+              </div>
+              {mine.map((chord) => (
+                <button
+                  key={chord.id}
+                  type="button"
+                  onClick={() => onPick(chord.name)}
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-[10px] px-2.5 py-2 text-left hover:bg-edge"
+                >
+                  <span className="shrink-0">
+                    <ChordVisual
+                      chord={{
+                        frets: chord.frets,
+                        barres: chord.barres,
+                        baseFret: chord.base_fret,
+                        keys: chord.keys.length ? chord.keys : undefined,
+                      }}
+                      scale={chord.keys.length ? 0.8 : 0.62}
+                    />
+                  </span>
+                  <span className="text-sm font-bold">{chord.name}</span>
+                </button>
+              ))}
+              <div className="mx-1.5 my-1 h-px bg-edge" />
+            </div>
+          )}
           {status === "error" ? (
             <div role="alert" className="px-2.5 py-4 text-center text-[12.5px]">
               <p className="mb-2.5 font-semibold text-warn">{t("pickerError")}</p>
@@ -187,7 +225,8 @@ export function ChordPicker({
               {t("pickerLoading")}
             </p>
           ) : (
-            chords.length === 0 && (
+            chords.length === 0 &&
+            mine.length === 0 && (
               <p className="px-2.5 py-4 text-center text-[12.5px] text-tert">
                 {t("pickerEmpty")}
               </p>

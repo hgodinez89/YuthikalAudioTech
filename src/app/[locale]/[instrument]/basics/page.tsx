@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { BasicsTabs } from "@/components/basics-tabs";
 import { InstrumentStrings } from "@/components/instrument-strings";
 import { MusicalNotes } from "@/components/musical-notes";
 import { PianoBasics } from "@/components/piano-basics";
@@ -39,37 +40,7 @@ export default async function BasicsPage({
           {t("eyebrow", { instrument: tInstruments(`${instrument}.name`) })}
         </div>
         <h1 className="mb-5 text-4xl font-extrabold tracking-[-0.025em]">{t("title")}</h1>
-        <div className="flex w-fit rounded-xl border border-edge bg-surface-2 p-1 text-[13px] font-semibold">
-          {isFretted(instrument) ? (
-            <a
-              href="#strings"
-              className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
-            >
-              {t("strings")}
-            </a>
-          ) : (
-            <>
-              <a
-                href="#keyboard"
-                className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
-              >
-                {t("keyboard")}
-              </a>
-              <a
-                href="#fingers"
-                className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
-              >
-                {t("fingers")}
-              </a>
-            </>
-          )}
-          <a
-            href="#notes"
-            className="rounded-[9px] px-[15px] py-[7px] text-sub hover:text-ink"
-          >
-            {t("notes")}
-          </a>
-        </div>
+        <BasicsTabs instrument={instrument} current="page" />
       </div>
 
       <div className="flex flex-col gap-16">

@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   ArrowUpNarrowWide,
   FileMusic,
+  LayoutGrid,
   MonitorPlay,
   Music,
   Pencil,
@@ -312,10 +313,16 @@ export function SongsView({
           </h1>
           <p className="text-[14px] text-tert">{t("count", { count: listed.length })}</p>
         </div>
-        <Button variant="primary" onClick={() => setNewSongOpen(true)}>
-          <Plus size={16} strokeWidth={2.4} />
-          {t("newSong")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`${base}/chords`} className={buttonClass("secondary")}>
+            <LayoutGrid size={16} strokeWidth={2} />
+            {t("myChords")}
+          </Link>
+          <Button variant="primary" onClick={() => setNewSongOpen(true)}>
+            <Plus size={16} strokeWidth={2.4} />
+            {t("newSong")}
+          </Button>
+        </div>
       </div>
 
       {/* PLAYLISTS COMO FILTROS */}

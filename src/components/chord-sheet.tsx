@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   useEffect,
   useId,
@@ -18,12 +18,17 @@ import {
   type SheetSection,
   wordGroups,
 } from "@/lib/chordpro";
+import { ROOT_SHORT_ES } from "@/lib/chords";
 import { smoothBehavior } from "@/lib/motion";
 import { useAtBottom } from "@/lib/use-at-bottom";
 
 export type SheetChordData = {
   name: string;
   nameEs: string;
+  /** De la biblioteca del usuario ("Mío"), no del catálogo. */
+  custom?: boolean;
+  /** Acorde con bajo no definido ("C/E"): diagrama del base + su bajo (nota). */
+  bass?: string;
   /** Piano: teclas del acorde (los trastes quedan vacíos). */
   keys?: number[];
   frets: number[];
@@ -45,6 +50,33 @@ type ChordPopover = {
 
 /* Tamaño base de la letra (text-lg); el resto de medidas son relativas (em). */
 const BASE_FONT_PX = 18;
+
+/** Debajo del nombre: "Mío" (biblioteca propia), el nombre en español y el bajo. */
+function ChordCaption({
+  chord,
+  className,
+}: {
+  chord: SheetChordData;
+  className: string;
+}) {
+  const t = useTranslations("songView");
+  const locale = useLocale();
+  const bass =
+    chord.bass &&
+    (locale === "es" ? (ROOT_SHORT_ES[chord.bass] ?? chord.bass) : chord.bass);
+  return (
+    <span className={`flex flex-col items-center ${className}`}>
+      {chord.custom ? (
+        <span className="font-bold uppercase tracking-[0.06em] text-accent">
+          {t("mine")}
+        </span>
+      ) : (
+        <span>{chord.nameEs}</span>
+      )}
+      {bass && <span className="text-tert">{t("bass", { note: bass })}</span>}
+    </span>
+  );
+}
 
 /** Nota para el músico ({c: …}): indicación aparte, no letra. */
 export function SheetNote({ text }: { text: string }) {
@@ -283,7 +315,7 @@ export function ChordSheet({
                   <ChordVisual chord={chord} scale={zoom} />
                 </div>
                 <span className="font-extrabold">{chord.name}</span>
-                <span className="text-xs text-sub">{chord.nameEs}</span>
+                <ChordCaption chord={chord} className="text-xs text-sub" />
               </article>
             ))}
           </div>
@@ -304,7 +336,7 @@ export function ChordSheet({
             <ChordVisual chord={popoverChord} />
           </div>
           <span className="text-[15px] font-extrabold">{popoverChord.name}</span>
-          <span className="text-[11.5px] text-sub">{popoverChord.nameEs}</span>
+          <ChordCaption chord={popoverChord} className="text-[11.5px] text-sub" />
         </div>
       )}
 

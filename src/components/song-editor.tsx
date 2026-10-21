@@ -17,20 +17,24 @@ import { useTranslations } from "next-intl";
 import { useDeferredValue, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./button";
+import { ChordBuilder } from "./chord-builder";
 import { ChordPicker } from "./chord-picker";
-import { ChordSheet } from "./chord-sheet";
+import { ChordSheet, type ChordDataMap } from "./chord-sheet";
 import { highlightLine } from "./chordpro-highlight";
 import { PasteChordsModal } from "./paste-chords-modal";
+import { SongChordsStrip } from "./song-chords-strip";
 import { SongMetaDrawer, type PlaylistOption } from "./song-meta-drawer";
 import { StrumBuilder } from "./strum-builder";
 import { VisualEditor, type PickerTarget } from "./visual-editor";
 import {
   buildVisualModel,
+  collectChords,
   parseChordPro,
   replaceInstrumentalToken,
   setChordAtUnit,
   setSectionStrum,
 } from "@/lib/chordpro";
+import { customChordData, type CustomChordRow } from "@/lib/custom-chords";
 import type { Instrument } from "@/lib/instruments";
 import { updateSongContent } from "@/lib/song-actions";
 import { MAX_CONTENT_LENGTH, type SongRow } from "@/lib/songs";
@@ -47,10 +51,16 @@ export function SongEditor({
   song,
   instrument,
   playlists,
+  chords,
+  customChords,
 }: {
   song: SongRow;
   instrument: Instrument;
   playlists: PlaylistOption[];
+  /** Diagramas de los acordes de la letra al abrir (catálogo y propios). */
+  chords: ChordDataMap;
+  /** Biblioteca del usuario para este instrumento (selector y constructor). */
+  customChords: CustomChordRow[];
 }) {
   const t = useTranslations("editor");
   const sectionTitle = useSectionTitle();
@@ -62,6 +72,11 @@ export function SongEditor({
   const deleteLater = useDeleteSong();
   const [pasteOpen, setPasteOpen] = useState(false);
   const [picker, setPicker] = useState<PickerTarget | null>(null);
+  /* Diagramas conocidos: al crear un acorde propio se suma sin recargar. */
+  const [known, setKnown] = useState(chords);
+  const [myChords, setMyChords] = useState(customChords);
+  const [builderFor, setBuilderFor] = useState<string | null>(null);
+  const [checked] = useState(() => new Set(collectChords(parseChordPro(song.content))));
   const [strumTarget, setStrumTarget] = useState<{
     headerLineIndex: number;
     strum: string | null;
@@ -88,6 +103,7 @@ export function SongEditor({
      espera a que se vuelva a parsear y pintar todo el cifrado. */
   const previewContent = useDeferredValue(content);
   const parsed = useMemo(() => parseChordPro(previewContent), [previewContent]);
+  const chordNames = useMemo(() => collectChords(parsed), [parsed]);
   const visualModel = useMemo(
     () => (subMode === "visual" ? buildVisualModel(content) : []),
     [subMode, content],
@@ -211,6 +227,14 @@ export function SongEditor({
         </div>
       </div>
 
+      {/* ACORDES DE LA CANCIÓN: los que no tienen diagrama se crean aquí */}
+      <SongChordsStrip
+        names={chordNames}
+        chords={known}
+        checked={checked}
+        onCreate={setBuilderFor}
+      />
+
       {/* MODO TEXTO: editor + preview, cada panel con su propio scroll y cabecera fija;
           lado a lado, el botón del centro vincula ambos scrolls */}
       {subMode === "text" && (
@@ -284,7 +308,7 @@ export function SongEditor({
               {parsed.sections.length ? (
                 <ChordSheet
                   sections={parsed.sections}
-                  chords={{}}
+                  chords={known}
                   showLegend={false}
                   showFab={false}
                 />
@@ -345,9 +369,24 @@ export function SongEditor({
           x={picker.x}
           y={picker.y}
           currentChord={picker.token ? picker.token.chord : picker.unit.chord}
+          customChords={myChords}
           onPick={applyChord}
           onRemove={() => applyChord(null)}
           onClose={() => setPicker(null)}
+        />
+      )}
+
+      {/* CONSTRUCTOR DE UN ACORDE PROPIO ("Sin diagrama · Crear") */}
+      {builderFor !== null && (
+        <ChordBuilder
+          instrument={instrument}
+          initial={myChords.find((c) => c.name === builderFor) ?? { name: builderFor }}
+          onClose={() => setBuilderFor(null)}
+          onSaved={(chord) => {
+            setMyChords((prev) => [...prev.filter((c) => c.id !== chord.id), chord]);
+            setKnown((prev) => ({ ...prev, [chord.name]: customChordData(chord) }));
+            setBuilderFor(null);
+          }}
         />
       )}
 

@@ -14,7 +14,7 @@ import {
 } from "@/components/song-modes";
 import { reconcileSync, type SongAudioRow, type SongSyncRow } from "@/lib/audio";
 import { collectChords, parseChordPro } from "@/lib/chordpro";
-import { loadChordData } from "@/lib/chord-data";
+import { loadChordData, loadCustomChords } from "@/lib/chord-data";
 import { dbError } from "@/lib/db-error";
 import { isUuid } from "@/lib/ids";
 import type { Instrument } from "@/lib/instruments";
@@ -86,7 +86,9 @@ export default async function SongPage({
   /* Todo lo que solo depende de la canción, a la vez; los diagramas de
      acordes, después (dependen de la letra). */
   const needsAudio = step === "audio" || mode === "karaoke";
-  const [song, audioRes, syncRes, playlistsRes] = await Promise.all([
+  // Diagramas: al ver, en karaoke y en el editor de letra (sus acordes sin diagrama).
+  const needsChords = !(mode === "edit" && step === "audio");
+  const [song, audioRes, syncRes, playlistsRes, customChords] = await Promise.all([
     getSong(songId),
     needsAudio
       ? supabase
@@ -108,6 +110,7 @@ export default async function SongPage({
           .select("id,name")
           .order("created_at", { ascending: false })
       : null,
+    needsChords ? loadCustomChords(supabase, instrument) : [],
   ]);
   if (!song) notFound();
   for (const res of [audioRes, syncRes, playlistsRes]) {
@@ -117,10 +120,9 @@ export default async function SongPage({
   const t = await getTranslations({ locale, namespace: "songView" });
 
   const parsed = parseChordPro(song.content);
-  const chordData =
-    mode === "view" || mode === "karaoke"
-      ? await loadChordData(instrument, collectChords(parsed))
-      : {};
+  const chordData = needsChords
+    ? await loadChordData(instrument, collectChords(parsed), customChords)
+    : {};
 
   const audio: SongAudioRow | null = audioRes?.data ?? null;
   let sync: SongSyncRow | null = null;
@@ -273,7 +275,13 @@ export default async function SongPage({
         ))}
 
       {mode === "edit" && step === "lyrics" && (
-        <SongEditor song={song} instrument={instrument} playlists={playlists} />
+        <SongEditor
+          song={song}
+          instrument={instrument}
+          playlists={playlists}
+          chords={chordData}
+          customChords={customChords}
+        />
       )}
 
       {mode === "edit" && step === "audio" && (

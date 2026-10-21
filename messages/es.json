@@ -235,7 +235,8 @@
       "undo": "Deshacer",
       "dismiss": "Cerrar aviso",
       "error": "No se pudo completar. Revisa tu conexión e intenta de nuevo."
-    }
+    },
+    "myChords": "Mis acordes"
   },
   "editor": {
     "textMode": "Editor de texto",
@@ -282,7 +283,15 @@
     "saveErrorMissing": "No se pudo guardar: la canción ya no existe",
     "retry": "Reintentar",
     "charCount": "{count, number} / {max, number} caracteres",
-    "strumBackspace": "Borrar el último golpe"
+    "strumBackspace": "Borrar el último golpe",
+    "pickerMine": "Mis acordes",
+    "chords": {
+      "title": "Acordes",
+      "mine": "Mío",
+      "missing": "Sin diagrama",
+      "create": "Crear",
+      "createHint": "Crear un diagrama propio para {name}"
+    }
   },
   "player": {
     "toStart": "Ir al inicio",
@@ -425,7 +434,9 @@
     "stepLyrics": "Letra",
     "stepAudio": "Audio",
     "breadcrumb": "Ruta de navegación",
-    "backToLyrics": "Volver a la letra"
+    "backToLyrics": "Volver a la letra",
+    "mine": "Mío",
+    "bass": "bajo {note}"
   },
   "concert": {
     "title": "Modo concierto",
@@ -497,7 +508,8 @@
     "strings": "Cuerdas",
     "notes": "Notas",
     "keyboard": "Teclado",
-    "fingers": "Dedos"
+    "fingers": "Dedos",
+    "tuner": "Afinador"
   },
   "notes": {
     "title": "Las notas musicales",
@@ -740,5 +752,113 @@
     "positionFrets": "Trastes {from}–{to}",
     "chordsTitle": "Acordes de la escala",
     "chordsIntro": "Los acordes que se forman con sus notas (terceras apiladas). Toca uno para ver todas sus formas."
+  },
+  "chordBuilder": {
+    "newTitle": "Nuevo acorde",
+    "editTitle": "Editar acorde",
+    "hint": {
+      "fretted": "Toca los trastes que pisas; sobre la cejuela, alterna al aire (○) y muteada (×).",
+      "piano": "Toca de 3 a 6 teclas del acorde."
+    },
+    "close": "Cerrar",
+    "name": "Nombre (como en el cifrado)",
+    "namePlaceholder": "Ej. Cadd9, C/E, Am7b5",
+    "grid": "Cuerdas y trastes",
+    "nut": "Cuerda {string}: {state} (tocar para cambiar)",
+    "open": "al aire",
+    "muted": "muteada",
+    "cell": "Cuerda {string}, traste {fret}",
+    "baseFret": "Traste inicial",
+    "baseFretDown": "Bajar el traste inicial",
+    "baseFretUp": "Subir el traste inicial",
+    "barre": "Cejilla",
+    "barreFret": "Traste",
+    "barreFrom": "Desde",
+    "barreTo": "Hasta",
+    "barreAdd": "Poner cejilla",
+    "barreClear": "Quitar",
+    "listen": "Escuchar",
+    "keysCount": "{count} de {max} teclas",
+    "cancel": "Cancelar",
+    "save": "Guardar acorde",
+    "saving": "Guardando…",
+    "errors": {
+      "instrument": "Instrumento inválido.",
+      "name": "El nombre no puede tener espacios (máximo 24 caracteres).",
+      "baseFret": "El traste inicial va del 1 al 20.",
+      "frets": "Marca al menos una cuerda que suene.",
+      "barres": "Una cejilla debe pisar al menos dos cuerdas en su traste.",
+      "keys": "Elige de 3 a 6 teclas distintas.",
+      "duplicate": "Ya tienes un acorde con ese nombre en este instrumento.",
+      "auth": "Tu sesión expiró. Vuelve a iniciar sesión.",
+      "db": "No se pudo guardar. Intenta de nuevo.",
+      "id": "Identificador inválido.",
+      "missing": "El acorde ya no existe."
+    }
+  },
+  "myChords": {
+    "title": "Mis acordes",
+    "back": "Mis canciones",
+    "count": "{count, plural, =0 {Sin acordes propios} one {1 acorde propio} other {# acordes propios}} · {instrument}",
+    "new": "Nuevo acorde",
+    "search": "Buscar en mis acordes…",
+    "actions": "Acciones de {name}",
+    "edit": "Editar",
+    "editNamed": "Editar {name}",
+    "delete": "Eliminar",
+    "deleted": "«{name}» eliminado",
+    "saved": "«{name}» guardado",
+    "noResults": "Sin resultados para «{query}»",
+    "emptyTitle": "Aún no tienes acordes propios",
+    "emptyDesc": "Crea los acordes que no están en el catálogo, o tu propia digitación. En tus canciones se usan antes que los del catálogo.",
+    "errors": {
+      "db": "No se pudo eliminar. Intenta de nuevo.",
+      "id": "Identificador inválido.",
+      "missing": "El acorde ya no existe."
+    }
+  },
+  "tuner": {
+    "title": "Afinador",
+    "intro": "Activa el micrófono y toca una cuerda al aire. Elige la cuerda o deja AUTO para que la reconozca.",
+    "view": "Vista del afinador",
+    "views": {
+      "headstock": "Clavijero",
+      "needle": "Aguja"
+    },
+    "auto": "Auto",
+    "autoHint": "Reconocer qué cuerda estás tocando",
+    "chromatic": "Cromático",
+    "tuning": "Afinación",
+    "tunings": {
+      "standard": "Estándar",
+      "dropD": "Drop D",
+      "halfDown": "Medio tono abajo",
+      "openG": "Open G",
+      "dadgad": "DADGAD",
+      "lowG": "Sol grave (Low G)",
+      "d": "Re (ADF#B)"
+    },
+    "shiftDown": "Bajar toda la afinación un semitono",
+    "shiftUp": "Subir toda la afinación un semitono",
+    "micIntro": "El afinador escucha por el micrófono de tu dispositivo. Nada se graba ni sale de tu navegador.",
+    "enableMic": "Activar micrófono",
+    "starting": "Activando…",
+    "denied": "No hay permiso para usar el micrófono. Actívalo en los ajustes del navegador para este sitio e intenta de nuevo.",
+    "unavailable": "No se encontró un micrófono en este dispositivo.",
+    "error": "No se pudo abrir el micrófono. Intenta de nuevo.",
+    "stopMic": "Apagar micrófono",
+    "listening": "Escuchando…",
+    "silence": "Toca una cuerda",
+    "playString": "Toca una cuerda",
+    "listen": "Escuchar",
+    "reference": "Escuchar {note} (tono de referencia)",
+    "inTune": "¡Afinada!",
+    "loosen": "Afloja",
+    "tighten": "Tensa",
+    "semitones": "{count, plural, one {1 semitono} other {# semitonos}} {dir, select, up {arriba} other {abajo}}",
+    "chooseString": "Afinar {note} {state}",
+    "tunedState": "(afinada)",
+    "matchesString": "Cuerda {n}",
+    "announce": "{note}, {cents} cents {dir, select, sharp {alto} other {bajo}}, {advice}"
   }
 }

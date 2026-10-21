@@ -38,6 +38,7 @@ Copiar `.env.example` a `.env.local` (local) y configurar las mismas en Vercel (
 | `keepalive` | 1 fila; objetivo del ping del cron | Lectura pública |
 | `chords` / `chord_positions` | Catálogo por instrumento (`chords.instrument`): guitarra 481 acordes / 1,924 posiciones, ukelele 552 / 2,114 (generado de `@tombatossals/chords-db`) | Lectura pública |
 | `playlists` | Playlists del usuario (género, rating "Me gusta" 1–5) | RLS solo dueño |
+| `custom_chords` | Acordes propios por usuario e instrumento: nombre (como en el cifrado, sin espacios, hasta 24), `base_fret` + `frets` (6 o 4 valores, −1 a 5) + `barres` (hasta 2), o `keys` (piano, 3 a 6 teclas); único por (usuario, instrumento, nombre) | RLS solo dueño |
 | `songs` | Canciones: metadatos + contenido ChordPro (con directiva propia `{strum:}`); `playlist_id` opcional (lista plana); `instruments` (guitar/ukulele/piano, informativo); `playlist_position` (lugar en el setlist de su playlist; null = al final) | RLS solo dueño |
 | `song_audio` | Fuente de audio por canción: YouTube (video id + título) o archivo (ruta en Storage) | RLS solo dueño |
 | `song_sync` | Sincronización: granularidad (línea/palabra) + timestamps JSONB `[{i, t}]` + huella de la letra `targets` + fin opcional `end_at` | RLS solo dueño |
@@ -61,6 +62,7 @@ RLS: todas las políticas usan `(select auth.uid())` (se evalúa una vez por con
 11. `supabase/migrations/00000000000010_drop_unused.sql` (borra `chords.popularity`, `chord_positions.popularity` y `keepalive.last_seen_at`, sin uso; ejecutar **después** de desplegar el código que ya no las lee)
 12. `supabase/migrations/00000000000011_list_perf.sql` (columna generada `song_sync.stamp_count` e índice trigram sobre `chords.search_text`; ejecutar **antes** de desplegar el código que lee `stamp_count`)
 13. `supabase/migrations/00000000000012_setlist.sql` (`songs.playlist_position` y la función `reorder_playlist`, con permisos del usuario; ejecutar **antes** de desplegar el código del setlist)
+14. `supabase/migrations/00000000000013_custom_chords.sql` (tabla `custom_chords`, la biblioteca personal de acordes, con RLS solo dueño; ejecutar **antes** de desplegar el código que la lee)
 
 ### 3.3 Seed del catálogo de acordes
 
@@ -143,6 +145,13 @@ src/components/           UI (fieles al handoff):
                           canción siguiente (y de la primera a la anterior), índice para
                           saltar, F pantalla completa, Escape sale
   setlist-order           Ordenar el setlist: asa con puntero o ↑/↓ (teclado y lector)
+  chord-builder           Constructor de un acorde propio: rejilla cuerdas × 5 trastes
+                          (○/× sobre la cejuela), traste inicial y cejilla de cuerda a
+                          cuerda; piano con el teclado; "Escuchar" con el sintetizador
+  my-chords               "Mis acordes" (`songs/chords`): buscar, crear, editar, borrar
+  song-chords-strip       Acordes de la canción en el editor ("Sin diagrama · Crear")
+  tuner                   Afinador (Básicos → Afinador): vistas Clavijero y Aguja
+  basics-tabs             Pestañas de Básicos (secciones y el afinador)
   songs-view              Lista plana de canciones con playlists como filtros; modales
                           `new-song-modal`, `move-song-modal`, `duplicate-song-modal`,
                           `playlist-form-modal` y menú ⋯ `song-menu`
@@ -172,6 +181,11 @@ src/lib/                  Lógica y acceso a datos:
   chord-query.ts          Página del buscador de acordes (servidor y cliente)
   db-error.ts             Error de consulta con digest de "base inaccesible" (+tests)
   loop.ts                 Repetir A–B: líneas de la sección y rango de tiempo del bucle (+tests)
+  custom-chords.ts        Acordes propios: validación compartida cliente/servidor (+tests)
+  custom-chord-actions.ts Server actions de "Mis acordes" (crear/editar/borrar, re-validan)
+  pitch.ts                Detección de tono (YIN), nota ↔ frecuencia, cuerda más cercana (+tests)
+  tunings.ts              Afinaciones del afinador y ajuste ♭/♯
+  use-pitch.ts            Micrófono → tono (solo con el botón; se apaga al salir u ocultar)
   motion.ts               Scroll suave salvo movimiento reducido
   use-delete-song.ts      Borrar canción con «Deshacer» (acción diferida del aviso)
   chord-import.ts         Cifrado "acordes encima de la letra" → ChordPro (+tests)
@@ -272,6 +286,8 @@ where o.bucket_id = 'audio'
 - *Karaoke siempre oscuro*: es la "pantalla hero" del diseño (único brillo cian de la app) y se lee mejor de lejos; la clase `.dark` en su raíz le aplica los tokens oscuros aunque el sitio esté en claro, sin botón para cambiarlo. Sincronizar sigue el tema del sitio.
 - *Setlist y modo concierto*: cada canción sigue en una sola playlist; `playlist_position` da su orden (sin posición, al final por fecha; mover a otra playlist la deja sin posición). Con una playlist filtrada, la lista se ordena por "Setlist" por defecto (preferencia aparte de la de "Todas") y "Ordenar" guarda el orden con una sola llamada (`reorder_playlist`, `security invoker`: RLS limita el update a las canciones del usuario). El concierto es una sola pantalla con todo el setlist y los diagramas de todos sus acordes de una consulta, para que la pantalla completa y la pantalla siempre encendida no se corten entre canciones; con pedal Bluetooth (flechas o Av Pág/Re Pág) se pasa de página y de canción. En celular (sin modo libro) es continuo, con "Canción siguiente" al pie.
 - *Repetir A–B y cuenta regresiva* (karaoke): con audio el rango sale de las marcas (de la primera de A hasta donde empieza la línea siguiente a B, o el fin); sin audio, de los tiempos del autoscroll; se combina con las velocidades lentas. Solo vuelve a A al cruzar B (saltar más allá a propósito no lo devuelve). La cuenta regresiva se ve como un número grande en degradado sobre la letra atenuada y se cancela tocando play.
+- *Biblioteca personal de acordes*: privada (RLS), por instrumento. Al mostrar una canción (ver, karaoke, editor, concierto) `loadChordData` usa primero tus acordes y después el catálogo; un acorde con bajo que no está definido ("C/E") toma el diagrama del base y anota "bajo Mi". En la leyenda y el popover, los propios dicen "Mío". En el editor, los acordes de la letra sin diagrama dicen "Sin diagrama · Crear" (los que se agregan mientras se escribe solo se marcan si no son un nombre del catálogo) y el selector del editor visual tiene el grupo "Mis acordes". Se administran en `/[locale]/[instrument]/songs/chords` (borrar con «Deshacer»); el buscador público no cambia y sigue estático.
+- *Afinador*: pestaña de Básicos con URL propia (`basics/tuner`, estática; en piano, 404). El micrófono solo se abre con "Activar micrófono" (gesto, requisito de iOS), sin cancelación de eco ni supresión de ruido, y se apaga al ocultar la pestaña o salir; nada se graba. YIN sobre bloques de 4096 muestras cada 50 ms, mediana de 300 ms y silencio tras 500 ms; la UI se actualiza ~12 veces por segundo y el trazo del historial se dibuja en un canvas en cada lectura (sin re-render). Afinada = ±5 cents durante medio segundo (✓ y brillo breve). Tocar la nota objetivo hace sonar la cuerda y el micrófono descansa mientras tanto. Afinaciones: guitarra Estándar, Drop D, Medio tono abajo, Open G, DADGAD; ukelele Estándar, Low G, Re (ADF#B); ♭/♯ mueven toda la afinación hasta 3 semitonos. Afinación, ajuste, AUTO y vista se recuerdan en el dispositivo. Un aviso hablado cada ~1,5 s ("Mi2, 12 cents alto, afloja") acompaña a los lectores de pantalla.
 - *Deshacer en vez de confirmar*: borrar una canción no pide confirmación; desaparece al instante y el borrado real ocurre a los 6 s (o al cerrar el aviso, o al salir de la sección de canciones). Si se cierra la pestaña antes, la canción **no** se borra (el lado seguro). Mover a otra playlist también se deshace. Borrar una playlist sí se confirma (conserva sus canciones).
 - *Errores*: un fallo puntual del buscador o del selector de acordes se muestra en su lugar con «Reintentar» (el selector dice «Cargando» mientras busca). En el servidor, las consultas que fallan lanzan `dbError` (`lib/db-error.ts`): si la base no respondió (sin código de PostgREST, PGRST000–003 o caída del gateway) el error lleva un digest `db-unavailable-…` y la página explica que la base está inaccesible; cualquier otro fallo muestra un error genérico. Una canción o acorde que no existe es 404, pero un fallo de la base no (en el catálogo, un 404 quedaría en caché). `[locale]/error.tsx` usa `retry()` (vuelve a pedir los datos); canciones tiene su propio `error.tsx` (conserva la barra del instrumento) y `global-error.tsx` cubre fallos del layout del idioma (descarga sus textos solo si se muestra). Si falla el canje del código de Google, el login lo indica (`?error`).
 - *Accesibilidad*: un solo `<main id="main">` por pantalla (la portada deja su pie fuera) con «Saltar al contenido»; anillo `:focus-visible` global y halo en los campos; bloque `prefers-reduced-motion` y `smoothBehavior()` (`lib/motion.ts`) para el scroll suave en JS; áreas táctiles de 44 px en pantallas táctiles sin agrandar el diseño (`.yk-hit` / `.yk-hit-y`); segmentados con `aria-pressed` o `radio`; la onda de progreso es un `slider` (flechas ±5 s, Re Pág/Av Pág ±10 s, Inicio, Fin); el video flotante cerrado queda `inert`; estrellas con texto equivalente (y como radios al calificar); los acordes con diagrama son botones (el popover abre al pasar el mouse, con el foco o al tocar, cierra con Escape o al tocar afuera y no se sale de la pantalla). En karaoke, Escape sale y hay una sola salida; los atajos están en el reproductor también en tablet y celular.

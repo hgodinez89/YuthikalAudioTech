@@ -41,6 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "",
     ...INSTRUMENTS.flatMap((instrument) => [
       `/${instrument}/basics`,
+      ...(isFretted(instrument) ? [`/${instrument}/basics/tuner`] : []),
       `/${instrument}/chords`,
       ...DB_KEYS.flatMap((key) =>
         SCALES.map(({ id }) => `/${instrument}/scales/${scaleSlug(key, id)}`),
