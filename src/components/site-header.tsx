@@ -16,6 +16,7 @@ import {
   switchInstrumentPath,
   type Instrument,
 } from "@/lib/instruments";
+import { sectionHref } from "@/lib/sections";
 import { useIntentPrefetch } from "@/lib/use-intent-prefetch";
 
 /** Pastilla para cambiar de instrumento conservando la sección actual. */
@@ -114,13 +115,12 @@ export function SiteHeader() {
         {instrument && (
           <nav className="hidden gap-1 text-sm font-semibold text-sub md:flex">
             {SECTIONS.map((section) => {
-              const href = `/${instrument}/${section}`;
-              const active = pathname.startsWith(href);
+              const active = pathname.startsWith(`/${instrument}/${section}`);
               const Icon = SECTION_ICONS[section];
               return (
                 <Link
                   key={section}
-                  href={href}
+                  href={sectionHref(instrument, section)}
                   {...(section === "songs" ? songsPrefetch : {})}
                   aria-current={active ? "page" : undefined}
                   className={`flex items-center gap-2 rounded-[10px] px-3 py-2 ${

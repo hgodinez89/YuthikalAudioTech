@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Link } from "@/i18n/navigation";
 import { ChordVisual } from "@/components/chord-visual";
+import { IntentLink } from "@/components/intent-link";
 import { ScalePicker } from "@/components/scale-picker";
 import { ScaleView } from "@/components/scale-view";
 import { loadChordData } from "@/lib/chord-data";
 import type { Instrument } from "@/lib/instruments";
-import { parseScaleSlug, scaleChords, scaleNotes, scaleSteps } from "@/lib/scales";
+import { DB_KEYS } from "@/lib/chords";
+import {
+  parseScaleSlug,
+  scaleChords,
+  scaleNotes,
+  scaleSlug,
+  scaleSteps,
+  SCALES,
+} from "@/lib/scales";
 import { localeAlternates } from "@/lib/site";
 
 type Params = Promise<{ locale: string; instrument: string; slug: string }>;
 
-/* Cada escala se genera estática en su primera visita y queda en caché. */
+/* Todas las escalas (12 notas × 15 tipos) se generan en el build, para cada
+   instrumento e idioma: nunca se arman al pedirlas, sobreviven a cada deploy
+   y la precarga de los chips trae la página completa (clic instantáneo). */
 export function generateStaticParams() {
-  return [];
+  return DB_KEYS.flatMap((key) => SCALES.map(({ id }) => ({ slug: scaleSlug(key, id) })));
 }
 
 export async function generateMetadata({
@@ -114,7 +124,8 @@ export default async function ScalePage({ params }: { params: Params }) {
               {chords.map((chord) => {
                 const data = chordData[chord.catalogName];
                 return (
-                  <Link
+                  // Los acordes se generan bajo demanda: precarga solo con intención.
+                  <IntentLink
                     key={chord.roman}
                     href={`/${instrument}/chords/${chord.slug}`}
                     className="flex flex-col items-center rounded-2xl border border-edge bg-surface px-3 pb-3 pt-3 transition-colors hover:border-accent/50"
@@ -133,7 +144,7 @@ export default async function ScalePage({ params }: { params: Params }) {
                     <span className="text-xs text-sub">
                       {lang === "es" ? chord.nameEn : chord.nameEs}
                     </span>
-                  </Link>
+                  </IntentLink>
                 );
               })}
             </div>

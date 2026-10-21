@@ -47,8 +47,6 @@ export const SCALES = [
 export type ScaleId = (typeof SCALES)[number]["id"];
 export type DbKey = (typeof DB_KEYS)[number];
 
-export const DEFAULT_SCALE_SLUG = "c-major";
-
 const LETTERS_EN = ["C", "D", "E", "F", "G", "A", "B"];
 const LETTERS_ES = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
 const LETTER_PC = [0, 2, 4, 5, 7, 9, 11];

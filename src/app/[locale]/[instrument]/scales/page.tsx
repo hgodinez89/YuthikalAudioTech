@@ -1,5 +1,5 @@
 import { redirect } from "@/i18n/navigation";
-import { DEFAULT_SCALE_SLUG } from "@/lib/scales";
+import { DEFAULT_SCALE_SLUG } from "@/lib/sections";
 
 /** La sección abre en Do mayor; cada escala tiene su propia URL. */
 export default async function ScalesPage({

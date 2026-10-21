@@ -10,6 +10,7 @@ import {
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { SECTIONS, type Instrument, type Section } from "@/lib/instruments";
+import { sectionHref } from "@/lib/sections";
 import { useIntentPrefetch } from "@/lib/use-intent-prefetch";
 
 export const SECTION_ICONS: Record<Section, LucideIcon> = {
@@ -32,13 +33,12 @@ export function InstrumentNav({ instrument }: { instrument: Instrument }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-edge bg-page/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[14px] md:hidden">
       {SECTIONS.map((section) => {
-        const href = `/${instrument}/${section}`;
-        const active = pathname.startsWith(href);
+        const active = pathname.startsWith(`/${instrument}/${section}`);
         const Icon = SECTION_ICONS[section];
         return (
           <Link
             key={section}
-            href={href}
+            href={sectionHref(instrument, section)}
             {...(section === "songs" ? songsPrefetch : {})}
             aria-current={active ? "page" : undefined}
             className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11.5px] font-semibold ${

@@ -13,6 +13,7 @@ import {
   type Section,
 } from "@/lib/instruments";
 import { LAST_PAGE_COOKIE, lastPageParts, safeLastPage } from "@/lib/last-page";
+import { sectionHref } from "@/lib/sections";
 import { InstrumentIcon } from "./instrument-icons";
 import { SECTION_ICONS } from "./instrument-nav";
 
@@ -99,7 +100,7 @@ export function HomeLauncher({ labels }: { labels: HomeLabels }) {
           return (
             <Link
               key={section}
-              href={`/${current}/${section}`}
+              href={sectionHref(current, section)}
               className="yk-raised flex flex-col gap-3 rounded-[18px] border border-edge-2 p-[22px] transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-accent"
             >
               <Icon size={26} strokeWidth={2} className="text-accent" />
