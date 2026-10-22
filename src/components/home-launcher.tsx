@@ -105,21 +105,25 @@ export function HomeLauncher({ labels }: { labels: HomeLabels }) {
               type="button"
               onClick={() => setPicked(id)}
               aria-pressed={id === current}
-              className={`relative flex cursor-pointer items-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold ${
+              className={`flex cursor-pointer items-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold ${
                 id === current ? "yk-gradient" : "text-sub hover:text-ink"
               }`}
             >
               <InstrumentIcon name={id} size={22} />
               {labels.instruments[id]}
+              {/* Dentro del botón, tras el nombre: así ningún botón tapa el
+                  icono de otro. En el elegido toma el color del texto. */}
               {saved?.[id] !== undefined && (
                 <span
                   title={saved[id] ? labels.offline.ready : labels.offline.missing}
-                  className="absolute -right-[7px] -top-[7px] grid size-5 place-items-center rounded-full border border-edge-2 bg-surface-3"
+                  className={`inline-flex ${
+                    id === current ? "" : saved[id] ? "text-accent" : "text-mute"
+                  }`}
                 >
                   {saved[id] ? (
-                    <CloudCheck size={12} strokeWidth={2.4} className="text-accent" />
+                    <CloudCheck size={16} strokeWidth={2.2} aria-hidden />
                   ) : (
-                    <CloudOff size={12} strokeWidth={2.4} className="text-mute" />
+                    <CloudOff size={16} strokeWidth={2.2} aria-hidden />
                   )}
                   <span className="sr-only">
                     {saved[id] ? labels.offline.ready : labels.offline.missing}
