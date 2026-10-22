@@ -20,7 +20,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { Link } from "@/i18n/navigation";
 import { Button, buttonClass } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -107,6 +107,25 @@ const sortParser =
 const parseSort = sortParser(SONG_SORTS);
 const parseListSort = sortParser(LIST_SORTS);
 
+/*
+ * Playlist filtrada (?list=), leída de la dirección y no de useSearchParams:
+ * el filtro cambia la URL sin ir al servidor, y Next deja de enterarse de esos
+ * pushState propios tras cambiar de idioma (quita su parche de history al
+ * cambiar el segmento raíz /es → /en). Atrás/adelante llegan por popstate.
+ */
+const LIST_EVENT = "yk-list-change";
+
+function subscribeList(onChange: () => void) {
+  window.addEventListener("popstate", onChange);
+  window.addEventListener(LIST_EVENT, onChange);
+  return () => {
+    window.removeEventListener("popstate", onChange);
+    window.removeEventListener(LIST_EVENT, onChange);
+  };
+}
+
+const readList = () => new URLSearchParams(window.location.search).get("list");
+
 /* Logo de YouTube (Playlist Detail.dc.html) — lucide ya no trae marcas. */
 function YoutubeIcon({ size = 15 }: { size?: number }) {
   return (
@@ -169,12 +188,25 @@ export function SongsView({
   const offline = !useOnline();
   const offlineTitle = offline ? tOffline("unavailable") : undefined;
   // Una ?list= ajena, borrada o inválida no coincide: se muestran todas.
-  const listParam = useSearchParams().get("list");
+  const requestedList = useSearchParams().get("list");
+  const listParam = useSyncExternalStore(
+    subscribeList,
+    readList,
+    // En el servidor y al hidratar, la de la petición.
+    () => requestedList,
+  );
   const activeList = playlists.find((p) => p.id === listParam) ?? null;
   const activeListId = activeList?.id ?? null;
-  /* pushState se integra con el router de Next (useSearchParams, atrás/adelante). */
-  const selectList = (id: string | null) =>
-    window.history.pushState(null, "", id ? `?list=${id}` : window.location.pathname);
+  const selectList = (id: string | null) => {
+    // Con el estado de Next (no null): la entrada sigue siendo suya para
+    // atrás/adelante, sin pasar por su parche de pushState (ver readList).
+    window.history.pushState(
+      window.history.state,
+      "",
+      id ? `?list=${id}` : window.location.pathname,
+    );
+    window.dispatchEvent(new Event(LIST_EVENT));
+  };
   const [search, setSearch] = useState("");
 
   /* Descargas para usar sin conexión (solo con service worker). */
