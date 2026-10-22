@@ -3,7 +3,7 @@
 import { Check, ChevronDown, CloudCheck, Download } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { BrandLogo } from "./brand-logo";
 import { InstrumentIcon } from "./instrument-icons";
 import { SECTION_ICONS } from "./instrument-nav";
@@ -18,6 +18,7 @@ import {
   type Instrument,
 } from "@/lib/instruments";
 import { sectionHref } from "@/lib/sections";
+import { useAppPathname } from "@/lib/use-app-pathname";
 import { useIntentPrefetch } from "@/lib/use-intent-prefetch";
 import { useOnline } from "@/lib/use-online";
 import { offlineHash, useOfflineInstruments } from "@/lib/use-offline-instruments";
@@ -38,7 +39,7 @@ function InstrumentOptions({
 }) {
   const t = useTranslations("instruments");
   const tHeader = useTranslations("header");
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const router = useRouter();
   const saved = useOfflineInstruments(useLocale());
   const online = useOnline();
@@ -175,7 +176,7 @@ function InstrumentSwitcher({ instrument }: { instrument: Instrument }) {
 
 export function SiteHeader() {
   const t = useTranslations("nav");
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const segment = pathname.split("/")[1];
   const instrument = isInstrument(segment) ? segment : null;
   // Canciones se precarga al pasar el cursor, salvo si ya se está dentro.

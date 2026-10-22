@@ -33,6 +33,7 @@ import { loadOfflineSongs } from "@/lib/offline-songs-client";
 import { keyLabel } from "@/lib/songs";
 import { buttonClass } from "./button";
 import { ConcertView } from "./concert-view";
+import { InstrumentNav } from "./instrument-nav";
 import { FIELD_CLASS } from "./playlist-form-modal";
 import { SongBook } from "./song-book";
 import { SongInstruments } from "./song-instruments";
@@ -94,7 +95,13 @@ export function OfflineSongs({ children }: { children: ReactNode }) {
   if (route.view === "concert") {
     return <OfflineConcert data={data} instrument={instrument} list={route.list} />;
   }
-  return <OfflineList data={data} instrument={instrument} list={route.list} />;
+  return (
+    <>
+      <OfflineList data={data} instrument={instrument} list={route.list} />
+      {/* Secciones en móvil, como en las páginas del instrumento. */}
+      <InstrumentNav instrument={instrument} />
+    </>
+  );
 }
 
 function useHref() {

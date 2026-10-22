@@ -6,19 +6,27 @@ import { useState } from "react";
 import { useOnline } from "@/lib/use-online";
 
 /**
- * «Reintentar» de la página sin conexión: vuelve a la dirección que se quiso
- * abrir (el service worker la deja en el fragmento: /es/offline#/es/…).
- * Solo rutas del propio sitio; si no hay, recarga.
+ * Volver a intentar: en una página sin conexión, la dirección que se quiso
+ * abrir (el service worker la deja en el fragmento: /es/offline#/es/…; solo
+ * rutas del propio sitio); en cualquier otra, recargar.
  */
+function retry() {
+  const target = window.location.hash.slice(1);
+  const offlinePage = /^\/(?:es|en)\/offline(?:\/|$)/.test(window.location.pathname);
+  if (
+    offlinePage &&
+    target.startsWith("/") &&
+    !target.startsWith("//") &&
+    !target.includes("\\")
+  ) {
+    window.location.assign(target);
+  } else {
+    window.location.reload();
+  }
+}
+
+/** «Reintentar» de la página sin conexión. */
 export function ReloadButton({ label }: { label: string }) {
-  const retry = () => {
-    const target = window.location.hash.slice(1);
-    if (target.startsWith("/") && !target.startsWith("//") && !target.includes("\\")) {
-      window.location.assign(target);
-    } else {
-      window.location.reload();
-    }
-  };
   return (
     <button
       type="button"
@@ -61,7 +69,7 @@ export function ConnectionBanner() {
           <span>{t("back")}</span>
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={retry}
             className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-accent/40 px-3 py-1 hover:bg-accent/15"
           >
             <RefreshCw size={13} strokeWidth={2.2} />

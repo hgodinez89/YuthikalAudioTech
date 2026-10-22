@@ -8,9 +8,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Link, usePathname } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { SECTIONS, type Instrument, type Section } from "@/lib/instruments";
 import { sectionHref } from "@/lib/sections";
+import { useAppPathname } from "@/lib/use-app-pathname";
 import { useIntentPrefetch } from "@/lib/use-intent-prefetch";
 
 export const SECTION_ICONS: Record<Section, LucideIcon> = {
@@ -23,7 +24,7 @@ export const SECTION_ICONS: Record<Section, LucideIcon> = {
 /** Barra inferior de secciones en móvil y tablet (al alcance del pulgar). */
 export function InstrumentNav({ instrument }: { instrument: Instrument }) {
   const t = useTranslations("nav");
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   // Canciones se precarga al tocarla, salvo si ya se está dentro.
   const songsPrefetch = useIntentPrefetch(!pathname.startsWith(`/${instrument}/songs`));
 
