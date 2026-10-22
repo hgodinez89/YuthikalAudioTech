@@ -984,7 +984,8 @@
       "db": "Couldn't delete. Please try again.",
       "id": "Invalid identifier.",
       "missing": "That chord no longer exists."
-    }
+    },
+    "loading": "Loading your chords…"
   },
   "tuner": {
     "title": "Tuner",

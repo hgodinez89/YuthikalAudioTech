@@ -2,16 +2,21 @@
 
 import { ChevronLeft, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { useOnline } from "@/lib/use-online";
 import { Button } from "./button";
-import { ChordBuilder } from "./chord-builder";
 import { ChordVisual } from "./chord-visual";
 import { Menu, MenuItem } from "./menu";
 import { FIELD_CLASS } from "./playlist-form-modal";
 import { useToast } from "./toast";
 import { deleteCustomChord } from "@/lib/custom-chord-actions";
+
+/* El constructor se descarga al abrirlo (o al pasar el cursor por sus
+   botones), no al entrar a la página. */
+const loadBuilder = () => import("./chord-builder");
+const ChordBuilder = dynamic(() => loadBuilder().then((m) => m.ChordBuilder));
 import type { CustomChordRow } from "@/lib/custom-chords";
 import type { Instrument } from "@/lib/instruments";
 
@@ -32,7 +37,6 @@ export function MyChords({
   /* Sin conexión la biblioteca es solo consulta: crear, editar y borrar, no. */
   const offline = !useOnline();
   const tInstruments = useTranslations("instruments");
-  const router = useRouter();
   const toast = useToast();
   const [items, setItems] = useState(chords);
   const [search, setSearch] = useState("");
@@ -50,8 +54,8 @@ export function MyChords({
       hides: chord.id,
       commit: async () => {
         const result = await deleteCustomChord(chord.id);
+        // La acción ya revalida: sin un segundo refresco (la tarjeta sigue oculta).
         if (!result.ok) return t(`errors.${result.error}`);
-        router.refresh();
         return null;
       },
     });
@@ -80,6 +84,8 @@ export function MyChords({
         <Button
           variant="primary"
           onClick={() => setBuilder("new")}
+          onPointerEnter={() => void loadBuilder()}
+          onFocus={() => void loadBuilder()}
           disabled={offline}
           title={offline ? tOffline("unavailable") : undefined}
         >
@@ -148,6 +154,7 @@ export function MyChords({
               <button
                 type="button"
                 onClick={() => setBuilder(chord)}
+                onPointerEnter={() => void loadBuilder()}
                 aria-label={t("editNamed", { name: chord.name })}
                 className="flex cursor-pointer flex-col items-center"
               >
@@ -178,6 +185,8 @@ export function MyChords({
           <Button
             variant="primary"
             onClick={() => setBuilder("new")}
+            onPointerEnter={() => void loadBuilder()}
+            onFocus={() => void loadBuilder()}
             disabled={offline}
             title={offline ? tOffline("unavailable") : undefined}
           >

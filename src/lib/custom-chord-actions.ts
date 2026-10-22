@@ -14,7 +14,11 @@ import { sessionUserId, supabaseWithSession } from "./supabase-server";
 
 type ChordResult = { ok: true; chord: CustomChordRow } | { ok: false; error: string };
 
-/* Las canciones y "Mis acordes" se vuelven a pedir con el acorde nuevo. */
+/* Las canciones y "Mis acordes" se vuelven a pedir con el acorde nuevo.
+   Apuntarla solo a las canciones no ahorra nada: en Next 16, si una acción
+   revalida otra ruta, el navegador igual refresca la página actual (en un
+   viaje aparte). Y sin revalidar, «Atrás» mostraría canciones con el
+   diagrama viejo. */
 const revalidateSongs = () => revalidatePath("/[locale]/[instrument]/songs", "layout");
 
 /**

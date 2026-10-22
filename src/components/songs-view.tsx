@@ -38,6 +38,7 @@ import {
   syncOfflineSongs,
   useOfflineSongs,
 } from "@/lib/offline-songs-client";
+import { useFullPrefetch } from "@/lib/use-full-prefetch";
 import { useHasServiceWorker } from "@/lib/use-offline-instruments";
 import {
   createPlaylist,
@@ -208,6 +209,11 @@ export function SongsView({
     window.dispatchEvent(new Event(LIST_EVENT));
   };
   const [search, setSearch] = useState("");
+  /* "Mis acordes" completo por adelantado (en segundo plano y al mostrar
+     intención): al entrar aparece al instante, con el servidor ya despierto. */
+  const prefetchChords = useFullPrefetch(`/${instrument}/songs/chords`, {
+    idle: !offline,
+  });
 
   /* Descargas para usar sin conexión (solo con service worker). */
   const saved = useOfflineSongs();
@@ -411,7 +417,13 @@ export function SongsView({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href={`${base}/chords`} className={buttonClass("secondary")}>
+          <Link
+            href={`${base}/chords`}
+            onMouseEnter={prefetchChords}
+            onTouchStart={prefetchChords}
+            onFocus={prefetchChords}
+            className={buttonClass("secondary")}
+          >
             <PendingIcon size={16}>
               <LayoutGrid size={16} strokeWidth={2} />
             </PendingIcon>

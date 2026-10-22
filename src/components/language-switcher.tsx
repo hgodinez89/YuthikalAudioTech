@@ -20,6 +20,7 @@ export function LanguageSwitcher() {
     // descargadas). Navegación completa: sin red, Next no puede ir solo.
     const target = offlineTarget();
     if (target) {
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a propósito: sin red el router de Next no puede navegar.
       window.location.assign(`/${code}${target}`);
       return;
     }

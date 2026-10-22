@@ -984,7 +984,8 @@
       "db": "No se pudo eliminar. Intenta de nuevo.",
       "id": "Identificador inválido.",
       "missing": "El acorde ya no existe."
-    }
+    },
+    "loading": "Cargando tus acordes…"
   },
   "tuner": {
     "title": "Afinador",
