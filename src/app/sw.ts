@@ -119,7 +119,10 @@ const serwist = new Serwist({
   ),
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: true,
+  // Sin navigation preload: en Firefox, con la red caída, hacía fallar la
+  // navegación a las páginas precargadas (/offline, /home) aunque el service
+  // worker las tuviera. Las páginas guardadas igual responden al instante.
+  navigationPreload: false,
   runtimeCaching,
 });
 

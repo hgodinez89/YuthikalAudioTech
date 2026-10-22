@@ -5,6 +5,7 @@ import { findCatalogChord, type CatalogChord } from "@/lib/chord-catalog";
 import { loadCatalog } from "@/lib/chord-catalog-client";
 import { isInstrument, type Instrument } from "@/lib/instruments";
 import { ChordDetailView } from "./chord-detail-view";
+import { InstrumentNav } from "./instrument-nav";
 
 /** La ruta pedida viaja en el hash: /es/offline#/es/guitar/chords/c-major */
 const CHORD_PATH = /^#\/(?:es|en)\/([a-z]+)\/chords\/([a-z0-9-]+)\/?$/;
@@ -51,12 +52,16 @@ export function OfflineChord({ children }: { children: ReactNode }) {
   if (!found || found.instrument !== instrument || found.slug !== slug) return children;
 
   return (
-    <main id="main" tabIndex={-1} className="flex-1 outline-none">
-      <ChordDetailView
-        instrument={found.instrument}
-        chord={found.chord}
-        positions={found.chord.positions}
-      />
-    </main>
+    <>
+      <main id="main" tabIndex={-1} className="flex-1 pb-[76px] outline-none md:pb-0">
+        <ChordDetailView
+          instrument={found.instrument}
+          chord={found.chord}
+          positions={found.chord.positions}
+        />
+      </main>
+      {/* Secciones en móvil, como en las páginas del instrumento. */}
+      <InstrumentNav instrument={found.instrument} />
+    </>
   );
 }

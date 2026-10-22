@@ -706,7 +706,7 @@ export function SongKaraoke({
     PageDown: nextSection,
     "[": () => setRate(stepRate(rates, rate, -1)),
     "]": () => setRate(stepRate(rates, rate, 1)),
-    m: variant === "sync" ? engine.toggleMute : undefined,
+    m: variant === "sync" && !silent ? engine.toggleMute : undefined,
     r: repeatLine,
     v: hasVideo ? toggleVideo : undefined,
   });
@@ -719,7 +719,7 @@ export function SongKaraoke({
     { keys: tp("keys.home"), label: tp("keys.toStart") },
     { keys: `↑ / ↓ · ${tp("keys.pages")}`, label: tp("keys.section") },
     { keys: "[ / ]", label: tp("keys.speed") },
-    ...(variant === "sync" ? [{ keys: "M", label: tp("keys.mute") }] : []),
+    ...(variant === "sync" && !silent ? [{ keys: "M", label: tp("keys.mute") }] : []),
     { keys: "R", label: tp("keys.repeatLine") },
     { keys: "B", label: tp("keys.loop") },
     ...(hasVideo ? [{ keys: "V", label: tp("keys.video") }] : []),
@@ -1040,7 +1040,8 @@ export function SongKaraoke({
             onChange={setRate}
             disabled={transportDisabled}
           />
-          {variant === "sync" && (
+          {/* Sin audio (sin conexión) no hay volumen que ajustar. */}
+          {variant === "sync" && !silent && (
             <VolumeControl
               volume={engine.volume}
               muted={engine.muted}
