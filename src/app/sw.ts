@@ -17,8 +17,10 @@ import { staticAssets } from "@/lib/offline-cache";
  * Service worker: consulta sin conexión de lo público ya visitado.
  *
  * Reglas (en orden; gana la primera que coincide):
- *  1. Lo privado o con sesión NUNCA se guarda: canciones, login, auth, api,
- *     y cualquier origen externo (Supabase, YouTube).
+ *  0. Lo de otros orígenes (Supabase, YouTube) ni se toca: ninguna regla lo
+ *     atrapa y lo pide el navegador con la CSP de la página. Si lo pidiera el
+ *     service worker, valdría SU CSP (solo 'self') y fallaría siempre.
+ *  1. Lo privado o con sesión NUNCA se guarda: canciones, login, auth, api.
  *  2. Archivos con hash de Next: primero caché (nunca cambian).
  *  3. Páginas y datos de navegación (RSC) públicos: primero la red; sin ella,
  *     la copia guardada. Así con conexión nunca se ve contenido viejo.
@@ -68,11 +70,12 @@ const offlineRedirect: SerwistPlugin = {
 
 const runtimeCaching: RuntimeCaching[] = [
   {
-    matcher: ({ sameOrigin, url }) => !sameOrigin || PRIVATE.test(url.pathname),
+    matcher: ({ sameOrigin, url }) => sameOrigin && PRIVATE.test(url.pathname),
     handler: new NetworkOnly({ plugins: [offlineRedirect] }),
   },
   {
-    matcher: ({ url }) => url.pathname.startsWith("/_next/static/"),
+    matcher: ({ sameOrigin, url }) =>
+      sameOrigin && url.pathname.startsWith("/_next/static/"),
     // Sin caducidad por tiempo: una página guardada los necesita aunque
     // pasen semanas sin abrir el sitio (con hash, nunca quedan viejos).
     handler: new CacheFirst({
@@ -81,7 +84,8 @@ const runtimeCaching: RuntimeCaching[] = [
     }),
   },
   {
-    matcher: /\.(?:png|svg|ico|webp|jpg|jpeg)$/i,
+    matcher: ({ sameOrigin, url }) =>
+      sameOrigin && /\.(?:png|svg|ico|webp|jpg|jpeg)$/i.test(url.pathname),
     handler: new StaleWhileRevalidate({
       cacheName: "yk-images",
       plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * DAY })],
@@ -89,7 +93,8 @@ const runtimeCaching: RuntimeCaching[] = [
   },
   {
     // Navegación del cliente (RSC) y sus precargas: cada variante tiene su ?_rsc=.
-    matcher: ({ request }) => request.headers.get("RSC") === "1",
+    matcher: ({ sameOrigin, request }) =>
+      sameOrigin && request.headers.get("RSC") === "1",
     handler: new NetworkFirst({
       cacheName: "yk-rsc",
       networkTimeoutSeconds: 5,
@@ -101,7 +106,7 @@ const runtimeCaching: RuntimeCaching[] = [
     // con CACHE_URLS o con «Descargar [instrumento]»). Sin caducidad por
     // tiempo: con red siempre se piden de nuevo; sin ella, la copia sirve
     // aunque sea vieja. El tope alcanza para los 3 instrumentos en 2 idiomas.
-    matcher: ({ request }) => request.method === "GET",
+    matcher: ({ sameOrigin, request }) => sameOrigin && request.method === "GET",
     handler: new NetworkFirst({
       cacheName: "yk-pages",
       networkTimeoutSeconds: 5,
