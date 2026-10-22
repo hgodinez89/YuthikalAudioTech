@@ -190,14 +190,12 @@ export function SongsView({
   useEffect(() => {
     if (offline || !canSave) return;
     void syncOfflineSongs(
-      locale,
       userId,
       offlineList,
       playlists.map(({ id, name, songs_count }) => ({ id, name, songs_count })),
     );
-  }, [offline, canSave, locale, userId, offlineList, playlists]);
-  const setScope = (next: OfflineScope) =>
-    void setOfflineScope(locale, next, offlineList);
+  }, [offline, canSave, userId, offlineList, playlists]);
+  const setScope = (next: OfflineScope) => void setOfflineScope(next, offlineList);
   const [removeAllOpen, setRemoveAllOpen] = useState(false);
   const playlistSaved = (id: string) => scope.all || scope.playlists.includes(id);
   const togglePlaylist = (id: string) =>

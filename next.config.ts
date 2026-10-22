@@ -3,19 +3,23 @@ import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const isDev = process.env.NODE_ENV === "development";
+// Solo en los previews de Vercel: su barra de comentarios (vercel.live). En
+// producción la CSP no la incluye (VERCEL_ENV existe al compilar en Vercel).
+const preview = (sources: string) =>
+  process.env.VERCEL_ENV === "preview" ? ` ${sources}` : "";
 
 // CSP: 'unsafe-inline' en script-src es requerido por la hidratación de
 // Next.js sin nonces; el resto de directivas quedan cerradas. YouTube
 // (IFrame API) y Supabase están pre-autorizados para las fases 3–7.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.youtube.com`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://i.ytimg.com https://*.googleusercontent.com",
-  "font-src 'self'",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.youtube.com${preview("https://vercel.live")}`,
+  `style-src 'self' 'unsafe-inline'${preview("https://vercel.live")}`,
+  `img-src 'self' data: blob: https://i.ytimg.com https://*.googleusercontent.com${preview("https://vercel.live https://vercel.com")}`,
+  `font-src 'self'${preview("https://vercel.live https://assets.vercel.com")}`,
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${preview("https://vercel.live wss://ws-us3.pusher.com")}`,
   "media-src 'self' blob: https://*.supabase.co",
-  "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+  `frame-src https://www.youtube.com https://www.youtube-nocookie.com${preview("https://vercel.live")}`,
   // Service worker de consulta sin conexión (/serwist/sw.js, mismo origen).
   "worker-src 'self'",
   "object-src 'none'",

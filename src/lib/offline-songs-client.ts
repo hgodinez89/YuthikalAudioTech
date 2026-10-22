@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import { locales } from "@/i18n/config";
 import { INSTRUMENTS } from "./instruments";
 import { staticAssets } from "./offline-cache";
 import {
@@ -213,7 +214,8 @@ async function fetchSongs(ids: string[]): Promise<OfflinePayload> {
 
 class SessionGone extends Error {}
 
-/* La página sin conexión de canciones y su código, una vez por visita. */
+/* La página sin conexión de canciones y su código, una vez por visita, en los
+   dos idiomas: cambiar de idioma no deja sin ella (los datos no dependen del idioma). */
 const pagesSaved = new Set<string>();
 async function saveOfflinePage(locale: string) {
   if (pagesSaved.has(locale)) return;
@@ -233,7 +235,6 @@ async function saveOfflinePage(locale: string) {
  * quita `remove`. Con `full`, reemplaza los diagramas en vez de sumarlos.
  */
 async function apply(
-  locale: string,
   scope: OfflineScope,
   download: string[],
   remove: string[],
@@ -281,7 +282,7 @@ async function apply(
         });
       }
       if (extra.full) await writeMeta({ refreshedAt: Date.now() });
-      await saveOfflinePage(locale).catch(() => {});
+      await Promise.allSettled(locales.map(saveOfflinePage));
       set({ busy: null });
     } catch (error) {
       if (error instanceof SessionGone) {
@@ -300,7 +301,6 @@ type Listed = { id: string; playlist_id: string | null; version: string };
  * playlists, olvida suscripciones a lo borrado y baja lo nuevo o cambiado.
  */
 export function syncOfflineSongs(
-  locale: string,
   userId: string,
   list: Listed[],
   playlists: OfflinePlaylist[],
@@ -321,36 +321,36 @@ export function syncOfflineSongs(
     if (nothing && Object.keys(meta.versions).length === 0) return;
     const full = Date.now() - meta.refreshedAt > FULL_REFRESH_MS;
     const plan = planRefresh(new Map(Object.entries(meta.versions)), list, scope, full);
-    await apply(locale, scope, plan.download, plan.remove, { playlists, full });
+    await apply(scope, plan.download, plan.remove, { playlists, full });
   });
 }
 
 /** Cambia las suscripciones desde la lista (que conoce todas las canciones). */
-export function setOfflineScope(locale: string, scope: OfflineScope, list: Listed[]) {
+export function setOfflineScope(scope: OfflineScope, list: Listed[]) {
   return serial(async () => {
     const meta = await readMeta();
     const plan = planRefresh(new Map(Object.entries(meta.versions)), list, scope, false);
-    await apply(locale, scope, plan.download, plan.remove);
+    await apply(scope, plan.download, plan.remove);
   });
 }
 
 /** Desde la canción: descargarla sola o quitarla (si no la cubre otra cosa). */
-export function setOfflineSong(locale: string, id: string, on: boolean) {
+export function setOfflineSong(id: string, on: boolean) {
   return serial(async () => {
     const meta = await readMeta();
     const songs = on
       ? [...new Set([...meta.scope.songs, id])]
       : meta.scope.songs.filter((s) => s !== id);
     const scope = { ...meta.scope, songs };
-    await apply(locale, scope, on ? [id] : [], on ? [] : [id]);
+    await apply(scope, on ? [id] : [], on ? [] : [id]);
   });
 }
 
 /** Vuelve a bajar canciones ya cubiertas (cambiaron o aún no estaban). */
-export function refreshOfflineSongs(locale: string, ids: string[]) {
+export function refreshOfflineSongs(ids: string[]) {
   return serial(async () => {
     const meta = await readMeta();
-    await apply(locale, meta.scope, ids, []);
+    await apply(meta.scope, ids, []);
   });
 }
 

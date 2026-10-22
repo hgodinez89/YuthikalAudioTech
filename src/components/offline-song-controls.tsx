@@ -1,7 +1,7 @@
 "use client";
 
 import { CloudCheck, Download, LoaderCircle } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { coverage } from "@/lib/offline-songs";
 import {
@@ -39,7 +39,6 @@ export function SongDownloadButton({
   version: string;
 }) {
   const t = useTranslations("songView");
-  const locale = useLocale();
   const online = useOnline();
   const hasWorker = useHasServiceWorker();
   const { ready, scope, versions, busy } = useOfflineSongs();
@@ -48,9 +47,9 @@ export function SongDownloadButton({
 
   useEffect(() => {
     if (online && hasWorker && ready && covered && stored !== version) {
-      void refreshOfflineSongs(locale, [songId]);
+      void refreshOfflineSongs([songId]);
     }
-  }, [online, hasWorker, ready, covered, stored, version, locale, songId]);
+  }, [online, hasWorker, ready, covered, stored, version, songId]);
 
   if (!hasWorker || !ready) return null;
 
@@ -70,7 +69,7 @@ export function SongDownloadButton({
   const saved = covered === "song";
   return (
     <Button
-      onClick={() => void setOfflineSong(locale, songId, !saved)}
+      onClick={() => void setOfflineSong(songId, !saved)}
       disabled={!online || busy !== null}
       title={saved ? t("offlineRemove") : undefined}
       className={saved ? "border-accent/35 text-accent" : "border-accent/45"}
