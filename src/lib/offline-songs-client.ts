@@ -291,6 +291,10 @@ async function apply(
       }
       set({ busy: null, error: true });
     }
+  } else if (Object.keys(versions).length > 0) {
+    // Sin nada que bajar: igual se asegura la página sin conexión en los dos
+    // idiomas (las descargas de antes solo la guardaban en uno).
+    void Promise.allSettled(locales.map(saveOfflinePage));
   }
 }
 

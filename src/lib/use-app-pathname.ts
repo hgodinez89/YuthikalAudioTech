@@ -27,3 +27,15 @@ export function useAppPathname(): string {
   if (!OFFLINE_PAGE.test(pathname)) return pathname;
   return /^#\/(?:es|en)(\/[^?#]*)/.exec(hash)?.[1] ?? pathname;
 }
+
+/**
+ * En una página sin conexión, la ruta pedida sin idioma y con su búsqueda
+ * (/es/offline/songs#/es/guitar/songs?list=x → /guitar/songs?list=x); en
+ * cualquier otra, null. Se lee al momento (p. ej. al cambiar de idioma).
+ */
+export function offlineTarget(): string | null {
+  if (!/^\/(?:es|en)\/offline(?:\/|$)/.test(window.location.pathname)) return null;
+  const target = /^#\/(?:es|en)(\/[^#]*)$/.exec(window.location.hash)?.[1];
+  // Solo rutas del propio sitio.
+  return target && !target.startsWith("//") && !target.includes("\\") ? target : null;
+}
