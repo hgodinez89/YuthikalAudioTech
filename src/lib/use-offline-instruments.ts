@@ -70,6 +70,16 @@ function subscribe(onChange: () => void) {
 
 const hasWorker = () => Boolean(navigator.serviceWorker?.controller);
 
+function subscribeWorker(onChange: () => void) {
+  navigator.serviceWorker?.addEventListener("controllerchange", onChange);
+  return () => navigator.serviceWorker?.removeEventListener("controllerchange", onChange);
+}
+
+/** ¿Hay service worker al mando? (sin él, en desarrollo, no hay nada sin conexión). */
+export function useHasServiceWorker(): boolean {
+  return useSyncExternalStore(subscribeWorker, hasWorker, () => false);
+}
+
 /**
  * Estado por instrumento (sin comprobar aún: ausente). `null` sin service
  * worker (en desarrollo o sin soporte): entonces no hay nada que indicar.

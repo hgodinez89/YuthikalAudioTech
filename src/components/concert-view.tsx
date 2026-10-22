@@ -16,7 +16,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { AppLink, useAppNavigate } from "./app-link";
 import { ChordSheet, type ChordDataMap } from "./chord-sheet";
 import { Menu, MenuItem } from "./menu";
 import { BookView } from "./song-book";
@@ -61,7 +61,7 @@ export function ConcertView({
 }) {
   const t = useTranslations("concert");
   const tSongView = useTranslations("songView");
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const canBook = useSyncExternalStore(
     subscribeMedia,
     () => window.matchMedia(BOOK_QUERY).matches,
@@ -96,10 +96,10 @@ export function ConcertView({
     step,
     toggleFullscreen,
     canBook,
-    exit: () => router.push(exitHref),
+    exit: () => navigate(exitHref),
   });
   useLayoutEffect(() => {
-    keys.current = { step, toggleFullscreen, canBook, exit: () => router.push(exitHref) };
+    keys.current = { step, toggleFullscreen, canBook, exit: () => navigate(exitHref) };
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -154,14 +154,14 @@ export function ConcertView({
     <div className="fixed inset-0 z-50 flex flex-col bg-page text-ink">
       {/* CABECERA: lugar en el setlist, siguiente, índice y salir */}
       <header className="flex shrink-0 items-center gap-3 border-b border-edge px-4 py-2.5 sm:px-5">
-        <Link
+        <AppLink
           href={exitHref}
           aria-label={t("exit")}
           title={`${t("exit")} (Esc)`}
           className="grid size-11 shrink-0 place-items-center rounded-[11px] border border-edge bg-surface-3 text-sub hover:text-ink"
         >
           <X size={19} strokeWidth={2} />
-        </Link>
+        </AppLink>
         <div className="min-w-0 flex-1" aria-live="polite">
           <div className="flex items-baseline gap-2.5">
             <span className="shrink-0 text-[13px] font-bold tabular-nums text-accent">

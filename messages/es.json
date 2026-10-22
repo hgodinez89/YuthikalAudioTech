@@ -325,7 +325,36 @@
       "dismiss": "Cerrar aviso",
       "error": "No se pudo completar. Revisa tu conexión e intenta de nuevo."
     },
-    "myChords": "Mis acordes"
+    "myChords": "Mis acordes",
+    "offline": {
+      "downloadAll": "Descargar todas",
+      "allSaved": "Todas sin conexión",
+      "downloading": "Descargando {done} de {total}…",
+      "removeAllTitle": "¿Quitar todas las descargas?",
+      "removeAllMessage": "Las canciones dejarán de estar disponibles sin conexión en este dispositivo. Puedes volver a descargarlas cuando quieras.",
+      "removeAllConfirm": "Quitar descargas",
+      "error": "No se pudo descargar para usar sin conexión. Revisa tu conexión.",
+      "badge": "Sin conexión",
+      "menuDownload": "Descargar para usar sin conexión",
+      "menuRemove": "Quitar descarga",
+      "menuIncluded": "Incluida en la playlist {name}",
+      "menuIncludedAll": "Incluida en «Todas»",
+      "download": "Descargar",
+      "saved": "Sin conexión",
+      "removePlaylist": "Quitar la descarga de la playlist",
+      "includedAll": "Sin conexión · en Todas",
+      "includedAllHint": "Incluida al descargar todas: se gestiona desde «Todas sin conexión».",
+      "panelDownload": "Descargar {name} para usar sin conexión",
+      "legendSaved": "Sin conexión",
+      "legendDownload": "Descargar",
+      "savedCount": "{count, plural, one {# canción descargada en este dispositivo} other {# canciones descargadas en este dispositivo}}",
+      "playlists": "Playlists descargadas",
+      "complete": "{count, plural, one {La canción está en este dispositivo.} other {Las # canciones están en este dispositivo.}}",
+      "incomplete": "{saved} de {total} canciones descargadas. Descarga la playlist para usar el concierto sin conexión.",
+      "concertNeedsDownload": "Descarga la playlist para usar el concierto sin conexión",
+      "notSynced": "Sin sincronizar: la letra avanza por tiempo",
+      "listNote": "Toca una canción para verla en modo libro; ▶ abre el karaoke. Editar, mover o borrar necesitan conexión."
+    }
   },
   "editor": {
     "textMode": "Editor de texto",
@@ -563,7 +592,14 @@
     "mine": "Mío",
     "bass": "bajo {note}",
     "capo": "Capo {n}",
-    "tempo": "{bpm} BPM"
+    "tempo": "{bpm} BPM",
+    "offlineDownload": "Descargar",
+    "offlineSaved": "Sin conexión",
+    "offlineRemove": "Quitar descarga",
+    "offlineIncluded": "Sin conexión · en {name}",
+    "offlineAll": "Todas",
+    "offlineIncludedHint": "Incluida por su playlist o por «Todas»: se quita desde ahí.",
+    "offlineDownloading": "Descargando…"
   },
   "concert": {
     "title": "Modo concierto",
@@ -605,7 +641,9 @@
       "pickA": "Toca la línea donde empieza (A)",
       "pickB": "Ahora toca la línea donde termina (B)",
       "cancel": "Cancelar"
-    }
+    },
+    "silentChip": "Sin audio",
+    "silentNote": "Sin conexión: sin audio. La letra sigue el tiempo de tu sincronización."
   },
   "strings": {
     "title": "{instrument, select, ukulele {Las cuerdas del ukelele} other {Las cuerdas de la guitarra}}",

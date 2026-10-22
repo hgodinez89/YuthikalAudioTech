@@ -13,6 +13,9 @@ export type AudioSource = (
       /** Identidad estable (la ruta del archivo): la URL firmada se renueva. */
       id: string;
     }
+  /* Sin audio (sin conexión): un reloj silencioso con la misma interfaz,
+     para que la letra siga las marcas de la sincronización. */
+  | { type: "clock"; id: string; duration: number }
 ) & { start?: number };
 
 export type AudioEngine = {
@@ -125,8 +128,8 @@ type Controls = {
 };
 
 /**
- * Reloj de reproducción unificado sobre YouTube (IFrame API) o un MP3
- * (elemento <audio>). Ambas fuentes exponen la misma interfaz: la capa de
+ * Reloj de reproducción unificado sobre YouTube (IFrame API), un MP3
+ * (elemento <audio>) o un reloj silencioso (sin conexión). Ambas fuentes exponen la misma interfaz: la capa de
  * calibración/karaoke solo necesita "dame el tiempo actual".
  */
 export function useAudioEngine(
@@ -138,9 +141,13 @@ export function useAudioEngine(
   /* MP3 vigente: permite cambiar su URL (renovada) sin recrear el reproductor. */
   const fileRef = useRef<{ key: string; swap: (url: string) => void } | null>(null);
 
-  const sourceKey = source
-    ? `${source.type}:${source.type === "youtube" ? source.videoId : source.id}`
-    : null;
+  const sourceKey = !source
+    ? null
+    : source.type === "youtube"
+      ? `youtube:${source.videoId}`
+      : source.type === "clock"
+        ? `clock:${source.id}:${source.duration}`
+        : `file:${source.id}`;
 
   useEffect(() => {
     if (!source || !sourceKey) return;
@@ -169,6 +176,68 @@ export function useAudioEngine(
             },
       );
     };
+
+    if (source.type === "clock") {
+      const end = source.duration;
+      // Posición = base + tiempo desde el último play × velocidad.
+      let base = Math.min(start, end);
+      let since = 0;
+      let rate = 1;
+      let running = false;
+      const now = () =>
+        running
+          ? Math.min(end, base + ((performance.now() - since) / 1000) * rate)
+          : base;
+      const rebase = () => {
+        base = now();
+        since = performance.now();
+      };
+      const pause = () => {
+        if (!running) return;
+        rebase();
+        running = false;
+        patch({ playing: false, currentTime: base });
+      };
+      const play = () => {
+        if (running) return;
+        if (base >= end) base = 0;
+        since = performance.now();
+        running = true;
+        patch({ playing: true });
+      };
+      // Al llegar al final se detiene, como un audio.
+      const ender = setInterval(() => {
+        if (running && now() >= end) pause();
+      }, 200);
+      // Listo en el siguiente turno, como las otras fuentes (que cargan algo).
+      const init = setTimeout(() => {
+        patch({ ready: true, duration: end, currentTime: base });
+        setControls({
+          now,
+          toggle: () => (running ? pause() : play()),
+          play,
+          pause,
+          seekTo: (seconds) => {
+            base = Math.min(Math.max(0, seconds), end);
+            since = performance.now();
+            patch({ currentTime: base });
+          },
+          setRate: (next) => {
+            rebase();
+            rate = next;
+            patch({ rate });
+          },
+          setVolume: (next) => patch({ volume: next }),
+          setFade: () => {},
+          setMuted: (muted) => patch({ muted }),
+        });
+      }, 0);
+      return () => {
+        cancelled = true;
+        clearTimeout(init);
+        clearInterval(ender);
+      };
+    }
 
     if (source.type === "youtube") {
       const container = youtubeContainer.current;

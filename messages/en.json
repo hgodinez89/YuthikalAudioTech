@@ -325,7 +325,36 @@
       "dismiss": "Dismiss",
       "error": "Couldn't complete that. Check your connection and try again."
     },
-    "myChords": "My chords"
+    "myChords": "My chords",
+    "offline": {
+      "downloadAll": "Download all",
+      "allSaved": "All available offline",
+      "downloading": "Downloading {done} of {total}…",
+      "removeAllTitle": "Remove all downloads?",
+      "removeAllMessage": "Your songs will no longer be available offline on this device. You can download them again any time.",
+      "removeAllConfirm": "Remove downloads",
+      "error": "Couldn't download for offline use. Check your connection.",
+      "badge": "Offline",
+      "menuDownload": "Download for offline use",
+      "menuRemove": "Remove download",
+      "menuIncluded": "Included in the {name} playlist",
+      "menuIncludedAll": "Included in “All”",
+      "download": "Download",
+      "saved": "Offline",
+      "removePlaylist": "Remove the playlist download",
+      "includedAll": "Offline · in All",
+      "includedAllHint": "Included when you downloaded all: manage it from “All available offline”.",
+      "panelDownload": "Download {name} for offline use",
+      "legendSaved": "Offline",
+      "legendDownload": "Download",
+      "savedCount": "{count, plural, one {# song downloaded on this device} other {# songs downloaded on this device}}",
+      "playlists": "Downloaded playlists",
+      "complete": "{count, plural, one {The song is on this device.} other {All # songs are on this device.}}",
+      "incomplete": "{saved} of {total} songs downloaded. Download the playlist to use concert mode offline.",
+      "concertNeedsDownload": "Download the playlist to use concert mode offline",
+      "notSynced": "Not synced: lyrics advance on a timer",
+      "listNote": "Tap a song to see it in book mode; ▶ opens karaoke. Editing, moving or deleting need a connection."
+    }
   },
   "editor": {
     "textMode": "Text editor",
@@ -563,7 +592,14 @@
     "breadcrumb": "Breadcrumb",
     "backToLyrics": "Back to the lyrics",
     "capo": "Capo {n}",
-    "tempo": "{bpm} BPM"
+    "tempo": "{bpm} BPM",
+    "offlineDownload": "Download",
+    "offlineSaved": "Offline",
+    "offlineRemove": "Remove download",
+    "offlineIncluded": "Offline · in {name}",
+    "offlineAll": "All",
+    "offlineIncludedHint": "Included by its playlist or by “All”: remove it from there.",
+    "offlineDownloading": "Downloading…"
   },
   "concert": {
     "title": "Concert mode",
@@ -605,7 +641,9 @@
       "pickA": "Tap the line where it starts (A)",
       "pickB": "Now tap the line where it ends (B)",
       "cancel": "Cancel"
-    }
+    },
+    "silentChip": "No audio",
+    "silentNote": "Offline: no audio. The lyrics follow the timing of your sync."
   },
   "strings": {
     "title": "{instrument, select, ukulele {The ukulele strings} other {The guitar strings}}",

@@ -22,7 +22,9 @@ import { staticAssets } from "@/lib/offline-cache";
  *  2. Archivos con hash de Next: primero caché (nunca cambian).
  *  3. Páginas y datos de navegación (RSC) públicos: primero la red; sin ella,
  *     la copia guardada. Así con conexión nunca se ve contenido viejo.
- * Sin copia guardada, una página redirige a /{idioma}/offline (precargada).
+ * Sin copia guardada, una página redirige a /{idioma}/offline (precargada);
+ * las de canciones, a /{idioma}/offline/songs si hay canciones descargadas
+ * (sus datos viven en IndexedDB, nunca en estas cachés).
  */
 
 declare global {
@@ -34,9 +36,14 @@ declare global {
 declare const self: ServiceWorkerGlobalScope;
 
 /* Rutas con datos del usuario o de sesión: solo red. */
-const PRIVATE = /^\/(?:(?:es|en)\/(?:login|[^/]+\/songs)(?:\/|$)|auth\/|api\/|serwist\/)/;
+const PRIVATE =
+  /^\/(?:(?:es|en)\/(?:login|(?!offline\/)[^/]+\/songs)(?:\/|$)|auth\/|api\/|serwist\/)/;
 
 const DAY = 24 * 60 * 60;
+
+/* Páginas de canciones (lista, canción, concierto). /{idioma}/offline/songs
+   es la página sin conexión: estática y sin datos, sí se guarda. */
+const SONGS = /^\/(?:es|en)\/(?!offline\/)[^/]+\/songs(?:\/|$)/;
 
 /*
  * Sin red y sin copia guardada, una página redirige a /{idioma}/offline con la
@@ -49,7 +56,13 @@ const offlineRedirect: SerwistPlugin = {
     if (request.mode !== "navigate") return undefined;
     const url = new URL(request.url);
     const locale = /^\/en(?:\/|$)/.test(url.pathname) ? "en" : "es";
-    return Response.redirect(`/${locale}/offline#${url.pathname}${url.search}`, 302);
+    const target = `${url.pathname}${url.search}`;
+    // Canciones: si se descargaron (su página quedó guardada), van ahí.
+    const songs = `/${locale}/offline/songs`;
+    if (SONGS.test(url.pathname) && (await caches.match(songs))) {
+      return Response.redirect(`${songs}#${target}`, 302);
+    }
+    return Response.redirect(`/${locale}/offline#${target}`, 302);
   },
 };
 

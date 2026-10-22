@@ -1,6 +1,6 @@
 "use client";
 
-import { History, Info, Pause, Play, Repeat, SkipBack, X } from "lucide-react";
+import { History, Info, Pause, Play, Repeat, SkipBack, VolumeOff, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   memo,
@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { AppLink, useAppNavigate } from "./app-link";
 import { ChordVisual } from "./chord-visual";
 import type { ChordDataMap } from "./chord-sheet";
 import { FloatingVideo, type VideoInsets } from "./floating-video";
@@ -38,6 +38,7 @@ import {
   type SongSyncRow,
 } from "@/lib/audio";
 import { isInstrumental, wordGroups } from "@/lib/chordpro";
+import { clockDuration } from "@/lib/offline-songs";
 import {
   crossedLoopEnd,
   loopRange,
@@ -233,8 +234,11 @@ export function SongKaraoke({
   syncMissing = 0,
   capo = null,
   tempo = null,
+  silent = false,
 }: {
   song: SongRow;
+  /** Sin conexión: sin audio; un reloj silencioso sigue las marcas. */
+  silent?: boolean;
   /** {capo:} y {tempo:} de la letra (informativos: el ritmo lo marca el audio). */
   capo?: number | null;
   tempo?: number | null;
@@ -245,7 +249,7 @@ export function SongKaraoke({
   chords: ChordDataMap;
   exitHref: string;
   /** Paso "Audio" del editor, para sincronizar desde el aviso sin calibración. */
-  syncHref: string;
+  syncHref: string | null;
 }) {
   const t = useTranslations("karaoke");
   const tSongView = useTranslations("songView");
@@ -277,15 +281,17 @@ export function SongKaraoke({
 
   /* Motor de audio (solo variante sincronizada). URL firmada del MP3, renovada. */
   const filePath =
-    variant === "sync" && audio?.source === "file" ? audio.file_path : null;
+    variant === "sync" && !silent && audio?.source === "file" ? audio.file_path : null;
   const signed = useSignedAudioUrl(filePath);
 
   const engineSource: AudioSource | null =
-    variant === "sync" && audio?.source === "youtube" && audio.youtube_id
-      ? { type: "youtube", videoId: audio.youtube_id }
-      : filePath && signed.url
-        ? { type: "file", url: signed.url, id: filePath }
-        : null;
+    variant === "sync" && silent && sync
+      ? { type: "clock", id: song.id, duration: clockDuration(sync) }
+      : variant === "sync" && audio?.source === "youtube" && audio.youtube_id
+        ? { type: "youtube", videoId: audio.youtube_id }
+        : filePath && signed.url
+          ? { type: "file", url: signed.url, id: filePath }
+          : null;
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
   const engine = useAudioEngine(engineSource, youtubeContainerRef);
 
@@ -680,12 +686,12 @@ export function SongKaraoke({
   const toggleVideo = () => setVideoOpen(!videoOpen);
 
   const transportDisabled = variant === "sync" && !engine.ready;
-  const router = useRouter();
+  const navigate = useAppNavigate();
 
   usePlayerShortcuts({
     // Los menús abiertos (velocidad, atajos) atrapan su propio Escape; al
     // elegir A–B, Escape cancela la elección.
-    Escape: () => (picking ? setPicking(null) : router.push(exitHref)),
+    Escape: () => (picking ? setPicking(null) : navigate(exitHref)),
     b: toggleLoop,
     " ": togglePlay,
     k: togglePlay,
@@ -766,8 +772,15 @@ export function SongKaraoke({
           )}
         </div>
 
+        {/* Sin conexión: sin audio (el video vuelve con la red). */}
+        {silent && (
+          <span className="ml-auto mr-1 inline-flex items-center gap-1.5 self-center rounded-full border border-edge-2 bg-surface-3 px-3 py-1.5 text-[12px] font-semibold text-tert">
+            <VolumeOff size={14} strokeWidth={2} />
+            {t("silentChip")}
+          </span>
+        )}
         {/* Única salida (también con Escape) */}
-        <Link
+        <AppLink
           href={exitHref}
           aria-label={t("exit")}
           title={`${t("exit")} (Esc)`}
@@ -776,7 +789,7 @@ export function SongKaraoke({
           <PendingIcon size={19}>
             <X size={19} strokeWidth={2} />
           </PendingIcon>
-        </Link>
+        </AppLink>
       </div>
 
       {/* ELEGIR A–B (reemplaza a la línea de datos mientras dura) */}
@@ -894,24 +907,47 @@ export function SongKaraoke({
             {t("fileLoadError")}
           </div>
         )}
+        {silent && variant === "sync" && (
+          <div
+            role="note"
+            className="mb-2 flex items-center justify-center gap-[7px] text-center text-xs text-warn"
+          >
+            <Info size={14} strokeWidth={2} />
+            {t("silentNote")}
+          </div>
+        )}
         {variant === "sync" && syncMissing > 0 && (
           <div className="mb-2 flex flex-wrap items-center justify-center gap-[7px] text-xs text-warn">
             <Info size={14} strokeWidth={2} />
             {t("syncDrift", { count: syncMissing })}
-            <span aria-hidden>·</span>
-            <Link href={syncHref} className="font-semibold text-accent hover:underline">
-              {t("syncReview")}
-            </Link>
+            {syncHref && (
+              <>
+                <span aria-hidden>·</span>
+                <AppLink
+                  href={syncHref}
+                  className="font-semibold text-accent hover:underline"
+                >
+                  {t("syncReview")}
+                </AppLink>
+              </>
+            )}
           </div>
         )}
         {variant === "auto" && (
           <div className="mb-2 flex items-center justify-center gap-[7px] text-xs text-tert">
             <Info size={14} strokeWidth={2} />
             {t("noSyncNote")}
-            <span aria-hidden>·</span>
-            <Link href={syncHref} className="font-semibold text-accent hover:underline">
-              {t("syncNow")}
-            </Link>
+            {syncHref && (
+              <>
+                <span aria-hidden>·</span>
+                <AppLink
+                  href={syncHref}
+                  className="font-semibold text-accent hover:underline"
+                >
+                  {t("syncNow")}
+                </AppLink>
+              </>
+            )}
           </div>
         )}
 

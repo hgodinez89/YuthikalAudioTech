@@ -161,6 +161,8 @@ export type SongListRow = Omit<SongRow, "content"> & {
   /** Marcas de sincronización y su precisión (para mostrarlas al duplicar). */
   stampCount: number;
   granularity: "line" | "word" | null;
+  /** Para actualizar la copia descargada (ver songVersion). */
+  version: string;
 };
 
 /** La sincronización solo tiene sentido con el audio al que pertenecen sus marcas. */

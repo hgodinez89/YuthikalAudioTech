@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
+import { Check, ChevronDown, CloudCheck, Download, Plus, Search, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   useId,
@@ -19,6 +19,13 @@ import { Modal } from "./modal";
 const FEATURED = 5;
 /** Con más playlists que esto, el panel muestra el buscador. */
 const SEARCH_FROM = 8;
+
+/** Descargar playlists para usar sin conexión (lo maneja la lista). */
+type OfflineSaving = {
+  saved: (id: string) => boolean;
+  onDownload: (id: string) => void;
+  disabled: boolean;
+};
 
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -62,6 +69,7 @@ export function PlaylistFilter({
   onSelect,
   onNewList,
   canCreate = true,
+  offlineSaving,
 }: {
   base: string;
   playlists: PlaylistWithCount[];
@@ -70,6 +78,7 @@ export function PlaylistFilter({
   onNewList: () => void;
   /** Sin conexión no se crean playlists (solo consulta). */
   canCreate?: boolean;
+  offlineSaving?: OfflineSaving;
 }) {
   const t = useTranslations("songs");
   const tPlaylists = useTranslations("playlists");
@@ -153,6 +162,7 @@ export function PlaylistFilter({
           onSelect={onSelect}
           onNewList={onNewList}
           canCreate={canCreate}
+          offlineSaving={offlineSaving}
         />
       )}
     </>
@@ -172,8 +182,10 @@ function PlaylistPanel({
   onSelect,
   onNewList,
   canCreate,
+  offlineSaving,
 }: {
   canCreate: boolean;
+  offlineSaving?: OfflineSaving;
   anchor: DOMRect;
   base: string;
   playlists: PlaylistWithCount[];
@@ -214,28 +226,52 @@ function PlaylistPanel({
   };
 
   const row = (listId: string | null, name: string, current: boolean, count?: number) => (
-    <FilterLink
-      key={listId ?? "all"}
-      data-row
-      base={base}
-      listId={listId}
-      onPick={(id) => {
-        onClose();
-        onSelect(id);
-      }}
-      aria-current={current ? "page" : undefined}
-      className="flex items-center gap-3 rounded-[10px] px-3 py-3 text-[14px] hover:bg-edge sm:py-2"
-    >
-      <Check
-        size={15}
-        strokeWidth={2.4}
-        className={current ? "shrink-0 text-accent" : "invisible shrink-0"}
-      />
-      <span className="min-w-0 flex-1 truncate font-semibold">{name}</span>
-      {count !== undefined && (
-        <span className="text-[12px] tabular-nums text-tert">{count}</span>
-      )}
-    </FilterLink>
+    <div key={listId ?? "all"} className="flex items-center gap-1.5 pr-1.5">
+      <FilterLink
+        data-row
+        base={base}
+        listId={listId}
+        onPick={(id) => {
+          onClose();
+          onSelect(id);
+        }}
+        aria-current={current ? "page" : undefined}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-[10px] px-3 py-3 text-[14px] hover:bg-edge sm:py-2"
+      >
+        <Check
+          size={15}
+          strokeWidth={2.4}
+          className={current ? "shrink-0 text-accent" : "invisible shrink-0"}
+        />
+        <span className="min-w-0 flex-1 truncate font-semibold">{name}</span>
+        {count !== undefined && (
+          <span className="text-[12px] tabular-nums text-tert">{count}</span>
+        )}
+      </FilterLink>
+      {/* Cada playlist: descargada (nube) o botón para descargarla. */}
+      {offlineSaving &&
+        listId &&
+        (offlineSaving.saved(listId) ? (
+          <span
+            title={t("offline.legendSaved")}
+            className="grid size-8 shrink-0 place-items-center text-accent"
+          >
+            <CloudCheck size={17} strokeWidth={2} aria-hidden />
+            <span className="sr-only">{t("offline.legendSaved")}</span>
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => offlineSaving.onDownload(listId)}
+            disabled={offlineSaving.disabled}
+            aria-label={t("offline.panelDownload", { name })}
+            title={t("offline.panelDownload", { name })}
+            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-[8px] border border-edge-2 text-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download size={16} strokeWidth={2} aria-hidden />
+          </button>
+        ))}
+    </div>
   );
 
   return (
@@ -290,6 +326,21 @@ function PlaylistPanel({
           )}
         </div>
 
+        {offlineSaving && (
+          <div
+            aria-hidden
+            className="flex flex-wrap gap-x-3.5 gap-y-1 border-t border-edge px-4 py-2.5 text-[11.5px] text-sub"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <CloudCheck size={14} strokeWidth={2} className="text-accent" />
+              {t("offline.legendSaved")}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Download size={14} strokeWidth={2} className="text-accent" />
+              {t("offline.legendDownload")}
+            </span>
+          </div>
+        )}
         <div className="border-t border-edge p-2.5">
           <button
             type="button"

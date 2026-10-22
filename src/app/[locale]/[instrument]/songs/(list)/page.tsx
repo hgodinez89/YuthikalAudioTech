@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LoginCard } from "@/components/login-card";
+import { WipeOfflineSongs } from "@/components/offline-song-controls";
 import { SongsView } from "@/components/songs-view";
 import { dbError } from "@/lib/db-error";
 import type { Instrument } from "@/lib/instruments";
+import { songVersion } from "@/lib/offline-songs";
 import type { PlaylistRow } from "@/lib/playlists";
 import type { SongListRow } from "@/lib/songs";
 import { sessionUserId, supabaseWithSession } from "@/lib/supabase-server";
@@ -20,14 +22,15 @@ export async function generateMetadata({
 }
 
 const SONG_COLUMNS =
-  "id,playlist_id,playlist_position,name,description,key_note,instruments,created_at,audio:song_audio(source,youtube_title),sync:song_sync(granularity,stamp_count)";
+  "id,playlist_id,playlist_position,name,description,key_note,instruments,created_at,updated_at,audio:song_audio(source,youtube_title),sync:song_sync(granularity,stamp_count,updated_at)";
 
 type SongWithMeta = Omit<
   SongListRow,
-  "source" | "youtubeTitle" | "synced" | "stampCount" | "granularity"
+  "source" | "youtubeTitle" | "synced" | "stampCount" | "granularity" | "version"
 > & {
+  updated_at: string;
   audio: { source: "youtube" | "file"; youtube_title: string | null } | null;
-  sync: { granularity: "line" | "word"; stamp_count: number } | null;
+  sync: { granularity: "line" | "word"; stamp_count: number; updated_at: string } | null;
 };
 
 export default async function SongsPage({
@@ -42,15 +45,20 @@ export default async function SongsPage({
   const supabase = await supabaseWithSession();
 
   // Sin sesión: login en la misma página, que regresa aquí al terminar.
-  if (!(await sessionUserId(supabase))) {
+  const userId = await sessionUserId(supabase);
+  if (!userId) {
     const t = await getTranslations({ locale, namespace: "songs" });
     return (
-      <LoginCard
-        embedded
-        next={`/${locale}/${instrument}/songs`}
-        title={t("gateTitle")}
-        subtitle={t("gateSubtitle")}
-      />
+      <>
+        {/* Sin sesión no quedan canciones de nadie en el dispositivo. */}
+        <WipeOfflineSongs />
+        <LoginCard
+          embedded
+          next={`/${locale}/${instrument}/songs`}
+          title={t("gateTitle")}
+          subtitle={t("gateSubtitle")}
+        />
+      </>
     );
   }
 
@@ -76,8 +84,14 @@ export default async function SongsPage({
   const playlists = playlistsRes.data ?? [];
   const songs = songsRes.data ?? [];
 
-  const rows: SongListRow[] = songs.map(({ audio, sync, ...song }) => ({
+  const rows: SongListRow[] = songs.map(({ audio, sync, updated_at, ...song }) => ({
     ...song,
+    version: songVersion({
+      updated_at,
+      sync_updated_at: sync?.updated_at ?? null,
+      playlist_id: song.playlist_id,
+      playlist_position: song.playlist_position,
+    }),
     source: audio?.source ?? null,
     youtubeTitle: audio?.youtube_title ?? null,
     synced: (sync?.stamp_count ?? 0) > 0,
@@ -87,6 +101,7 @@ export default async function SongsPage({
 
   return (
     <SongsView
+      userId={userId}
       instrument={instrument as Instrument}
       songs={rows}
       playlists={playlists.map(({ songs: count, ...p }) => ({

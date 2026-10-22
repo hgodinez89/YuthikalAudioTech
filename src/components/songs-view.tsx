@@ -4,8 +4,11 @@ import {
   ArrowDownWideNarrow,
   ArrowUpDown,
   ArrowUpNarrowWide,
+  CloudCheck,
+  Download,
   FileMusic,
   LayoutGrid,
+  LoaderCircle,
   MonitorPlay,
   Music,
   Pencil,
@@ -17,7 +20,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Link } from "@/i18n/navigation";
 import { Button, buttonClass } from "./button";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -29,6 +32,13 @@ import { SongMenu } from "./song-menu";
 import { StarsRow } from "./stars";
 import { useToast } from "./toast";
 import type { Instrument } from "@/lib/instruments";
+import { coverage, EMPTY_SCOPE, type OfflineScope } from "@/lib/offline-songs";
+import {
+  setOfflineScope,
+  syncOfflineSongs,
+  useOfflineSongs,
+} from "@/lib/offline-songs-client";
+import { useHasServiceWorker } from "@/lib/use-offline-instruments";
 import {
   createPlaylist,
   deletePlaylist,
@@ -140,10 +150,13 @@ function EmptyArt() {
  * cambiar de playlist solo cambia la URL, sin ir al servidor.
  */
 export function SongsView({
+  userId,
   instrument,
   songs,
   playlists,
 }: {
+  /** Cuenta con sesión: las descargas de otra cuenta se borran. */
+  userId: string;
   instrument: Instrument;
   songs: SongListRow[];
   playlists: PlaylistWithCount[];
@@ -163,6 +176,37 @@ export function SongsView({
   const selectList = (id: string | null) =>
     window.history.pushState(null, "", id ? `?list=${id}` : window.location.pathname);
   const [search, setSearch] = useState("");
+
+  /* Descargas para usar sin conexión (solo con service worker). */
+  const saved = useOfflineSongs();
+  const canSave = useHasServiceWorker() && saved.ready;
+  const scope = saved.scope;
+  const busy = saved.busy;
+  const offlineList = useMemo(
+    () => songs.map(({ id, playlist_id, version }) => ({ id, playlist_id, version })),
+    [songs],
+  );
+  // Con red: cuenta, playlists y copias al día (lo nuevo o cambiado se baja solo).
+  useEffect(() => {
+    if (offline || !canSave) return;
+    void syncOfflineSongs(
+      locale,
+      userId,
+      offlineList,
+      playlists.map(({ id, name, songs_count }) => ({ id, name, songs_count })),
+    );
+  }, [offline, canSave, locale, userId, offlineList, playlists]);
+  const setScope = (next: OfflineScope) =>
+    void setOfflineScope(locale, next, offlineList);
+  const [removeAllOpen, setRemoveAllOpen] = useState(false);
+  const playlistSaved = (id: string) => scope.all || scope.playlists.includes(id);
+  const togglePlaylist = (id: string) =>
+    setScope({
+      ...scope,
+      playlists: scope.playlists.includes(id)
+        ? scope.playlists.filter((p) => p !== id)
+        : [...scope.playlists, id],
+    });
   /* Antes de montar, el orden por defecto (el del servidor): sin desajuste de hidratación. */
   const [allSort, saveAllSort] = useStoredValue(
     SORT_KEY,
@@ -330,6 +374,11 @@ export function SongsView({
             {t("title")}
           </h1>
           <p className="text-[14px] text-tert">{t("count", { count: listed.length })}</p>
+          {saved.error && (
+            <p role="alert" className="mt-1 text-[13px] text-warn">
+              {t("offline.error")}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href={`${base}/chords`} className={buttonClass("secondary")}>
@@ -338,6 +387,36 @@ export function SongsView({
             </PendingIcon>
             {t("myChords")}
           </Link>
+          {canSave &&
+            (scope.all && !busy ? (
+              <Button
+                onClick={() => setRemoveAllOpen(true)}
+                disabled={offline}
+                title={offline ? offlineTitle : t("offline.removeAllTitle")}
+                className="border-accent/35 text-accent"
+              >
+                <CloudCheck size={16} strokeWidth={2} />
+                {t("offline.allSaved")}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setScope({ ...scope, all: true })}
+                disabled={offline || busy !== null || songs.length === 0}
+                title={offlineTitle}
+                className="border-accent/45"
+              >
+                {busy ? (
+                  <LoaderCircle
+                    size={16}
+                    strokeWidth={2.4}
+                    className="animate-spin text-accent"
+                  />
+                ) : (
+                  <Download size={16} strokeWidth={2} className="text-accent" />
+                )}
+                {busy ? t("offline.downloading", busy) : t("offline.downloadAll")}
+              </Button>
+            ))}
           <Button
             variant="primary"
             onClick={() => setNewSongOpen(true)}
@@ -358,6 +437,15 @@ export function SongsView({
         onSelect={selectList}
         onNewList={() => setNewListOpen(true)}
         canCreate={!offline}
+        offlineSaving={
+          canSave
+            ? {
+                saved: playlistSaved,
+                onDownload: togglePlaylist,
+                disabled: offline || busy !== null,
+              }
+            : undefined
+        }
       />
 
       {/* CABECERA DE LA PLAYLIST SELECCIONADA */}
@@ -392,6 +480,45 @@ export function SongsView({
                 {t("setlist.concert")}
               </Link>
             )}
+            {canSave &&
+              listed.length > 0 &&
+              !ordering &&
+              (scope.all ? (
+                <span
+                  title={t("offline.includedAllHint")}
+                  className="inline-flex h-[38px] items-center gap-1.5 rounded-[10px] border border-edge px-3 text-[13px] font-semibold text-sub"
+                >
+                  <CloudCheck size={15} strokeWidth={2} className="text-accent" />
+                  {t("offline.includedAll")}
+                </span>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => togglePlaylist(activeList.id)}
+                  disabled={offline || busy !== null}
+                  title={
+                    offline
+                      ? offlineTitle
+                      : playlistSaved(activeList.id)
+                        ? t("offline.removePlaylist")
+                        : undefined
+                  }
+                  className={
+                    playlistSaved(activeList.id)
+                      ? "border-accent/35 text-accent"
+                      : "border-accent/45"
+                  }
+                >
+                  {playlistSaved(activeList.id) ? (
+                    <CloudCheck size={15} strokeWidth={2} />
+                  ) : (
+                    <Download size={15} strokeWidth={2} className="text-accent" />
+                  )}
+                  {playlistSaved(activeList.id)
+                    ? t("offline.saved")
+                    : t("offline.download")}
+                </Button>
+              ))}
             {listed.length > 1 && !ordering && (
               <Button
                 size="sm"
@@ -566,6 +693,12 @@ export function SongsView({
                         </span>
                       )
                     )}
+                    {canSave && saved.versions[song.id] && (
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-accent">
+                        <CloudCheck size={14} strokeWidth={2} />
+                        {t("offline.badge")}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {/* Con el menú abierto se eleva sobre las filas siguientes. */}
@@ -576,6 +709,24 @@ export function SongsView({
                     onMove={() => setSongToMove(song)}
                     onDuplicate={() => setSongToDuplicate(song)}
                     onDelete={() => deleteLater(song)}
+                    offlineItem={
+                      canSave
+                        ? {
+                            state: coverage(scope, song),
+                            playlistName: song.playlist_id
+                              ? (playlistName.get(song.playlist_id) ?? "")
+                              : "",
+                            disabled: offline || busy !== null,
+                            onToggle: () =>
+                              setScope({
+                                ...scope,
+                                songs: scope.songs.includes(song.id)
+                                  ? scope.songs.filter((id) => id !== song.id)
+                                  : [...scope.songs, song.id],
+                              }),
+                          }
+                        : undefined
+                    }
                   />
                   <Link
                     href={url("karaoke")}
@@ -687,6 +838,18 @@ export function SongsView({
           onSubmit={editList}
         />
       )}
+      <ConfirmDialog
+        open={removeAllOpen}
+        title={t("offline.removeAllTitle")}
+        message={t("offline.removeAllMessage")}
+        cancelLabel={tPlaylists("cancel")}
+        confirmLabel={t("offline.removeAllConfirm")}
+        onCancel={() => setRemoveAllOpen(false)}
+        onConfirm={() => {
+          setRemoveAllOpen(false);
+          setScope(EMPTY_SCOPE);
+        }}
+      />
       <ConfirmDialog
         open={deleteListOpen && activeList !== null}
         title={tPlaylists("deleteModal.title")}

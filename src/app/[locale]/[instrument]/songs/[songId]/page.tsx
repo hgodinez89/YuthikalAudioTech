@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Link, redirect } from "@/i18n/navigation";
 import { buttonClass } from "@/components/button";
 import { PendingIcon } from "@/components/link-pending";
+import { SongDownloadButton } from "@/components/offline-song-controls";
 import { OnlineLink } from "@/components/online-link";
 import { SongInstruments } from "@/components/song-instruments";
 import { YouTubeHints } from "@/components/youtube-hints";
@@ -20,11 +21,20 @@ import { collectChords, parseChordPro } from "@/lib/chordpro";
 import { loadChordData, loadCustomChords } from "@/lib/chord-data";
 import { dbError } from "@/lib/db-error";
 import { isUuid } from "@/lib/ids";
+import { songVersion } from "@/lib/offline-songs";
 import type { Instrument } from "@/lib/instruments";
 import { keyLabel, type SongRow } from "@/lib/songs";
 import { sessionUserId, supabaseWithSession } from "@/lib/supabase-server";
 
 type Mode = "view" | "edit" | "karaoke";
+
+/* La canción y lo que define su copia descargada (ver songVersion). */
+type SongWithVersion = SongRow & {
+  updated_at: string;
+  playlist_position: number | null;
+  playlist: { name: string } | null;
+  sync_meta: { updated_at: string } | null;
+};
 type Step = "lyrics" | "audio";
 
 const getSong = cache(async (songId: string) => {
@@ -32,9 +42,11 @@ const getSong = cache(async (songId: string) => {
   const supabase = await supabaseWithSession();
   const { data, error, status } = await supabase
     .from("songs")
-    .select("id,playlist_id,name,description,key_note,instruments,content,created_at")
+    .select(
+      "id,playlist_id,name,description,key_note,instruments,content,created_at,updated_at,playlist_position,playlist:playlists(name),sync_meta:song_sync(updated_at)",
+    )
     .eq("id", songId)
-    .maybeSingle<SongRow>();
+    .maybeSingle<SongWithVersion>();
   // Sin fila (no existe o es ajena, por RLS) → 404; un fallo de la base no es un 404.
   if (error) throw dbError(error, status);
   return data;
@@ -238,7 +250,19 @@ export default async function SongPage({
             loading.tsx aquí: la pantalla sigue hasta que llega el modo y el
             botón pulsado muestra que está cargando. */}
         {mode === "view" ? (
-          <div className="flex gap-2.5">
+          <div className="flex flex-wrap gap-2.5">
+            {/* Descargar para usar sin conexión (y mantener la copia al día). */}
+            <SongDownloadButton
+              songId={songId}
+              playlistId={song.playlist_id}
+              playlistName={song.playlist?.name ?? null}
+              version={songVersion({
+                updated_at: song.updated_at,
+                sync_updated_at: song.sync_meta?.updated_at ?? null,
+                playlist_id: song.playlist_id,
+                playlist_position: song.playlist_position,
+              })}
+            />
             {/* Editar necesita conexión: sin red se ve desactivado. */}
             <OnlineLink
               href={`${songUrl}?mode=edit`}

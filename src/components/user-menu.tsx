@@ -59,6 +59,9 @@ export function UserMenu() {
   }, []);
 
   const signOut = async () => {
+    // Lo descargado para usar sin conexión es de esta cuenta: se borra.
+    const { wipeOfflineSongs } = await import("@/lib/offline-songs-client");
+    await wipeOfflineSongs().catch(() => {});
     const { supabaseBrowser } = await import("@/lib/supabase");
     await supabaseBrowser().auth.signOut();
     router.push("/");
