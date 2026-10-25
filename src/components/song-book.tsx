@@ -416,7 +416,11 @@ export function BookView({
   /* Táctil: tocar el tercio izquierdo/derecho o deslizar pasa de página. */
   const touch = useRef<{ x: number; y: number } | null>(null);
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    touch.current = e.pointerType === "mouse" ? null : { x: e.clientX, y: e.clientY };
+    // Un toque sobre un botón o enlace (un acorde, p. ej.) es suyo: no pasa
+    // de página (si no, en táctiles se sumaba al clic del botón).
+    const onControl = e.target instanceof Element && e.target.closest("button, a");
+    touch.current =
+      e.pointerType === "mouse" || onControl ? null : { x: e.clientX, y: e.clientY };
   };
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
     const from = touch.current;
@@ -461,7 +465,7 @@ export function BookView({
         ref={areaRef}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
-        className="group relative min-h-[320px] flex-1 touch-pan-y select-none"
+        className="relative min-h-[320px] flex-1 touch-pan-y select-none"
       >
         <div
           ref={columnsRef}
@@ -489,26 +493,8 @@ export function BookView({
             ))}
           <ChordSheet sections={sections} chords={chords} showFab={false} zoom={zoom} />
         </div>
-
-        {/* Flechas laterales */}
-        <button
-          type="button"
-          onClick={() => turn(-1)}
-          disabled={atStart}
-          aria-label={t("previous")}
-          className="absolute left-1 top-1/2 grid size-12 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-edge-2 bg-surface/80 text-sub opacity-0 shadow-pop backdrop-blur transition-opacity hover:text-ink group-hover:opacity-100 disabled:hidden [@media(hover:none)]:opacity-100"
-        >
-          <ChevronLeft size={24} strokeWidth={2.2} />
-        </button>
-        <button
-          type="button"
-          onClick={() => turn(1)}
-          disabled={atEnd}
-          aria-label={t("next")}
-          className="absolute right-1 top-1/2 grid size-12 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-edge-2 bg-surface/80 text-sub opacity-0 shadow-pop backdrop-blur transition-opacity hover:text-ink group-hover:opacity-100 disabled:hidden [@media(hover:none)]:opacity-100"
-        >
-          <ChevronRight size={24} strokeWidth={2.2} />
-        </button>
+        {/* Sin flechas laterales: tapaban la letra. Se pasa de página con la
+            barra de abajo, tocando un lado, deslizando, el teclado o un pedal. */}
       </div>
 
       {/* BARRA DE CONTROLES */}
