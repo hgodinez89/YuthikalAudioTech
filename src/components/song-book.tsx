@@ -82,6 +82,18 @@ function subscribeTouch(onChange: () => void) {
    receptor del pedal, marcado con data-page-keys). */
 const TYPING = "input, textarea, select, [contenteditable='true']";
 
+/* Relleno del receptor con el cursor en medio: si iOS no avisa la tecla pero
+   sí mueve el cursor (como en Notas), se sabe hacia dónde pisó el pedal. */
+const PEDAL_FILL = "-".repeat(20);
+const PEDAL_MID = 10;
+
+/* TEMPORAL (diagnóstico del pedal): qué elemento tiene el foco. */
+function describeFocus(el: Element | null): string {
+  if (!el || el === document.body) return "ninguno";
+  if (el.hasAttribute("data-page-keys")) return "receptor ✓";
+  return el.tagName.toLowerCase();
+}
+
 function subscribeMedia(onChange: () => void) {
   const mql = window.matchMedia(BOOK_QUERY);
   mql.addEventListener("change", onChange);
@@ -180,14 +192,40 @@ export function BookView({
     () => false,
   );
   const pedalRef = useRef<HTMLInputElement>(null);
+  const resetCaret = useCallback((el: HTMLInputElement) => {
+    if (el.value !== PEDAL_FILL) el.value = PEDAL_FILL;
+    el.setSelectionRange(PEDAL_MID, PEDAL_MID);
+  }, []);
   const focusPedal = useCallback(() => {
     const el = pedalRef.current;
     const active = document.activeElement;
-    if (!el || active === el) return;
-    // No se le quita el foco a otro campo donde se esté escribiendo.
-    if (active instanceof Element && active.closest(TYPING)) return;
-    el.focus({ preventScroll: true });
-  }, []);
+    if (!el) return;
+    if (active !== el) {
+      // No se le quita el foco a otro campo donde se esté escribiendo.
+      if (active instanceof Element && active.closest(TYPING)) return;
+      el.focus({ preventScroll: true });
+    }
+    resetCaret(el);
+  }, [resetCaret]);
+  /* Última vuelta de hoja por una tecla: el cursor que se mueva justo
+     después es esa misma tecla (no otra vuelta). */
+  const lastKeyTurn = useRef(0);
+
+  /* TEMPORAL: diagnóstico del pedal en táctiles (se quita al resolverlo). */
+  const [pedalDebug, setPedalDebug] = useState({
+    focus: "—",
+    keys: [] as string[],
+    caret: [] as string[],
+  });
+  useEffect(() => {
+    if (!touchScreen) return;
+    const id = setInterval(
+      () =>
+        setPedalDebug((d) => ({ ...d, focus: describeFocus(document.activeElement) })),
+      400,
+    );
+    return () => clearInterval(id);
+  }, [touchScreen]);
   // Al entrar (si el navegador lo permite; iOS espera el primer toque).
   useEffect(() => {
     if (touchScreen) focusPedal();
@@ -374,6 +412,14 @@ export function BookView({
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // TEMPORAL: diagnóstico del pedal.
+      setPedalDebug((d) => ({
+        ...d,
+        keys: [
+          `${e.key || "∅"}|${e.code || "∅"}|${e.keyCode}@${describeFocus(e.target instanceof Element ? e.target : null)}`,
+          ...d.keys,
+        ].slice(0, 4),
+      }));
       // El destino puede no ser un elemento (window/document): solo se ignoran
       // las teclas mientras se escribe en un campo.
       const target = e.target;
@@ -393,6 +439,7 @@ export function BookView({
       const direction = pageTurnDirection(e, onControl);
       if (direction) {
         e.preventDefault();
+        lastKeyTurn.current = performance.now();
         a.turn(direction);
         return;
       }
@@ -430,6 +477,28 @@ export function BookView({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  /* Pedal por el cursor: si el receptor está activo y su cursor se movió (a la
+     derecha = siguiente, a la izquierda = anterior), se pasa de página y el
+     cursor vuelve al medio. Si una tecla ya pasó la página, no se repite. */
+  useEffect(() => {
+    if (!touchScreen) return;
+    const onSelection = () => {
+      const el = pedalRef.current;
+      if (!el || document.activeElement !== el) return;
+      const pos = el.selectionStart ?? PEDAL_MID;
+      if (pos === PEDAL_MID && el.selectionEnd === PEDAL_MID) return;
+      const fromKey = performance.now() - lastKeyTurn.current < 400;
+      setPedalDebug((d) => ({
+        ...d,
+        caret: [`${pos}${fromKey ? " (tecla)" : ""}`, ...d.caret].slice(0, 4),
+      }));
+      resetCaret(el);
+      if (!fromKey) keyActions.current.turn(pos > PEDAL_MID ? 1 : -1);
+    };
+    document.addEventListener("selectionchange", onSelection);
+    return () => document.removeEventListener("selectionchange", onSelection);
+  }, [touchScreen, resetCaret]);
 
   /* Pantalla siempre encendida mientras se lee (si el navegador lo permite). */
   useEffect(() => {
@@ -558,14 +627,26 @@ export function BookView({
           autoCapitalize="off"
           spellCheck={false}
           tabIndex={-1}
-          // Lo que "escriba" el pedal no se queda (las teclas de pasar página
-          // ya se cancelan en el manejador de teclado).
-          onInput={(e) => {
-            e.currentTarget.value = "";
-          }}
-          // 16 px: con menos, iOS hace zoom al activarlo.
-          className="pointer-events-none fixed left-0 top-0 size-px text-[16px] opacity-0"
+          defaultValue={PEDAL_FILL}
+          // Lo que "escriba" el pedal no se queda: vuelve el relleno.
+          onInput={(e) => resetCaret(e.currentTarget)}
+          // 16 px: con menos, iOS hace zoom al activarlo. Casi invisible pero
+          // con tamaño real: iOS puede negarse a activar un campo de 1 px.
+          className="pointer-events-none fixed bottom-0 left-0 h-5 w-10 border-0 bg-transparent p-0 text-[16px] text-transparent caret-transparent opacity-[0.02] outline-none"
         />
+      )}
+
+      {/* TEMPORAL: diagnóstico del pedal (se quita al resolverlo). */}
+      {touchScreen && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed right-3 top-20 z-[60] max-w-[300px] rounded-lg border border-edge-2 bg-surface/95 px-3 py-2 font-mono text-[11px] leading-snug text-sub shadow-pop"
+        >
+          <div className="font-bold text-ink">Diagnóstico pedal (temporal)</div>
+          <div>Foco: {pedalDebug.focus}</div>
+          <div>Teclas: {pedalDebug.keys.join(" · ") || "—"}</div>
+          <div>Cursor: {pedalDebug.caret.join(" · ") || "—"}</div>
+        </div>
       )}
 
       {/* BARRA DE CONTROLES: tras usar un botón, el pedal sigue activo. */}
