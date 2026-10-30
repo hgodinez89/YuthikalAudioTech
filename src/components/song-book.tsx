@@ -67,6 +67,21 @@ function writeSession(key: string, value: string) {
 /* Espacio al pie de cada página para su número. */
 const PAGE_FOOTER = 22;
 
+/* Pantallas táctiles (iPad, teléfonos). Ahí un pedal Bluetooth que iOS no
+   reconoce como teclado completo (el teclado de pantalla no se oculta) solo
+   entrega sus teclas a un campo de texto activo, nunca a la página. */
+const TOUCH_QUERY = "(any-pointer: coarse)";
+
+function subscribeTouch(onChange: () => void) {
+  const mql = window.matchMedia(TOUCH_QUERY);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
+}
+
+/* Campos donde se escribe: sus teclas no son para el libro (salvo el
+   receptor del pedal, marcado con data-page-keys). */
+const TYPING = "input, textarea, select, [contenteditable='true']";
+
 function subscribeMedia(onChange: () => void) {
   const mql = window.matchMedia(BOOK_QUERY);
   mql.addEventListener("change", onChange);
@@ -154,6 +169,29 @@ export function BookView({
 }) {
   const concert = onBeyond !== undefined;
   const t = useTranslations("book");
+
+  /* Receptor del pedal: un campo invisible que no abre el teclado de
+     pantalla (inputmode="none") y queda activo mientras se lee, para que iOS
+     le entregue las teclas del pedal. Solo en táctiles; en la computadora el
+     teclado ya llega a la página. */
+  const touchScreen = useSyncExternalStore(
+    subscribeTouch,
+    () => window.matchMedia(TOUCH_QUERY).matches,
+    () => false,
+  );
+  const pedalRef = useRef<HTMLInputElement>(null);
+  const focusPedal = useCallback(() => {
+    const el = pedalRef.current;
+    const active = document.activeElement;
+    if (!el || active === el) return;
+    // No se le quita el foco a otro campo donde se esté escribiendo.
+    if (active instanceof Element && active.closest(TYPING)) return;
+    el.focus({ preventScroll: true });
+  }, []);
+  // Al entrar (si el navegador lo permite; iOS espera el primer toque).
+  useEffect(() => {
+    if (touchScreen) focusPedal();
+  }, [touchScreen, focusPedal]);
   const [zoom, setZoom] = useState(() => {
     const saved = Number(readPref(zoomKey(songId)));
     return saved ? clampZoom(saved) : 1;
@@ -341,7 +379,8 @@ export function BookView({
       const target = e.target;
       if (
         target instanceof Element &&
-        target.closest("input, textarea, select, [contenteditable='true'], [role='menu']")
+        !target.closest("[data-page-keys]") &&
+        target.closest(`${TYPING}, [role='menu']`)
       ) {
         return;
       }
@@ -464,6 +503,18 @@ export function BookView({
         ref={areaRef}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
+        // Tocar la página deja activo el receptor del pedal. En el clic (no al
+        // soltar): tras un toque el navegador simula un clic de ratón que
+        // quitaría el foco. Los botones (un acorde) se quedan con el suyo.
+        onClick={
+          touchScreen
+            ? (e) => {
+                if (!(e.target instanceof Element && e.target.closest("button, a"))) {
+                  focusPedal();
+                }
+              }
+            : undefined
+        }
         className="relative min-h-[320px] flex-1 touch-pan-y select-none"
       >
         <div
@@ -496,8 +547,29 @@ export function BookView({
             barra de abajo, tocando un lado, deslizando, el teclado o un pedal. */}
       </div>
 
-      {/* BARRA DE CONTROLES */}
-      <div className="shrink-0">
+      {touchScreen && (
+        <input
+          ref={pedalRef}
+          data-page-keys
+          aria-label={t("pedal")}
+          inputMode="none"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          tabIndex={-1}
+          // Lo que "escriba" el pedal no se queda (las teclas de pasar página
+          // ya se cancelan en el manejador de teclado).
+          onInput={(e) => {
+            e.currentTarget.value = "";
+          }}
+          // 16 px: con menos, iOS hace zoom al activarlo.
+          className="pointer-events-none fixed left-0 top-0 size-px text-[16px] opacity-0"
+        />
+      )}
+
+      {/* BARRA DE CONTROLES: tras usar un botón, el pedal sigue activo. */}
+      <div className="shrink-0" onClick={touchScreen ? focusPedal : undefined}>
         <div className="mb-2.5 h-[3px] overflow-hidden rounded-[3px] bg-edge">
           <div
             className="h-full rounded-[3px] bg-[linear-gradient(90deg,var(--grad-from),var(--grad-to))] transition-[width] duration-300"

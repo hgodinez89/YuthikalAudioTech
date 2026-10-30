@@ -107,6 +107,7 @@ export function ConcertView({
       const target = e.target;
       if (
         target instanceof Element &&
+        !target.closest("[data-page-keys]") && // receptor del pedal del libro
         target.closest("input, textarea, select, [contenteditable='true'], [role='menu']")
       ) {
         return;

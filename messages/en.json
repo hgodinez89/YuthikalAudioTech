@@ -791,7 +791,8 @@
     "fit": "Fit",
     "fitHint": "Make the lyrics as large as fits on screen",
     "fullscreen": "Full screen",
-    "exitFullscreen": "Exit full screen"
+    "exitFullscreen": "Exit full screen",
+    "pedal": "Turn pages with a pedal or keyboard"
   },
   "piano": {
     "listen": "Listen",
