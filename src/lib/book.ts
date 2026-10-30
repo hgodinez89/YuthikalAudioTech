@@ -74,3 +74,69 @@ export function turnPage(
 ): number {
   return clampStart(start + direction * visible, count, visible);
 }
+
+/* Teclas de pasar página: teclados y pedales Bluetooth. Cada pedal (y cada
+   modo del pedal) envía algo distinto, e iPadOS a veces nombra las flechas
+   a su manera (UIKeyInputRightArrow…); si `key` no llega, se mira `code` y
+   el código numérico. */
+const NEXT_KEYS = new Set([
+  "ArrowRight",
+  "Right",
+  "UIKeyInputRightArrow",
+  "ArrowDown",
+  "Down",
+  "UIKeyInputDownArrow",
+  "PageDown",
+  "Enter",
+]);
+const PREV_KEYS = new Set([
+  "ArrowLeft",
+  "Left",
+  "UIKeyInputLeftArrow",
+  "ArrowUp",
+  "Up",
+  "UIKeyInputUpArrow",
+  "PageUp",
+]);
+const NEXT_CODES = new Set([
+  "ArrowRight",
+  "ArrowDown",
+  "PageDown",
+  "Enter",
+  "NumpadEnter",
+]);
+const PREV_CODES = new Set(["ArrowLeft", "ArrowUp", "PageUp"]);
+/* 39 →, 40 ↓, 34 Av Pág, 13 Enter · 37 ←, 38 ↑, 33 Re Pág · 32 Espacio */
+const NEXT_KEY_CODES = new Set([39, 40, 34, 13]);
+const PREV_KEY_CODES = new Set([37, 38, 33]);
+
+export type PageKey = {
+  key?: string;
+  code?: string;
+  keyCode?: number;
+  shiftKey?: boolean;
+};
+
+/**
+ * Hacia dónde pasa la página una tecla (1 siguiente, -1 anterior, null
+ * ninguna). Con `onControl` (foco en un botón o enlace) Enter y Espacio son
+ * del control: activarlo y además pasar de página daría doble salto.
+ */
+export function pageTurnDirection(e: PageKey, onControl = false): 1 | -1 | null {
+  const key = e.key && e.key !== "Unidentified" ? e.key : null;
+  const space =
+    key === " " ||
+    key === "Spacebar" ||
+    (!key && (e.code === "Space" || e.keyCode === 32));
+  const enter =
+    key === "Enter" ||
+    (!key && (e.code === "Enter" || e.code === "NumpadEnter" || e.keyCode === 13));
+  if ((space || enter) && onControl) return null;
+  if (space) return e.shiftKey ? -1 : 1;
+  if (key) return NEXT_KEYS.has(key) ? 1 : PREV_KEYS.has(key) ? -1 : null;
+  if (e.code && NEXT_CODES.has(e.code)) return 1;
+  if (e.code && PREV_CODES.has(e.code)) return -1;
+  if (e.keyCode !== undefined && NEXT_KEY_CODES.has(e.keyCode)) return 1;
+  if (e.keyCode !== undefined && PREV_KEY_CODES.has(e.keyCode)) return -1;
+  return null;
+}

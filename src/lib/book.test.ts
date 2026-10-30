@@ -4,6 +4,7 @@ import {
   clampStart,
   clampZoom,
   pageAt,
+  pageTurnDirection,
   PAGE_PADDING,
   PAGE_SPACING,
   stepZoom,
@@ -57,5 +58,49 @@ describe("navegación", () => {
     expect(turnPage(4, 7, 2, 1)).toBe(5); // última vista llena: 6 y 7
     expect(turnPage(5, 7, 2, -1)).toBe(3);
     expect(turnPage(1, 7, 2, -1)).toBe(0);
+  });
+});
+
+describe("pageTurnDirection", () => {
+  it("flechas, Av/Re Pág y Enter de teclados y pedales", () => {
+    for (const key of ["ArrowRight", "ArrowDown", "PageDown", "Enter", "Right", "Down"]) {
+      expect(pageTurnDirection({ key })).toBe(1);
+    }
+    for (const key of ["ArrowLeft", "ArrowUp", "PageUp", "Left", "Up"]) {
+      expect(pageTurnDirection({ key })).toBe(-1);
+    }
+  });
+
+  it("los nombres de iPadOS para las flechas", () => {
+    expect(pageTurnDirection({ key: "UIKeyInputRightArrow" })).toBe(1);
+    expect(pageTurnDirection({ key: "UIKeyInputDownArrow" })).toBe(1);
+    expect(pageTurnDirection({ key: "UIKeyInputLeftArrow" })).toBe(-1);
+    expect(pageTurnDirection({ key: "UIKeyInputUpArrow" })).toBe(-1);
+  });
+
+  it("sin `key` (o «Unidentified»): por `code` o por el código numérico", () => {
+    expect(pageTurnDirection({ key: "Unidentified", code: "ArrowRight" })).toBe(1);
+    expect(pageTurnDirection({ code: "PageUp" })).toBe(-1);
+    expect(pageTurnDirection({ key: "", keyCode: 39 })).toBe(1);
+    expect(pageTurnDirection({ keyCode: 38 })).toBe(-1);
+    expect(pageTurnDirection({ keyCode: 32, shiftKey: true })).toBe(-1);
+  });
+
+  it("Espacio: adelante, con Mayús atrás", () => {
+    expect(pageTurnDirection({ key: " " })).toBe(1);
+    expect(pageTurnDirection({ key: " ", shiftKey: true })).toBe(-1);
+  });
+
+  it("Enter y Espacio sobre un botón son del botón (sin doble salto)", () => {
+    expect(pageTurnDirection({ key: "Enter" }, true)).toBeNull();
+    expect(pageTurnDirection({ key: " " }, true)).toBeNull();
+    // Las flechas sí pasan de página aunque haya un botón enfocado.
+    expect(pageTurnDirection({ key: "ArrowRight" }, true)).toBe(1);
+  });
+
+  it("otras teclas no pasan de página", () => {
+    expect(pageTurnDirection({ key: "a" })).toBeNull();
+    expect(pageTurnDirection({ key: "Home" })).toBeNull();
+    expect(pageTurnDirection({})).toBeNull();
   });
 });

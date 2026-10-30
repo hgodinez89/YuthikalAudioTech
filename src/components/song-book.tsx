@@ -37,6 +37,7 @@ import {
   ZOOM_MIN,
   ZOOM_STEP,
   type BookLayout,
+  pageTurnDirection,
 } from "@/lib/book";
 import type { SheetSection } from "@/lib/chordpro";
 import { smoothBehavior } from "@/lib/motion";
@@ -347,19 +348,17 @@ export function BookView({
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const a = keyActions.current;
       const { count: c, zoom: z } = live.current;
+      // Pasar página: flechas, Av/Re Pág, Espacio y Enter, con los nombres
+      // que use cada teclado o pedal (ver pageTurnDirection).
+      const onControl = target instanceof Element && Boolean(target.closest("button, a"));
+      const direction = pageTurnDirection(e, onControl);
+      if (direction) {
+        e.preventDefault();
+        a.turn(direction);
+        return;
+      }
       const handled = (() => {
         switch (e.key) {
-          case "ArrowRight":
-          case "PageDown":
-            a.turn(1);
-            return true;
-          case "ArrowLeft":
-          case "PageUp":
-            a.turn(-1);
-            return true;
-          case " ":
-            a.turn(e.shiftKey ? -1 : 1);
-            return true;
           case "Home":
             a.go(0);
             return true;

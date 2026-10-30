@@ -16,6 +16,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { pageTurnDirection } from "@/lib/book";
 import { AppLink, useAppNavigate } from "./app-link";
 import { ChordSheet, type ChordDataMap } from "./chord-sheet";
 import { Menu, MenuItem } from "./menu";
@@ -117,10 +118,16 @@ export function ConcertView({
         k.toggleFullscreen();
       } else if (e.key === "Escape" && !document.fullscreenElement) {
         k.exit();
-      } else if (!k.canBook && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
-        // En continuo (sin páginas), las flechas cambian de canción.
-        e.preventDefault();
-        k.step(e.key === "ArrowRight" ? 1 : -1);
+      } else if (!k.canBook) {
+        // En continuo (sin páginas), las teclas de pasar página (flechas,
+        // pedales…) cambian de canción.
+        const onControl =
+          target instanceof Element && Boolean(target.closest("button, a"));
+        const direction = pageTurnDirection(e, onControl);
+        if (direction) {
+          e.preventDefault();
+          k.step(direction);
+        }
       }
     };
     window.addEventListener("keydown", onKey);
