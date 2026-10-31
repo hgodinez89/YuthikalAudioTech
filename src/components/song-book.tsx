@@ -196,14 +196,21 @@ export function BookView({
     if (el.value !== PEDAL_FILL) el.value = PEDAL_FILL;
     el.setSelectionRange(PEDAL_MID, PEDAL_MID);
   }, []);
+  /* iOS solo le conecta el teclado (y el pedal) a un campo activado durante un
+     toque: activado por código queda "activo" pero sordo. Por eso se activa
+     únicamente desde un toque, y si quedó activo sin uno (iOS puede devolverle
+     el foco al volver a la app), el siguiente toque lo reactiva. */
+  const pedalByTouch = useRef(false);
   const focusPedal = useCallback(() => {
     const el = pedalRef.current;
     const active = document.activeElement;
     if (!el) return;
-    if (active !== el) {
+    if (active === el && !pedalByTouch.current) el.blur();
+    if (document.activeElement !== el) {
       // No se le quita el foco a otro campo donde se esté escribiendo.
-      if (active instanceof Element && active.closest(TYPING)) return;
+      if (active !== el && active instanceof Element && active.closest(TYPING)) return;
       el.focus({ preventScroll: true });
+      pedalByTouch.current = true;
     }
     resetCaret(el);
   }, [resetCaret]);
@@ -214,6 +221,7 @@ export function BookView({
   /* TEMPORAL: diagnóstico del pedal en táctiles (se quita al resolverlo). */
   const [pedalDebug, setPedalDebug] = useState({
     focus: "—",
+    touch: false,
     keys: [] as string[],
     caret: [] as string[],
   });
@@ -221,15 +229,15 @@ export function BookView({
     if (!touchScreen) return;
     const id = setInterval(
       () =>
-        setPedalDebug((d) => ({ ...d, focus: describeFocus(document.activeElement) })),
+        setPedalDebug((d) => ({
+          ...d,
+          focus: describeFocus(document.activeElement),
+          touch: pedalByTouch.current,
+        })),
       400,
     );
     return () => clearInterval(id);
   }, [touchScreen]);
-  // Al entrar (si el navegador lo permite; iOS espera el primer toque).
-  useEffect(() => {
-    if (touchScreen) focusPedal();
-  }, [touchScreen, focusPedal]);
   const [zoom, setZoom] = useState(() => {
     const saved = Number(readPref(zoomKey(songId)));
     return saved ? clampZoom(saved) : 1;
@@ -630,6 +638,9 @@ export function BookView({
           defaultValue={PEDAL_FILL}
           // Lo que "escriba" el pedal no se queda: vuelve el relleno.
           onInput={(e) => resetCaret(e.currentTarget)}
+          onBlur={() => {
+            pedalByTouch.current = false;
+          }}
           // 16 px: con menos, iOS hace zoom al activarlo. Casi invisible pero
           // con tamaño real: iOS puede negarse a activar un campo de 1 px.
           className="pointer-events-none fixed bottom-0 left-0 h-5 w-10 border-0 bg-transparent p-0 text-[16px] text-transparent caret-transparent opacity-[0.02] outline-none"
@@ -644,6 +655,7 @@ export function BookView({
         >
           <div className="font-bold text-ink">Diagnóstico pedal (temporal)</div>
           <div>Foco: {pedalDebug.focus}</div>
+          <div>Toque: {pedalDebug.touch ? "sí" : "no"}</div>
           <div>Teclas: {pedalDebug.keys.join(" · ") || "—"}</div>
           <div>Cursor: {pedalDebug.caret.join(" · ") || "—"}</div>
         </div>
