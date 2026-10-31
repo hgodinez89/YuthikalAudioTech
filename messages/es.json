@@ -792,7 +792,13 @@
     "fitHint": "Agrandar la letra al máximo que entra en pantalla",
     "fullscreen": "Pantalla completa",
     "exitFullscreen": "Salir de pantalla completa",
-    "pedal": "Pasar página con pedal o teclado"
+    "pedal": "Pasar página con pedal o teclado",
+    "pedalActivate": "Activar pedal",
+    "pedalReady": "Pisa el pedal…",
+    "pedalOn": "Pedal conectado (toca para desactivarlo)",
+    "pedalHintTitle": "¿Usas un pedal?",
+    "pedalHintBody": "Toca «Activar pedal» o cualquier parte de la página para que funcione.",
+    "pedalHintOk": "Entendido"
   },
   "piano": {
     "listen": "Escuchar",

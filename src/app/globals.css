@@ -319,6 +319,17 @@ body {
   }
 }
 
+/* Botón del pedal esperando la primera pulsación (modo libro). */
+@keyframes yk-pedal-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
 @keyframes yk-flat-pulse {
   0%,
   100% {
