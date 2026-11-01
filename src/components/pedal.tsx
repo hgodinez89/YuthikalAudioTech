@@ -12,7 +12,6 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { readPref, writePref } from "@/lib/use-stored-flag";
 
 /* Pantallas táctiles (iPad, teléfonos). Ahí un pedal Bluetooth que iOS no
    reconoce como teclado completo (el teclado de pantalla no se oculta) solo
@@ -28,9 +27,6 @@ function subscribeTouch(onChange: () => void) {
 /* Campos donde se escribe: sus teclas no son para el libro (salvo el
    receptor del pedal, marcado con data-page-keys). */
 export const TYPING = "input, textarea, select, [contenteditable='true']";
-
-/* El aviso del pedal se deja de mostrar al cerrarlo o al usar el pedal. */
-const PEDAL_HINT_KEY = "yk-pedal-hint";
 
 /* off: receptor inactivo · ready: activo, esperando la primera tecla ·
    on: ya llegó una tecla del pedal. */
@@ -76,12 +72,11 @@ export function PedalProvider({
   const active = enabled && touchScreen;
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<PedalState>("off");
-  // Aviso "¿Usas un pedal?" (solo táctiles, hasta cerrarlo o usar el pedal).
-  const [hintDone, setHintDone] = useState(() => readPref(PEDAL_HINT_KEY) === "done");
-  const finishHint = useCallback(() => {
-    setHintDone(true);
-    writePref(PEDAL_HINT_KEY, "done");
-  }, []);
+  /* Aviso "¿Usas un pedal?": en cada entrada (este proveedor se monta al
+     entrar al libro o al concierto), hasta tocar "Ahora no" o activar el
+     pedal; no vuelve en la misma entrada aunque el pedal se apague. */
+  const [hintDone, setHintDone] = useState(false);
+  const finishHint = useCallback(() => setHintDone(true), []);
   /* iOS solo le conecta el teclado (y el pedal) a un campo activado durante un
      toque: activado por código queda "activo" pero sordo. Por eso se activa
      únicamente desde un toque, y si quedó activo sin uno (iOS puede devolverle
@@ -104,6 +99,7 @@ export function PedalProvider({
     el.focus({ preventScroll: true });
     byTouch.current = true;
     setState(worked.current ? "on" : "ready");
+    setHintDone(true);
   }, []);
 
   const toggle = () => {
