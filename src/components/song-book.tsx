@@ -12,7 +12,6 @@ import {
   Minus,
   Plus,
   Scaling,
-  Check,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
@@ -43,6 +42,7 @@ import {
 import type { SheetSection } from "@/lib/chordpro";
 import { smoothBehavior } from "@/lib/motion";
 import { readPref, writePref } from "@/lib/use-stored-flag";
+import { PedalButton, PedalProvider, TYPING, usePedal } from "./pedal";
 
 /* Modo libro solo donde hay espacio para páginas a lo alto. */
 const BOOK_QUERY = "(min-width: 768px) and (min-height: 560px)";
@@ -67,48 +67,6 @@ function writeSession(key: string, value: string) {
 }
 /* Espacio al pie de cada página para su número. */
 const PAGE_FOOTER = 22;
-
-/* Pantallas táctiles (iPad, teléfonos). Ahí un pedal Bluetooth que iOS no
-   reconoce como teclado completo (el teclado de pantalla no se oculta) solo
-   entrega sus teclas a un campo de texto activo, nunca a la página. */
-const TOUCH_QUERY = "(any-pointer: coarse)";
-
-function subscribeTouch(onChange: () => void) {
-  const mql = window.matchMedia(TOUCH_QUERY);
-  mql.addEventListener("change", onChange);
-  return () => mql.removeEventListener("change", onChange);
-}
-
-/* Campos donde se escribe: sus teclas no son para el libro (salvo el
-   receptor del pedal, marcado con data-page-keys). */
-const TYPING = "input, textarea, select, [contenteditable='true']";
-
-/* El aviso del pedal se deja de mostrar al cerrarlo o al usar el pedal. */
-const PEDAL_HINT_KEY = "yk-pedal-hint";
-
-/* Pie pisando un pedal, con el trazo de los íconos de Lucide. */
-function PedalIcon({ size }: { size: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M2 22h20" />
-      <path d="M2.5 14.5 13 19.75" />
-      <path d="M9 17.75 7.5 22" />
-      <path d="M4 13 14 18 15 15V10L12 9Q9 11 6 11Q4 11.3 4 13Z" />
-      <path d="M12 9 15 2" />
-      <path d="M15 10 19 2" />
-    </svg>
-  );
-}
 
 function subscribeMedia(onChange: () => void) {
   const mql = window.matchMedia(BOOK_QUERY);
@@ -146,12 +104,14 @@ export function SongBook({
 
   if (canBook && mode === "book") {
     return (
-      <BookView
-        songId={songId}
-        sections={sections}
-        chords={chords}
-        onContinuous={() => choose("scroll")}
-      />
+      <PedalProvider>
+        <BookView
+          songId={songId}
+          sections={sections}
+          chords={chords}
+          onContinuous={() => choose("scroll")}
+        />
+      </PedalProvider>
     );
   }
 
@@ -197,69 +157,8 @@ export function BookView({
 }) {
   const concert = onBeyond !== undefined;
   const t = useTranslations("book");
-
-  /* Receptor del pedal: un campo invisible que no abre el teclado de
-     pantalla (inputmode="none") y queda activo mientras se lee, para que iOS
-     le entregue las teclas del pedal. Solo en táctiles; en la computadora el
-     teclado ya llega a la página. */
-  const touchScreen = useSyncExternalStore(
-    subscribeTouch,
-    () => window.matchMedia(TOUCH_QUERY).matches,
-    () => false,
-  );
-  const pedalRef = useRef<HTMLInputElement>(null);
-  /* off: receptor inactivo · ready: activo, esperando la primera tecla ·
-     on: ya llegó una tecla del pedal. */
-  const [pedal, setPedal] = useState<"off" | "ready" | "on">("off");
-  // Aviso "¿Usas un pedal?" (solo táctiles, hasta cerrarlo o usar el pedal).
-  const [hintDone, setHintDone] = useState(() => readPref(PEDAL_HINT_KEY) === "done");
-  const finishHint = useCallback(() => {
-    setHintDone(true);
-    writePref(PEDAL_HINT_KEY, "done");
-  }, []);
-  /* iOS solo le conecta el teclado (y el pedal) a un campo activado durante un
-     toque: activado por código queda "activo" pero sordo. Por eso se activa
-     únicamente desde un toque, y si quedó activo sin uno (iOS puede devolverle
-     el foco al volver a la app), el siguiente toque lo reactiva. */
-  const pedalByTouch = useRef(false);
-  // Apagado con su botón: los toques ya no lo activan hasta volver a pedirlo.
-  const pedalOff = useRef(false);
-  /* El pedal ya respondió en este libro: al reactivarse (cada toque en la
-     página lo desactiva y lo vuelve a activar) sigue como "on". */
-  const pedalWorked = useRef(false);
-  const focusPedal = useCallback(() => {
-    const el = pedalRef.current;
-    const active = document.activeElement;
-    if (!el) return;
-    if (active === el && !pedalByTouch.current) el.blur();
-    if (document.activeElement === el) return;
-    // No se le quita el foco a otro campo donde se esté escribiendo.
-    if (active !== el && active instanceof Element && active.closest(TYPING)) return;
-    el.focus({ preventScroll: true });
-    pedalByTouch.current = true;
-    setPedal(pedalWorked.current ? "on" : "ready");
-  }, []);
-  const togglePedal = () => {
-    pedalOff.current = pedal !== "off";
-    if (pedalOff.current) pedalRef.current?.blur();
-    else focusPedal();
-  };
-
-  /* Cualquier toque en la pantalla (la página, el título, los márgenes, la
-     barra) activa el receptor. Se excluyen los enlaces, los botones fuera de
-     la barra (un acorde se queda con su foco) y el botón y el aviso del pedal. */
-  useEffect(() => {
-    if (!touchScreen) return;
-    const onClick = (e: MouseEvent) => {
-      const target = e.target;
-      if (!(target instanceof Element) || pedalOff.current) return;
-      if (target.closest("a, [data-pedal-skip]")) return;
-      if (target.closest("button") && !target.closest("[data-book-bar]")) return;
-      focusPedal();
-    };
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
-  }, [touchScreen, focusPedal]);
+  // Receptor del pedal (táctiles): vive en PedalProvider, por encima del libro.
+  const pedal = usePedal();
   const [zoom, setZoom] = useState(() => {
     const saved = Number(readPref(zoomKey(songId)));
     return saved ? clampZoom(saved) : 1;
@@ -436,9 +335,17 @@ export function BookView({
   }, []);
 
   /* Teclado y pedales Bluetooth (envían flechas / Av Pág / Re Pág). */
-  const keyActions = useRef({ turn, go, applyZoom, toggleFullscreen, fullscreen });
+  const markPedal = pedal?.markWorked;
+  const keyActions = useRef({
+    turn,
+    go,
+    applyZoom,
+    toggleFullscreen,
+    fullscreen,
+    markPedal,
+  });
   useLayoutEffect(() => {
-    keyActions.current = { turn, go, applyZoom, toggleFullscreen, fullscreen };
+    keyActions.current = { turn, go, applyZoom, toggleFullscreen, fullscreen, markPedal };
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -464,9 +371,7 @@ export function BookView({
         a.turn(direction);
         // Del receptor: el pedal funciona (y el aviso ya no hace falta).
         if (target instanceof Element && target.closest("[data-page-keys]")) {
-          pedalWorked.current = true;
-          setPedal("on");
-          finishHint();
+          a.markPedal?.();
         }
         return;
       }
@@ -503,7 +408,7 @@ export function BookView({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [finishHint]);
+  }, []);
 
   /* Pantalla siempre encendida mientras se lee (si el navegador lo permite). */
   useEffect(() => {
@@ -609,33 +514,8 @@ export function BookView({
             barra de abajo, tocando un lado, deslizando, el teclado o un pedal. */}
       </div>
 
-      {touchScreen && (
-        <input
-          ref={pedalRef}
-          data-page-keys
-          aria-label={t("pedal")}
-          inputMode="none"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          tabIndex={-1}
-          // Lo que "escriba" el pedal no se queda.
-          onInput={(e) => {
-            e.currentTarget.value = "";
-          }}
-          onBlur={() => {
-            pedalByTouch.current = false;
-            setPedal("off");
-          }}
-          // 16 px: con menos, iOS hace zoom al activarlo. Casi invisible pero
-          // con tamaño real: iOS puede negarse a activar un campo de 1 px.
-          className="pointer-events-none fixed bottom-0 left-0 h-5 w-10 border-0 bg-transparent p-0 text-[16px] text-transparent caret-transparent opacity-[0.02] outline-none"
-        />
-      )}
-
-      {/* BARRA DE CONTROLES (sus botones también dejan activo el pedal). */}
-      <div data-book-bar className="shrink-0">
+      {/* BARRA DE CONTROLES */}
+      <div className="shrink-0">
         <div className="mb-2.5 h-[3px] overflow-hidden rounded-[3px] bg-edge">
           <div
             className="h-full rounded-[3px] bg-[linear-gradient(90deg,var(--grad-from),var(--grad-to))] transition-[width] duration-300"
@@ -690,71 +570,7 @@ export function BookView({
           </div>
 
           <div className="flex items-center gap-1.5">
-            {touchScreen && (
-              <>
-                {/* Sin mousedown: tras un toque, el clic simulado le quitaría
-                    el foco al receptor antes de que el botón decida. */}
-                <div
-                  data-pedal-skip
-                  onMouseDown={(e) => e.preventDefault()}
-                  className="relative"
-                >
-                  {!hintDone && pedal === "off" && (
-                    <div
-                      role="status"
-                      className="absolute -left-3.5 bottom-[54px] z-10 flex w-[300px] flex-col gap-2.5 rounded-[14px] border border-accent/45 bg-surface px-4 py-3.5 shadow-pop"
-                    >
-                      <div className="flex items-center gap-2 text-accent">
-                        <PedalIcon size={18} />
-                        <span className="text-sm font-bold text-ink">{t("pedalHintTitle")}</span>
-                      </div>
-                      <p className="text-[13px] leading-[1.45] text-sub">{t("pedalHintBody")}</p>
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={finishHint}
-                          className="h-8 cursor-pointer rounded-[11px] border border-edge-2 bg-surface-2 px-3 text-xs font-semibold text-sub hover:text-ink"
-                        >
-                          {t("pedalHintOk")}
-                        </button>
-                      </div>
-                      <span
-                        aria-hidden
-                        className="absolute -bottom-[7px] left-12 size-3 rotate-45 border-r border-b border-accent/45 bg-surface"
-                      />
-                    </div>
-                  )}
-                  {pedal === "on" ? (
-                    <button
-                      type="button"
-                      onClick={togglePedal}
-                      aria-label={t("pedalOn")}
-                      title={t("pedalOn")}
-                      className="yk-gradient-soft relative grid size-10 cursor-pointer place-items-center rounded-[11px] border border-accent/45 text-accent"
-                    >
-                      <PedalIcon size={18} />
-                      <span className="yk-gradient absolute -top-[5px] -right-[5px] grid size-4 place-items-center rounded-full border-2 border-page">
-                        <Check size={9} strokeWidth={4} />
-                      </span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={togglePedal}
-                      className={
-                        pedal === "ready"
-                          ? "inline-flex h-10 cursor-pointer items-center gap-2 rounded-[11px] border border-accent bg-surface-2 px-3 text-[13px] font-semibold whitespace-nowrap text-accent animate-[yk-pedal-pulse_1.8s_ease-out_infinite]"
-                          : "inline-flex h-10 cursor-pointer items-center gap-2 rounded-[11px] border border-edge-2 bg-surface-2 px-3 text-[13px] font-semibold whitespace-nowrap text-sub hover:text-ink"
-                      }
-                    >
-                      <PedalIcon size={16} />
-                      {pedal === "ready" ? t("pedalReady") : t("pedalActivate")}
-                    </button>
-                  )}
-                </div>
-                <span className="mx-1 h-6 w-px bg-edge" />
-              </>
-            )}
+            <PedalButton />
             <button
               type="button"
               onClick={() => applyZoom(stepZoom(zoom, -1))}
