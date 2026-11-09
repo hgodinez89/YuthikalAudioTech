@@ -11,8 +11,10 @@ import {
   type ChordPositionRow,
   type ChordRow,
 } from "@/lib/chords";
+import { chordNoteLabels, pitchClass } from "@/lib/chord-notes";
 import { isFretted, type Instrument } from "@/lib/instruments";
 import {
+  chordSpeller,
   pianoChord,
   pianoIntervalLabels,
   pianoInversions,
@@ -54,6 +56,16 @@ export function ChordDetailView({
   const tFinder = useTranslations("finder");
   const tPiano = useTranslations("piano");
   const locale = useLocale();
+  const lang = locale === "en" ? "en" : "es";
+  // Nombre de la nota de cada cuerda; en el diagrama grande, en ambos idiomas.
+  const stringNotes = (p: ChordPositionRow, both = false) =>
+    chordNoteLabels(
+      instrument,
+      { key: chord.key, suffix: chord.suffix, frets: p.frets, baseFret: p.base_fret },
+      lang,
+      both,
+    );
+  const spell = chordSpeller(chord.key, chord.suffix);
 
   const suffix = printableSuffix(chord.suffix);
   const hero = positions[0];
@@ -92,6 +104,7 @@ export function ChordDetailView({
                     barres={hero.barres}
                     baseFret={hero.base_fret}
                     scale={1.5}
+                    labels={stringNotes(hero, true)}
                   />
                 </div>
                 <span className="text-[12.5px] font-semibold text-sub">
@@ -122,7 +135,11 @@ export function ChordDetailView({
             {[
               [
                 t("notes"),
-                (pianoData ? pianoNoteNames(pianoData, "en") : chord.notes).join(" · "),
+                (pianoData
+                  ? pianoNoteNames(pianoData, "en")
+                  : // misma escritura que el piano y los diagramas (C7: B♭, no A#)
+                    chord.notes.map((n) => spell(pitchClass(n), "en"))
+                ).join(" · "),
               ],
               [
                 t("intervals"),
@@ -195,6 +212,7 @@ export function ChordDetailView({
                     frets={p.frets}
                     barres={p.barres}
                     baseFret={p.base_fret}
+                    labels={stringNotes(p)}
                   />
                 </div>
                 <span className="text-[12.5px] font-semibold text-sub">

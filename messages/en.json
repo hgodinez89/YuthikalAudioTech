@@ -716,6 +716,7 @@
     "retry": "Retry",
     "loadingMore": "Loading more chords…",
     "barre": "barre",
+    "cardNotes": "Notes: {notes}",
     "fabDown": "Go to bottom",
     "fabUp": "Go to top",
     "categories": {

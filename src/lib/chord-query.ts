@@ -8,11 +8,7 @@ import { PIANO_SUFFIXES, pianoRootKeys } from "./piano";
 
 export const PAGE_SIZE = 36;
 
-export type ChordRow = ChordCardData & {
-  key: string;
-  suffix: string;
-  category: ChordCategory;
-};
+export type ChordRow = ChordCardData & { category: ChordCategory };
 
 export type ChordPage = { rows: ChordRow[]; total: number };
 

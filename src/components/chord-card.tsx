@@ -1,10 +1,14 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ChordVisual } from "./chord-visual";
+import { chordNoteLabels } from "@/lib/chord-notes";
 import type { ChordPositionRow } from "@/lib/chords";
+import type { Instrument } from "@/lib/instruments";
 
 export type ChordCardData = {
   id: string;
+  key: string;
+  suffix: string;
   name_en: string;
   name_es: string;
   position: Pick<ChordPositionRow, "base_fret" | "frets" | "barres">;
@@ -12,9 +16,31 @@ export type ChordCardData = {
   keys?: number[];
 };
 
-export function ChordCard({ chord, href }: { chord: ChordCardData; href: string }) {
+export function ChordCard({
+  chord,
+  instrument,
+  href,
+}: {
+  chord: ChordCardData;
+  instrument: Instrument;
+  href: string;
+}) {
   const t = useTranslations("finder");
+  const lang = useLocale() === "en" ? "en" : "es";
   const hasBarre = !chord.keys && chord.position.barres.length > 0;
+  // El nombre de cada nota bajo su tecla o su cuerda.
+  const notes = chordNoteLabels(
+    instrument,
+    {
+      key: chord.key,
+      suffix: chord.suffix,
+      keys: chord.keys,
+      frets: chord.position.frets,
+      baseFret: chord.position.base_fret,
+    },
+    lang,
+  );
+  const noteList = [...new Set(notes.flatMap((n) => (n ? [n.main] : [])))];
 
   return (
     <Link
@@ -36,6 +62,7 @@ export function ChordCard({ chord, href }: { chord: ChordCardData; href: string 
             keys: chord.keys,
           }}
           scale={chord.keys ? 1.15 : 1}
+          notes={notes}
         />
       </div>
       <div className="text-center leading-[1.35]">
@@ -44,6 +71,8 @@ export function ChordCard({ chord, href }: { chord: ChordCardData; href: string 
         </span>
         <div className="text-[12.5px] text-sub">{chord.name_es}</div>
       </div>
+      {/* El diagrama es un dibujo: las notas, también para lectores de pantalla. */}
+      <span className="sr-only">{t("cardNotes", { notes: noteList.join(", ") })}</span>
     </Link>
   );
 }

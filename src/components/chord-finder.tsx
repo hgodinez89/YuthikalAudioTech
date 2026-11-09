@@ -597,6 +597,7 @@ export function ChordFinder({
               <ChordCard
                 key={row.id}
                 chord={row}
+                instrument={instrument}
                 href={`/${instrument}/chords/${chordSlug(row.key, row.suffix)}`}
               />
             ))}

@@ -1,3 +1,5 @@
+import { labelWidth, stackLabels, type NoteLabel } from "@/lib/chord-notes";
+
 export type ChordShape = {
   /** Un valor por cuerda, de la más grave a la 1ª (6 en guitarra, 4 en
    *  ukelele): -1 muteada, 0 al aire, n>0 traste pisado (relativo a
@@ -16,21 +18,45 @@ const PAD_TOP = 24;
 const STRING_GAP = 15;
 const FRET_GAP = 21;
 const FRETS_SHOWN = 4;
+/* Nombres bajo las cuerdas: principal y, en las fichas, el otro idioma. */
+const LABEL_SIZE = 9.5;
+const SUB_SIZE = 7.5;
 
 export function ChordDiagram({
   frets,
   barres = [],
   baseFret = 1,
   scale = 1,
-}: ChordShape & { scale?: number }) {
+  labels,
+}: ChordShape & {
+  scale?: number;
+  /** Nota de cada cuerda (null si no suena), bajo el diagrama. */
+  labels?: (NoteLabel | null)[];
+}) {
   const shifted = baseFret > 1;
   const leftPad = PAD_X + (shifted ? 15 : 0);
   const gridW = STRING_GAP * (frets.length - 1);
   const svgW = leftPad + gridW + PAD_X;
   const gridH = FRET_GAP * FRETS_SHOWN;
-  const svgH = PAD_TOP + gridH + 6;
-
   const stringX = (i: number) => leftPad + i * STRING_GAP;
+
+  /* Si dos nombres se enciman (solfeo: «Sol♯» junto a «Si♭»), el segundo
+     baja una fila. */
+  const named = (labels ?? []).flatMap((label, i) =>
+    label ? [{ label, x: stringX(i) }] : [],
+  );
+  const rowH = named.some(({ label }) => label.sub) ? 21 : 12;
+  const rows = stackLabels(
+    named.map(({ label, x }) => ({
+      x,
+      width: Math.max(
+        labelWidth(label.main, LABEL_SIZE),
+        label.sub ? labelWidth(label.sub, SUB_SIZE) : 0,
+      ),
+    })),
+  );
+  const labelsH = named.length ? (Math.max(...rows) + 1) * rowH + 4 : 0;
+  const svgH = PAD_TOP + gridH + 6 + labelsH;
   const fretY = (f: number) => PAD_TOP + (f - 0.5) * FRET_GAP;
 
   /* Una cejilla abarca desde la primera hasta la última cuerda pisada en ese traste. */
@@ -139,6 +165,34 @@ export function ChordDiagram({
         if (isBarred(f)) return null;
         return (
           <circle key={`m${i}`} cx={x} cy={fretY(f)} r={6} fill="var(--accent-dot)" />
+        );
+      })}
+      {/* nombres de las notas bajo las cuerdas (la fundamental en cian) */}
+      {named.map(({ label, x }, k) => {
+        const y = PAD_TOP + gridH + 18 + rows[k] * rowH;
+        return (
+          <g key={`n${x}`} fontFamily="var(--font-inter), sans-serif" textAnchor="middle">
+            <text
+              x={x}
+              y={y}
+              fontSize={LABEL_SIZE}
+              fontWeight={label.root ? 800 : 700}
+              fill={label.root ? "var(--accent)" : "var(--sub)"}
+            >
+              {label.main}
+            </text>
+            {label.sub && (
+              <text
+                x={x}
+                y={y + 10}
+                fontSize={SUB_SIZE}
+                fontWeight={600}
+                fill="var(--tert)"
+              >
+                {label.sub}
+              </text>
+            )}
+          </g>
         );
       })}
     </svg>

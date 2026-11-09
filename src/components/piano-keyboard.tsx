@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
+import { labelWidth, stackLabels } from "@/lib/chord-notes";
 import { isBlackKey, noteName, octaveOf } from "@/lib/piano";
 
 /* Colores de los dedos (1 pulgar … 5 meñique), como en los métodos de piano. */
@@ -26,8 +27,10 @@ const BLACK_AFTER = [
 /**
  * Teclado de piano en SVG.
  * - `pressed`: teclas a resaltar (MIDI); `fingers`: dedo por tecla.
- * - `labels`: nombres de nota bajo las teclas resaltadas ("pressed"), en
- *   todas las teclas ("all") o ninguno.
+ * - `labels`: nombres de nota bajo las teclas resaltadas ("pressed"; en
+ *   una sola línea y del tamaño de la tecla, "compact"), en todas las teclas
+ *   ("all") o ninguno.
+ * - `rootKeys`: teclas cuyo nombre va resaltado (la fundamental).
  * - `noteLabels`: textos propios bajo las teclas resaltadas (escalas: Mi♯,
  *   grados) en lugar del nombre calculado.
  * - `strong`: teclas destacadas (tónica); con él, el resto se atenúa.
@@ -46,6 +49,7 @@ export function PianoKeyboard({
   marks,
   noteLabels,
   strong,
+  rootKeys,
   onKey,
   className = "",
 }: {
@@ -53,7 +57,7 @@ export function PianoKeyboard({
   octaves: number;
   pressed?: number[];
   fingers?: Record<number, number>;
-  labels?: "none" | "pressed" | "all";
+  labels?: "none" | "pressed" | "compact" | "all";
   flats?: boolean;
   /** Notas que se escriben con bemol (ortografía por intervalo del acorde). */
   flatNotes?: number[];
@@ -65,6 +69,7 @@ export function PianoKeyboard({
   noteLabels?: Record<number, [string, string?]>;
   /** Teclas destacadas entre las resaltadas (p. ej. la tónica). */
   strong?: number[];
+  rootKeys?: number[];
   onKey?: (midi: number) => void;
   className?: string;
 }) {
@@ -120,8 +125,26 @@ export function PianoKeyboard({
     lastX = x;
     lastRow = row;
   }
+  /* Compactos (tarjetas): una línea, del tamaño de la tecla; si se enciman
+     (solfeo: Re y Mi en Dsus2), el siguiente baja una fila. */
+  const compactSize = W * 0.95;
+  const compact = (labels === "compact" ? [...pressed] : []).sort(
+    (a, b) => centerX(a) - centerX(b),
+  );
+  const compactRows = stackLabels(
+    compact.map((midi) => ({
+      x: centerX(midi),
+      width: labelWidth(label(midi)[0], compactSize),
+    })),
+  );
   const bottom =
-    labels === "pressed" ? ([...labelRows.values()].includes(1) ? 62 : 34) : 0;
+    labels === "pressed"
+      ? [...labelRows.values()].includes(1)
+        ? 62
+        : 34
+      : compact.length
+        ? (Math.max(...compactRows) + 1) * (compactSize + 3) + 3
+        : 0;
 
   const keyProps = (midi: number) =>
     onKey
@@ -291,6 +314,25 @@ export function PianoKeyboard({
             </text>
           </g>
         ))}
+
+      {/* nombres compactos (tarjetas), la fundamental en cian */}
+      {compact.map((midi, i) => {
+        const root = Boolean(rootKeys?.includes(midi));
+        return (
+          <text
+            key={midi}
+            x={centerX(midi)}
+            y={top + H + compactSize + 2 + compactRows[i] * (compactSize + 3)}
+            textAnchor="middle"
+            fontSize={compactSize}
+            fontWeight={root ? 800 : 700}
+            fill={root ? "var(--accent)" : "var(--sub)"}
+            fontFamily="var(--font-inter), sans-serif"
+          >
+            {label(midi)[0]}
+          </text>
+        );
+      })}
     </svg>
   );
 }

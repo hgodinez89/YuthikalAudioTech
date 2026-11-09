@@ -266,6 +266,18 @@ export function flatSpelledNotes(chord: PianoChord, notes: number[]): number[] {
   });
 }
 
+/**
+ * Nombre de cualquier nota de un acorde del catálogo con la regla del piano
+ * (por intervalo; ver `flatSpelledNotes`); los tipos sin voicing de teclado
+ * (p. ej. `7sg`), por tonalidad. Así guitarra y piano dicen B♭ en C7, no A♯.
+ */
+export function chordSpeller(key: string, suffix: string) {
+  const chord = pianoChord(key, suffix);
+  const keyFlats = FLAT_KEYS.has(key);
+  return (midi: number, lang: "es" | "en") =>
+    noteName(midi, lang, chord ? flatSpelledNotes(chord, [midi]).length > 0 : keyFlats);
+}
+
 /** Nombres de las notas del voicing en posición fundamental, bien escritos. */
 export function pianoNoteNames(chord: PianoChord, lang: "es" | "en"): string[] {
   const notes = pianoInversions(chord)[0].notes;

@@ -716,6 +716,7 @@
     "loadError": "No se pudieron cargar los acordes. Revisa tu conexión e intenta de nuevo.",
     "retry": "Reintentar",
     "barre": "cejilla",
+    "cardNotes": "Notas: {notes}",
     "fabDown": "Ir abajo",
     "fabUp": "Ir arriba",
     "categories": {
